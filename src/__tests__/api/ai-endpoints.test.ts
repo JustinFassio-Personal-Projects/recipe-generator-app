@@ -25,11 +25,14 @@ describe('AI API Endpoints Configuration', () => {
 
       expect(hasViteSupabaseUrl).toBe(true);
       expect(hasViteSupabaseKey).toBe(true);
-      
+
       // VITE_OPENAI_MODEL is optional - tests can run without it
       // If it's set, we just log it for debugging
       if (hasViteOpenAIModel) {
-        console.log('✓ VITE_OPENAI_MODEL is configured:', import.meta.env.VITE_OPENAI_MODEL);
+        console.log(
+          '✓ VITE_OPENAI_MODEL is configured:',
+          import.meta.env.VITE_OPENAI_MODEL
+        );
       } else {
         console.warn('⚠ VITE_OPENAI_MODEL is not set - using fallback');
       }

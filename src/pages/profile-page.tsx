@@ -64,7 +64,7 @@ export default function ProfilePage() {
     };
 
     loadData();
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Note: Profile loading is handled by AuthProvider automatically
 

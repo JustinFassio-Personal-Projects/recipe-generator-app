@@ -388,7 +388,7 @@ I'll ensure all recommendations are safe for your dietary needs and tailored to 
         setIsLoading(false);
       }
     },
-    [messages, persona, isLoading, threadId]
+    [messages, persona, isLoading, threadId, user?.id]
   );
 
   const startNewRecipe = useCallback(() => {

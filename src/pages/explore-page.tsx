@@ -8,6 +8,7 @@ import { useToast } from '../hooks/use-toast';
 import { FilterBar } from '@/components/recipes/FilterBar';
 import { useRecipeFilters } from '@/hooks/use-recipe-filters';
 import { useNavigate } from 'react-router-dom';
+import { ExploreInstructionsModal } from '@/components/welcome/ExploreInstructionsModal';
 
 export default function ExplorePage() {
   const [recipes, setRecipes] = useState<
@@ -27,6 +28,17 @@ export default function ExplorePage() {
   const { filters, updateFilters } = useRecipeFilters();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check if user has seen explore instructions before
+  const [showExploreInstructions, setShowExploreInstructions] = useState(false);
+
+  useEffect(() => {
+    const hasHiddenInstructions =
+      localStorage.getItem('hideExploreInstructionsModal') === 'true';
+    if (!hasHiddenInstructions) {
+      setShowExploreInstructions(true);
+    }
+  }, []);
 
   const loadPublicRecipes = useCallback(async () => {
     try {
@@ -311,6 +323,14 @@ export default function ExplorePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Explore Instructions Modal */}
+      {showExploreInstructions && (
+        <ExploreInstructionsModal
+          isOpen={showExploreInstructions}
+          onClose={() => setShowExploreInstructions(false)}
+        />
+      )}
+
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Explore Recipes</h1>
         <p className="text-muted-foreground mb-6">

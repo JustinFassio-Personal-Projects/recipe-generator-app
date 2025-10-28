@@ -9,7 +9,7 @@ import {
 
 // Profile field selection constants for consistency across queries
 export const PROFILE_FIELDS_FULL =
-  'id, username, full_name, avatar_url, bio, region, country, state_province, city, language, units, time_per_meal, skill_level, created_at, updated_at';
+  'id, username, full_name, avatar_url, bio, region, country, state_province, city, language, units, time_per_meal, skill_level, visit_count, last_visit_at, show_welcome_popup, created_at, updated_at';
 export const PROFILE_FIELDS_BASIC =
   'bio, region, country, state_province, city, language, units, time_per_meal, skill_level';
 

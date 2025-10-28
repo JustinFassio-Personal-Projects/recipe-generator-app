@@ -65,7 +65,7 @@ export function ExploreInstructionsModal({
                 <h3 className="font-semibold text-purple-700">
                   1. Browse & Search Recipes
                 </h3>
-                <p className="text-sm text-white">
+                <p className="text-sm text-base-content opacity-90">
                   Use the search bar and filters to find recipes by name,
                   ingredients, cuisine, or category. Sort by trending, highest
                   rated, most viewed, or most recent to discover what you're
@@ -85,7 +85,7 @@ export function ExploreInstructionsModal({
                 <h3 className="font-semibold text-blue-700">
                   2. View Recipe Details
                 </h3>
-                <p className="text-sm text-white">
+                <p className="text-sm text-base-content opacity-90">
                   Click on any recipe card to see the full details, including
                   ingredients, instructions, and photos. You can see who created
                   it and how others have rated it!
@@ -104,7 +104,7 @@ export function ExploreInstructionsModal({
                 <h3 className="font-semibold text-green-700">
                   3. Save & Personalize
                 </h3>
-                <p className="text-sm text-white">
+                <p className="text-sm text-base-content opacity-90">
                   Found a recipe you love? Save it to your collection with one
                   click! Once saved, you can edit and personalize it to make it
                   your own. It will appear in your "My Recipes" page.
@@ -123,7 +123,7 @@ export function ExploreInstructionsModal({
                 <h3 className="font-semibold text-orange-700">
                   4. Rate & Share Feedback
                 </h3>
-                <p className="text-sm text-white">
+                <p className="text-sm text-base-content opacity-90">
                   Tried a recipe and loved it? Leave a rating and comment to
                   help other cooks discover great recipes! Your feedback helps
                   build a supportive cooking community.

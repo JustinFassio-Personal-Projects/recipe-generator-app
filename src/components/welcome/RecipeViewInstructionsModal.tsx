@@ -67,7 +67,7 @@ export function RecipeViewInstructionsModal({
                 <h3 className="font-semibold text-green-700">
                   1. Check Your Grocery Compatibility
                 </h3>
-                <p className="text-sm text-white">
+                <p className="text-sm text-base-content opacity-90">
                   See what percentage of ingredients you already have! Green
                   checkmarks show what's in your kitchen. The compatibility bar
                   tells you if you're ready to cook or need to shop.
@@ -86,7 +86,7 @@ export function RecipeViewInstructionsModal({
                 <h3 className="font-semibold text-blue-700">
                   2. Add Missing Ingredients
                 </h3>
-                <p className="text-sm text-white">
+                <p className="text-sm text-base-content opacity-90">
                   See an ingredient you don't have? Click the{' '}
                   <strong>+ Add</strong> button next to it to add it to your
                   grocery collection. You can then toggle it as "available" or
@@ -106,7 +106,7 @@ export function RecipeViewInstructionsModal({
                 <h3 className="font-semibold text-purple-700">
                   3. Create Shopping Lists
                 </h3>
-                <p className="text-sm text-white">
+                <p className="text-sm text-base-content opacity-90">
                   The shopping list automatically shows what you need to buy.
                   Use the
                   <strong> Add to Shopping Cart</strong> button to save all
@@ -127,7 +127,7 @@ export function RecipeViewInstructionsModal({
                 <h3 className="font-semibold text-orange-700">
                   4. Add Notes & Rate Recipes
                 </h3>
-                <p className="text-sm text-white">
+                <p className="text-sm text-base-content opacity-90">
                   Add your own notes, tips, or variations to any recipe. For
                   public recipes, you can also leave ratings and comments to
                   help the community!

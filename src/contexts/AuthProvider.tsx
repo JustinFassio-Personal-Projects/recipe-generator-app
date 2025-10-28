@@ -14,6 +14,7 @@ import {
 } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
+import { AuthContext, type AuthContextType } from './auth-context';
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { createLogger } from '@/lib/logger';
 

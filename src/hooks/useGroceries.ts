@@ -409,7 +409,6 @@ export function useGroceries(): UseGroceriesReturn {
       globalLoadingState.loadedUserId = null;
       globalLoadingState.isLoading = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]); // CRITICAL FIX: Only depend on user.id, loadGroceries handles its own deduplication
 
   // Debug: Log state changes in development (reduced logging)

@@ -66,7 +66,7 @@ export function ChatInstructionsModal({
                 <h3 className="font-semibold text-purple-700">
                   1. Recipe Preferences (Optional)
                 </h3>
-                <p className="text-sm text-base-content opacity-90">
+                <p className="text-sm text-white">
                   Use the filters at the top to select categories, cuisines,
                   moods, or ingredients you have on hand. These help guide{' '}
                   {chefName}'s suggestions, but they're completely optional!
@@ -85,7 +85,7 @@ export function ChatInstructionsModal({
                 <h3 className="font-semibold text-blue-700">
                   2. Your Profile is Pre-Loaded
                 </h3>
-                <p className="text-sm text-base-content opacity-90">
+                <p className="text-sm text-white">
                   {chefName} already knows your dietary restrictions, allergies,
                   preferences, and skill level from your profile. No need to
                   repeat this information!

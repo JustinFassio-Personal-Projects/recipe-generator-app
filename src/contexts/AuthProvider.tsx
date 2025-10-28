@@ -14,7 +14,6 @@ import {
 } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
-import { AuthContext, type AuthContextType } from './auth-context';
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { createLogger } from '@/lib/logger';
 
@@ -182,6 +181,40 @@ const getPersistedAuthState = () => {
   }
   return null;
 };
+
+interface AuthContextType {
+  user: User | null;
+  profile: Profile | null;
+  loading: boolean;
+  error: string | null;
+  signOut: () => Promise<void>;
+  refreshProfile: (
+    onComplete?: (profile: Profile | null) => void
+  ) => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Global fallback state for development hot reloads
+let globalAuthFallback: AuthContextType | null = null;
+
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+
+  // Enhanced error handling with hot reload recovery
+  if (context === undefined) {
+    // In development, try to use global fallback during hot reloads
+    if (import.meta.env.DEV && globalAuthFallback) {
+      console.warn(
+        'AuthProvider context is undefined, using global fallback during hot reload'
+      );
+      return globalAuthFallback;
+    }
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+
+  return context;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize with persisted state if available (hot reload recovery)

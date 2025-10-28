@@ -104,7 +104,7 @@ export function ChatInstructionsModal({
                 <h3 className="font-semibold text-green-700">
                   3. Start a Conversation
                 </h3>
-                <p className="text-sm text-base-content opacity-90 mb-2">
+                <p className="text-sm text-white mb-2">
                   Simply type your idea in the chat box. You can be specific or
                   ask for suggestions!
                 </p>

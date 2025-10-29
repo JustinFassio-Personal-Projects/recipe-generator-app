@@ -15,6 +15,7 @@ import { recipeApi } from '@/lib/api';
 import { ratingApi } from '@/lib/api/features/rating-api';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { RecipeViewInstructionsModal } from '@/components/welcome/RecipeViewInstructionsModal';
 import type { Recipe, RecipeVersion } from '@/lib/types';
 
 export function RecipeViewPage() {
@@ -104,10 +105,22 @@ export function RecipeViewPage() {
     null
   );
 
+  // Check if user has seen recipe view instructions
+  const [showInstructions, setShowInstructions] = useState(false);
+
   // Clear updated recipe data when baseRecipe changes (different recipe)
   useEffect(() => {
     setUpdatedRecipeData(null);
   }, [baseRecipe?.id]);
+
+  // Show instructions modal on first visit
+  useEffect(() => {
+    const hasHiddenInstructions =
+      localStorage.getItem('hideRecipeViewInstructionsModal') === 'true';
+    if (!hasHiddenInstructions && baseRecipe) {
+      setShowInstructions(true);
+    }
+  }, [baseRecipe]);
 
   // Determine which content to display
   const recipe = baseRecipe;
@@ -701,6 +714,12 @@ export function RecipeViewPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+      {/* Recipe View Instructions Modal */}
+      <RecipeViewInstructionsModal
+        isOpen={showInstructions}
+        onClose={() => setShowInstructions(false)}
+      />
+
       <div className="mx-auto max-w-full sm:max-w-7xl px-4 py-8 sm:px-6 lg:px-8 overflow-x-hidden">
         {/* Version Navigation Header - Show for owned recipes OR when versions exist */}
         {(isOwner || versions.length > 0) && (

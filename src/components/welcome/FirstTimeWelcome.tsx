@@ -1,20 +1,33 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ChefHat, Sparkles, Zap } from 'lucide-react';
 
 interface FirstTimeWelcomeProps {
   onClose: () => void;
+  onDisablePermanently?: () => Promise<void>;
 }
 
-export function FirstTimeWelcome({ onClose }: FirstTimeWelcomeProps) {
+export function FirstTimeWelcome({
+  onClose,
+  onDisablePermanently,
+}: FirstTimeWelcomeProps) {
   const navigate = useNavigate();
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
-  const handleCreateRecipe = () => {
+  const handleCreateRecipe = async () => {
+    if (dontShowAgain && onDisablePermanently) {
+      await onDisablePermanently();
+    }
     onClose();
     navigate('/chat-recipe');
   };
 
-  const handleExplore = () => {
+  const handleExplore = async () => {
+    if (dontShowAgain && onDisablePermanently) {
+      await onDisablePermanently();
+    }
     onClose();
     navigate('/explore');
   };
@@ -77,6 +90,27 @@ export function FirstTimeWelcome({ onClose }: FirstTimeWelcomeProps) {
         <Zap className="h-4 w-4 text-orange-500" />
         <span>Takes just 2 minutes to get started</span>
       </div>
+
+      {/* Don't Show Again Checkbox */}
+      {onDisablePermanently && (
+        <div className="flex items-start space-x-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <Checkbox
+            id="dont-show-again"
+            checked={dontShowAgain}
+            onCheckedChange={(checked) => setDontShowAgain(checked === true)}
+            className="mt-0.5"
+          />
+          <label
+            htmlFor="dont-show-again"
+            className="cursor-pointer text-sm text-gray-700"
+          >
+            Don't show these instructions again
+            <p className="mt-0.5 text-xs text-gray-500">
+              You can re-enable this in your profile settings
+            </p>
+          </label>
+        </div>
+      )}
     </div>
   );
 }

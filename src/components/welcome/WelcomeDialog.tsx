@@ -79,10 +79,16 @@ export function WelcomeDialog({
 
         {/* Render appropriate flow component */}
         {flowType === 'first-time' && (
-          <FirstTimeWelcome onClose={dismissPopup} />
+          <FirstTimeWelcome
+            onClose={dismissPopup}
+            onDisablePermanently={disablePopupPermanently}
+          />
         )}
         {flowType === 'welcome-back' && (
-          <WelcomeBackFlow onClose={dismissPopup} />
+          <WelcomeBackFlow
+            onClose={dismissPopup}
+            onDisablePermanently={disablePopupPermanently}
+          />
         )}
         {flowType === 'quick-nav' && (
           <QuickNavigationFlow

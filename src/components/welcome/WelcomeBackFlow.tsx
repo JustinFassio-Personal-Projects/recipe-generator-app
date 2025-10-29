@@ -1,18 +1,25 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useRecipes } from '@/hooks/use-recipes';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ChefHat, BookOpen, Sparkles, ShoppingCart, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface WelcomeBackFlowProps {
   onClose: () => void;
+  onDisablePermanently?: () => Promise<void>;
 }
 
-export function WelcomeBackFlow({ onClose }: WelcomeBackFlowProps) {
+export function WelcomeBackFlow({
+  onClose,
+  onDisablePermanently,
+}: WelcomeBackFlowProps) {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { data: recipes = [] } = useRecipes({});
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   // Get recent recipes (last 2-3, sorted by updated_at)
   const recentRecipes = recipes
@@ -24,9 +31,19 @@ export function WelcomeBackFlow({ onClose }: WelcomeBackFlowProps) {
 
   const userName = profile?.full_name || profile?.username || 'there';
 
-  const handleNavigation = (path: string) => {
+  const handleNavigation = async (path: string) => {
+    if (dontShowAgain && onDisablePermanently) {
+      await onDisablePermanently();
+    }
     onClose();
     navigate(path);
+  };
+
+  const handleClose = async () => {
+    if (dontShowAgain && onDisablePermanently) {
+      await onDisablePermanently();
+    }
+    onClose();
   };
 
   return (
@@ -120,9 +137,30 @@ export function WelcomeBackFlow({ onClose }: WelcomeBackFlowProps) {
         </div>
       )}
 
+      {/* Don't Show Again Checkbox */}
+      {onDisablePermanently && (
+        <div className="flex items-start space-x-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <Checkbox
+            id="dont-show-again"
+            checked={dontShowAgain}
+            onCheckedChange={(checked) => setDontShowAgain(checked === true)}
+            className="mt-0.5"
+          />
+          <label
+            htmlFor="dont-show-again"
+            className="cursor-pointer text-sm text-gray-700"
+          >
+            Don't show these instructions again
+            <p className="mt-0.5 text-xs text-gray-500">
+              You can re-enable this in your profile settings
+            </p>
+          </label>
+        </div>
+      )}
+
       {/* Close Button */}
       <Button
-        onClick={onClose}
+        onClick={handleClose}
         variant="ghost"
         className="w-full gap-2 text-gray-600 hover:text-gray-900"
       >

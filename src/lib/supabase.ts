@@ -63,6 +63,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'X-Client-Info': 'recipe-generator-web',
+      // Fix 406 errors in production by explicitly requesting JSON with PostgREST schema
+      Accept: 'application/json',
+      'Accept-Profile': 'public',
+      'Content-Profile': 'public',
     },
     // Add fetch configuration for better timeout handling
     fetch: (url, options = {}) => {

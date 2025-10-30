@@ -38,16 +38,16 @@ export function ChatInstructionsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-orange-600">
-          <ChefHat className="h-6 w-6" />
+      <DialogContent className="max-w-[95vw] sm:max-w-lg md:max-w-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-orange-600">
+          <ChefHat className="h-5 w-5 sm:h-6 sm:w-6" />
           How to Work with {chefName}
         </DialogTitle>
         <DialogDescription className="sr-only">
           Instructions for using the AI recipe assistant
         </DialogDescription>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Introduction */}
           <div className="rounded-lg bg-gradient-to-r from-orange-50 to-teal-50 p-4">
             <p className="text-gray-700">
@@ -57,10 +57,10 @@ export function ChatInstructionsModal({
           </div>
 
           {/* Recipe Preferences Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-                <Filter className="h-5 w-5 text-purple-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-purple-100">
+                <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-purple-700">
@@ -76,10 +76,10 @@ export function ChatInstructionsModal({
           </div>
 
           {/* Profile Data Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                <User className="h-5 w-5 text-blue-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-blue-100">
+                <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-blue-700">
@@ -95,10 +95,10 @@ export function ChatInstructionsModal({
           </div>
 
           {/* Chat Input Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                <MessageSquare className="h-5 w-5 text-green-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-green-100">
+                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-green-700">
@@ -113,10 +113,10 @@ export function ChatInstructionsModal({
           </div>
 
           {/* Examples Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
-                <Lightbulb className="h-5 w-5 text-orange-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-orange-100">
+                <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 mb-2">

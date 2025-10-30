@@ -29,6 +29,7 @@ export function useWelcomePopup(
   const [flowType, setFlowType] = useState<WelcomeFlowType>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasIncrementedVisit, setHasIncrementedVisit] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Determine which welcome flow to show based on user profile
   const determineFlowType = useCallback(
@@ -99,6 +100,10 @@ export function useWelcomePopup(
 
   // Initialize popup visibility on mount
   useEffect(() => {
+    // Prevent re-evaluating visibility after initial load to avoid
+    // immediate auto-close when profile is refreshed (e.g. after visit count increment)
+    if (hasInitialized) return;
+
     if (!profile) {
       setIsLoading(false);
       return;
@@ -118,11 +123,20 @@ export function useWelcomePopup(
     setShouldShow(flow !== null);
     setIsLoading(false);
 
+    // Mark initialization complete so subsequent profile refreshes don't change visibility
+    setHasInitialized(true);
+
     // Only increment visit count for general context
     if (context === 'general') {
       incrementVisitCount();
     }
-  }, [profile, determineFlowType, incrementVisitCount, context]);
+  }, [
+    profile,
+    determineFlowType,
+    incrementVisitCount,
+    context,
+    hasInitialized,
+  ]);
 
   // Dismiss popup temporarily (just for this session)
   const dismissPopup = useCallback(() => {

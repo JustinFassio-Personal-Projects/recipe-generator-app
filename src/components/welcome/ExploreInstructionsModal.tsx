@@ -37,16 +37,16 @@ export function ExploreInstructionsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-teal-600">
-          <Sparkles className="h-6 w-6" />
+      <DialogContent className="max-w-[95vw] sm:max-w-lg md:max-w-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-teal-600">
+          <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
           Explore the Recipe Community
         </DialogTitle>
         <DialogDescription className="sr-only">
           Instructions for using the Explore page
         </DialogDescription>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Introduction */}
           <div className="rounded-lg bg-gradient-to-r from-teal-50 to-orange-50 p-4">
             <p className="text-gray-700">
@@ -56,10 +56,10 @@ export function ExploreInstructionsModal({
           </div>
 
           {/* Browse & Search Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-                <Search className="h-5 w-5 text-purple-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-purple-100">
+                <Search className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-purple-700">
@@ -76,10 +76,10 @@ export function ExploreInstructionsModal({
           </div>
 
           {/* View Recipes Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                <Eye className="h-5 w-5 text-blue-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-blue-100">
+                <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-blue-700">
@@ -95,10 +95,10 @@ export function ExploreInstructionsModal({
           </div>
 
           {/* Save & Personalize Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                <Copy className="h-5 w-5 text-green-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-green-100">
+                <Copy className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-green-700">
@@ -114,10 +114,10 @@ export function ExploreInstructionsModal({
           </div>
 
           {/* Rate & Comment Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
-                <Star className="h-5 w-5 text-orange-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-orange-100">
+                <Star className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-orange-700">
@@ -133,10 +133,10 @@ export function ExploreInstructionsModal({
           </div>
 
           {/* Tips Section */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100">
-                <Lightbulb className="h-5 w-5 text-teal-600" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-teal-100">
+                <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-teal-700 mb-2">Pro Tips</h3>

@@ -20,6 +20,30 @@ interface UseWelcomePopupReturn {
   disablePopupPermanently: () => Promise<void>;
 }
 
+// Session storage helpers for tracking shown popups
+const SESSION_STORAGE_PREFIX = 'welcome-popup-shown-';
+
+function hasFlowBeenShownThisSession(flowType: WelcomeFlowType): boolean {
+  if (!flowType || flowType === 'chat-recipe') return false;
+  try {
+    return (
+      sessionStorage.getItem(`${SESSION_STORAGE_PREFIX}${flowType}`) === 'true'
+    );
+  } catch {
+    // sessionStorage might not be available (e.g., in some privacy modes)
+    return false;
+  }
+}
+
+function markFlowAsShown(flowType: WelcomeFlowType): void {
+  if (!flowType || flowType === 'chat-recipe') return;
+  try {
+    sessionStorage.setItem(`${SESSION_STORAGE_PREFIX}${flowType}`, 'true');
+  } catch {
+    // Silently fail if sessionStorage is not available
+  }
+}
+
 export function useWelcomePopup(
   context: WelcomeFlowContext = 'general'
 ): UseWelcomePopupReturn {
@@ -109,18 +133,24 @@ export function useWelcomePopup(
       return;
     }
 
-    // Handle chat-recipe context
+    // Handle chat-recipe context (always show, not session-tracked)
     if (context === 'chat-recipe') {
       setFlowType('chat-recipe');
       setShouldShow(true);
       setIsLoading(false);
+      setHasInitialized(true);
       return;
     }
 
     // Handle general context (main app pages)
     const flow = determineFlowType(profile);
     setFlowType(flow);
-    setShouldShow(flow !== null);
+
+    // Check if this flow has already been shown this session
+    const alreadyShownThisSession = hasFlowBeenShownThisSession(flow);
+    const shouldShowPopup = flow !== null && !alreadyShownThisSession;
+
+    setShouldShow(shouldShowPopup);
     setIsLoading(false);
 
     // Mark initialization complete so subsequent profile refreshes don't change visibility
@@ -141,7 +171,9 @@ export function useWelcomePopup(
   // Dismiss popup temporarily (just for this session)
   const dismissPopup = useCallback(() => {
     setShouldShow(false);
-  }, []);
+    // Mark this flow as shown in sessionStorage to prevent re-showing on other pages
+    markFlowAsShown(flowType);
+  }, [flowType]);
 
   // Disable popup permanently (update user preference in database)
   const disablePopupPermanently = useCallback(async () => {
@@ -163,6 +195,8 @@ export function useWelcomePopup(
       } else {
         setShouldShow(false);
         setFlowType(null);
+        // Mark as shown in session storage as well
+        markFlowAsShown(flowType);
         // Refresh profile to get updated preference
         await refreshProfile();
         toast({
@@ -178,7 +212,7 @@ export function useWelcomePopup(
         variant: 'destructive',
       });
     }
-  }, [user, refreshProfile, toast]);
+  }, [user, refreshProfile, toast, flowType]);
 
   return {
     shouldShow,

@@ -320,13 +320,15 @@ export class IngredientMatcher {
         const hasConflictingDifferentiator =
           recipeWords.some(
             (rWord) =>
-              IMPORTANT_DIFFERENTIATORS.includes(rWord) &&
-              !groceryWords.includes(rWord)
+              (IMPORTANT_DIFFERENTIATORS as readonly string[]).includes(
+                rWord
+              ) && !groceryWords.includes(rWord)
           ) ||
           groceryWords.some(
             (gWord) =>
-              IMPORTANT_DIFFERENTIATORS.includes(gWord) &&
-              !recipeWords.includes(gWord)
+              (IMPORTANT_DIFFERENTIATORS as readonly string[]).includes(
+                gWord
+              ) && !recipeWords.includes(gWord)
           );
 
         // Skip this match if there's a conflicting differentiator

@@ -119,25 +119,6 @@ export function RecipeView({
     return basicIngredientMatching.calculateCompatibility(recipe);
   }, [basicIngredientMatching, recipe]);
 
-  // Calculate enhanced compatibility for individual ingredient workflow (includes global ingredients)
-  const enhancedCompatibility = useMemo(() => {
-    if (!enhancedMatcher) {
-      return {
-        recipeId: recipe.id,
-        totalIngredients: recipe.ingredients.length,
-        availableIngredients: [],
-        missingIngredients: recipe.ingredients.map((ing) => ({
-          recipeIngredient: ing,
-          confidence: 0,
-          matchType: 'none' as const,
-        })),
-        compatibilityScore: 0,
-        confidenceScore: 0,
-      };
-    }
-    return enhancedMatcher.calculateRecipeCompatibility(recipe);
-  }, [enhancedMatcher, recipe]);
-
   // Use grocery compatibility for the compatibility section (user's actual groceries)
   const availabilityPercentage = groceryCompatibility.compatibilityScore;
 
@@ -509,20 +490,26 @@ export function RecipeView({
             Ingredients
             {enhancedMatcher && (
               <span className="text-sm font-normal text-gray-600">
-                ({enhancedCompatibility.availableIngredients.length} available)
+                ({groceryCompatibility.availableIngredients.length} available)
               </span>
             )}
           </h3>
 
           <div className="space-y-3">
             {recipe.ingredients.map((ingredient, index) => {
-              const match = enhancedMatcher
-                ? enhancedMatcher.matchIngredient(ingredient)
-                : {
-                    recipeIngredient: ingredient,
-                    confidence: 0,
-                    matchType: 'none' as const,
-                  };
+              // First check user groceries, then fall back to enhanced matcher (global ingredients)
+              const userGroceryMatch =
+                basicIngredientMatching.matchIngredient(ingredient);
+              const match =
+                userGroceryMatch.matchType !== 'none'
+                  ? userGroceryMatch
+                  : enhancedMatcher
+                    ? enhancedMatcher.matchIngredient(ingredient)
+                    : {
+                        recipeIngredient: ingredient,
+                        confidence: 0,
+                        matchType: 'none' as const,
+                      };
               const isAvailable =
                 match.matchType !== 'none' && match.confidence >= 50;
 

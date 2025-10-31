@@ -5,6 +5,7 @@ import {
   RecipeCompatibility,
   IngredientMatch,
 } from '@/lib/groceries/ingredient-matcher';
+import { logger } from '@/lib/logger';
 import type { Recipe } from '@/lib/types';
 
 export interface UseIngredientMatchingReturn {
@@ -31,14 +32,12 @@ export function useIngredientMatching(): UseIngredientMatchingReturn {
   const { groceries, loading } = useGroceriesQuery();
 
   // Debug logging
-  if (import.meta.env.DEV) {
-    console.log('[useIngredientMatching] Debug:', {
-      groceries,
-      groceriesKeys: Object.keys(groceries),
-      groceriesCount: Object.values(groceries).flat().length,
-      loading,
-    });
-  }
+  logger.debug('[useIngredientMatching]', {
+    groceries,
+    groceriesKeys: Object.keys(groceries),
+    groceriesCount: Object.values(groceries).flat().length,
+    loading,
+  });
 
   const matcher = useMemo(() => {
     if (Object.keys(groceries).length === 0) return null;

@@ -19,6 +19,42 @@ export interface RecipeCompatibility {
 }
 
 /**
+ * Preserved ingredient patterns that should not be over-normalized
+ * These compound ingredient names need to maintain their specific identifiers
+ * to ensure accurate matching (e.g., "cherry tomato" vs generic "tomato")
+ */
+export const PRESERVED_INGREDIENT_PATTERNS = [
+  'cherry tomato',
+  'grape tomato',
+  'bell pepper',
+  'green onion',
+  'red onion',
+  'white onion',
+  'yellow onion',
+] as const;
+
+/**
+ * Important differentiating words that prevent false ingredient matches
+ * These words specify the type/form of an ingredient and should not be ignored
+ * when matching (e.g., "balsamic glaze" should NOT match "balsamic vinegar")
+ */
+export const IMPORTANT_DIFFERENTIATORS = [
+  'glaze',
+  'vinegar',
+  'juice',
+  'sauce',
+  'paste',
+  'powder',
+  'flakes',
+  'whole',
+  'ground',
+  'crushed',
+  'diced',
+  'extract',
+  'zest',
+] as const;
+
+/**
  * Core ingredient matching engine with multiple matching strategies
  */
 export class IngredientMatcher {
@@ -199,18 +235,8 @@ export class IngredientMatcher {
     const lowered = ingredient.toLowerCase();
 
     // Special handling: preserve compound ingredient names before normalization
-    const preservedPatterns = [
-      'cherry tomato',
-      'grape tomato',
-      'bell pepper',
-      'green onion',
-      'red onion',
-      'white onion',
-      'yellow onion',
-    ];
-
     // Check if this is a preserved pattern - if so, return normalized version of the pattern
-    for (const pattern of preservedPatterns) {
+    for (const pattern of PRESERVED_INGREDIENT_PATTERNS) {
       if (lowered.includes(pattern)) {
         return normalizeAccentedCharacters(pattern.replace(/\s+/g, ' ').trim());
       }
@@ -264,23 +290,6 @@ export class IngredientMatcher {
       confidence: number;
     } | null = null;
 
-    // List of important differentiating words that shouldn't be ignored
-    const importantDifferentiators = [
-      'glaze',
-      'vinegar',
-      'juice',
-      'sauce',
-      'paste',
-      'powder',
-      'flakes',
-      'whole',
-      'ground',
-      'crushed',
-      'diced',
-      'extract',
-      'zest',
-    ];
-
     for (const [groceryNormalized, { categories, original }] of this
       .preprocessedGroceries) {
       // Check if recipe ingredient contains grocery ingredient
@@ -311,12 +320,12 @@ export class IngredientMatcher {
         const hasConflictingDifferentiator =
           recipeWords.some(
             (rWord) =>
-              importantDifferentiators.includes(rWord) &&
+              IMPORTANT_DIFFERENTIATORS.includes(rWord) &&
               !groceryWords.includes(rWord)
           ) ||
           groceryWords.some(
             (gWord) =>
-              importantDifferentiators.includes(gWord) &&
+              IMPORTANT_DIFFERENTIATORS.includes(gWord) &&
               !recipeWords.includes(gWord)
           );
 

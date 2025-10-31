@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useGroceries } from './useGroceries';
+import { useGroceriesQuery } from './useGroceriesQuery';
 import {
   IngredientMatcher,
   RecipeCompatibility,
@@ -28,7 +28,17 @@ export interface UseIngredientMatchingReturn {
 }
 
 export function useIngredientMatching(): UseIngredientMatchingReturn {
-  const { groceries, loading } = useGroceries();
+  const { groceries, loading } = useGroceriesQuery();
+
+  // Debug logging
+  if (import.meta.env.DEV) {
+    console.log('[useIngredientMatching] Debug:', {
+      groceries,
+      groceriesKeys: Object.keys(groceries),
+      groceriesCount: Object.values(groceries).flat().length,
+      loading,
+    });
+  }
 
   const matcher = useMemo(() => {
     if (Object.keys(groceries).length === 0) return null;

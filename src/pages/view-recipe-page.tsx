@@ -16,6 +16,9 @@ import { ratingApi } from '@/lib/api/features/rating-api';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { RecipeViewInstructionsModal } from '@/components/welcome/RecipeViewInstructionsModal';
+import { ProgressiveImage } from '@/components/shared/ProgressiveImage';
+import { getSafeImageUrl } from '@/lib/image-cache-utils';
+import { FALLBACK_IMAGE_PATH } from '@/lib/constants';
 import type { Recipe, RecipeVersion } from '@/lib/types';
 
 export function ViewRecipePage() {
@@ -901,6 +904,28 @@ export function ViewRecipePage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recipe Image - Only shown on view-recipe-page */}
+        {displayContent?.image_url && (
+          <div className="mb-6">
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
+              <ProgressiveImage
+                src={
+                  getSafeImageUrl(
+                    displayContent.image_url,
+                    displayContent.updated_at,
+                    displayContent.created_at,
+                    FALLBACK_IMAGE_PATH
+                  ) || FALLBACK_IMAGE_PATH
+                }
+                alt={displayContent.title}
+                className="h-full w-full object-cover"
+                loading="eager"
+                placeholder={FALLBACK_IMAGE_PATH}
+              />
             </div>
           </div>
         )}

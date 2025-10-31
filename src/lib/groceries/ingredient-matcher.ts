@@ -196,9 +196,28 @@ export class IngredientMatcher {
   }
 
   protected normalizeIngredient(ingredient: string): string {
+    const lowered = ingredient.toLowerCase();
+
+    // Special handling: preserve compound ingredient names before normalization
+    const preservedPatterns = [
+      'cherry tomato',
+      'grape tomato',
+      'bell pepper',
+      'green onion',
+      'red onion',
+      'white onion',
+      'yellow onion',
+    ];
+
+    // Check if this is a preserved pattern - if so, return normalized version of the pattern
+    for (const pattern of preservedPatterns) {
+      if (lowered.includes(pattern)) {
+        return normalizeAccentedCharacters(pattern.replace(/\s+/g, ' ').trim());
+      }
+    }
+
     return normalizeAccentedCharacters(
-      ingredient
-        .toLowerCase()
+      lowered
         .replace(/[^\w\s]/g, ' ') // Remove punctuation
         .replace(
           /\b(fresh|dried|ground|whole|chopped|diced|sliced|minced|melted|softened|room temperature)\b/g,
@@ -245,6 +264,23 @@ export class IngredientMatcher {
       confidence: number;
     } | null = null;
 
+    // List of important differentiating words that shouldn't be ignored
+    const importantDifferentiators = [
+      'glaze',
+      'vinegar',
+      'juice',
+      'sauce',
+      'paste',
+      'powder',
+      'flakes',
+      'whole',
+      'ground',
+      'crushed',
+      'diced',
+      'extract',
+      'zest',
+    ];
+
     for (const [groceryNormalized, { categories, original }] of this
       .preprocessedGroceries) {
       // Check if recipe ingredient contains grocery ingredient
@@ -268,6 +304,27 @@ export class IngredientMatcher {
         groceryNormalized.includes(word)
       );
       if (matchingWords.length > 0) {
+        // Check for conflicting differentiators (e.g., "glaze" vs "vinegar")
+        const recipeWords = normalized.split(' ');
+        const groceryWords = groceryNormalized.split(' ');
+
+        const hasConflictingDifferentiator =
+          recipeWords.some(
+            (rWord) =>
+              importantDifferentiators.includes(rWord) &&
+              !groceryWords.includes(rWord)
+          ) ||
+          groceryWords.some(
+            (gWord) =>
+              importantDifferentiators.includes(gWord) &&
+              !recipeWords.includes(gWord)
+          );
+
+        // Skip this match if there's a conflicting differentiator
+        if (hasConflictingDifferentiator) {
+          continue;
+        }
+
         // Improved confidence calculation for word matches
         const confidence = this.calculateWordMatchConfidence(
           normalized,
@@ -326,8 +383,14 @@ export class IngredientMatcher {
   private getIngredientSynonyms(ingredient: string): string[] {
     // Common ingredient synonyms mapping
     const synonymMap: Record<string, string[]> = {
-      onion: ['yellow onion', 'white onion', 'sweet onion'],
-      tomato: ['tomatoes', 'roma tomato', 'cherry tomato'],
+      onion: ['yellow onion', 'white onion', 'sweet onion', 'red onion'],
+      tomato: [
+        'tomatoes',
+        'roma tomato',
+        'cherry tomato',
+        'grape tomato',
+        'plum tomato',
+      ],
       pepper: [
         'bell pepper',
         'sweet pepper',
@@ -348,6 +411,16 @@ export class IngredientMatcher {
       egg: ['eggs', 'chicken egg'],
       lemon: ['lemon juice', 'fresh lemon'],
       lime: ['lime juice', 'fresh lime'],
+      pasta: [
+        'spaghetti',
+        'penne',
+        'fettuccine',
+        'linguine',
+        'rigatoni',
+        'angel hair',
+      ],
+      spaghetti: ['pasta', 'noodles'],
+      noodles: ['pasta', 'spaghetti'],
     };
 
     const words = ingredient.split(' ');

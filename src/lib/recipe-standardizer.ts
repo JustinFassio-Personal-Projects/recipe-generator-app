@@ -88,12 +88,14 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
     .filter((line) => line.length > 0);
 
   let title = '';
+  let description = '';
   const setup: string[] = [];
   const ingredients: string[] = [];
   const instructions: string[] = [];
   const notes: string[] = [];
 
   let currentSection = '';
+  let foundTitle = false;
 
   // Extract categories from the entire text first
   const categories: string[] = [];
@@ -143,7 +145,33 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
           ''
         )
         .trim();
+      foundTitle = true;
       continue;
+    }
+
+    // Extract description: text after title but before first section header
+    // We collect description lines before we hit the first section header
+    if (foundTitle && !currentSection) {
+      // Check if this is a section header - if so, stop collecting description
+      if (line.startsWith('## ')) {
+        // This is the first section header, set currentSection and continue to section processing below
+        // (Don't continue yet, let the section header processing handle it)
+      } else {
+        // This is descriptive text between title and first section
+        if (
+          line.length > 20 &&
+          !line.startsWith('- ') &&
+          !line.startsWith('* ') &&
+          !/^\d+\./.test(line)
+        ) {
+          if (description) {
+            description += ' ' + line;
+          } else {
+            description = line;
+          }
+        }
+        continue;
+      }
     }
 
     // Detect section headers
@@ -212,7 +240,7 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
 
   return {
     title: title || 'Untitled Recipe',
-    description: '',
+    description: description.trim(),
     setup,
     ingredients,
     instructions,

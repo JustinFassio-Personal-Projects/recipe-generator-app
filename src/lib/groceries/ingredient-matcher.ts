@@ -19,6 +19,42 @@ export interface RecipeCompatibility {
 }
 
 /**
+ * Preserved ingredient patterns that should not be over-normalized
+ * These compound ingredient names need to maintain their specific identifiers
+ * to ensure accurate matching (e.g., "cherry tomato" vs generic "tomato")
+ */
+export const PRESERVED_INGREDIENT_PATTERNS = [
+  'cherry tomato',
+  'grape tomato',
+  'bell pepper',
+  'green onion',
+  'red onion',
+  'white onion',
+  'yellow onion',
+] as const;
+
+/**
+ * Important differentiating words that prevent false ingredient matches
+ * These words specify the type/form of an ingredient and should not be ignored
+ * when matching (e.g., "balsamic glaze" should NOT match "balsamic vinegar")
+ */
+export const IMPORTANT_DIFFERENTIATORS = [
+  'glaze',
+  'vinegar',
+  'juice',
+  'sauce',
+  'paste',
+  'powder',
+  'flakes',
+  'whole',
+  'ground',
+  'crushed',
+  'diced',
+  'extract',
+  'zest',
+] as const;
+
+/**
  * Core ingredient matching engine with multiple matching strategies
  */
 export class IngredientMatcher {
@@ -196,9 +232,18 @@ export class IngredientMatcher {
   }
 
   protected normalizeIngredient(ingredient: string): string {
+    const lowered = ingredient.toLowerCase();
+
+    // Special handling: preserve compound ingredient names before normalization
+    // Check if this is a preserved pattern - if so, return normalized version of the pattern
+    for (const pattern of PRESERVED_INGREDIENT_PATTERNS) {
+      if (lowered.includes(pattern)) {
+        return normalizeAccentedCharacters(pattern.replace(/\s+/g, ' ').trim());
+      }
+    }
+
     return normalizeAccentedCharacters(
-      ingredient
-        .toLowerCase()
+      lowered
         .replace(/[^\w\s]/g, ' ') // Remove punctuation
         .replace(
           /\b(fresh|dried|ground|whole|chopped|diced|sliced|minced|melted|softened|room temperature)\b/g,
@@ -268,6 +313,29 @@ export class IngredientMatcher {
         groceryNormalized.includes(word)
       );
       if (matchingWords.length > 0) {
+        // Check for conflicting differentiators (e.g., "glaze" vs "vinegar")
+        const recipeWords = normalized.split(' ');
+        const groceryWords = groceryNormalized.split(' ');
+
+        const hasConflictingDifferentiator =
+          recipeWords.some(
+            (rWord) =>
+              (IMPORTANT_DIFFERENTIATORS as readonly string[]).includes(
+                rWord
+              ) && !groceryWords.includes(rWord)
+          ) ||
+          groceryWords.some(
+            (gWord) =>
+              (IMPORTANT_DIFFERENTIATORS as readonly string[]).includes(
+                gWord
+              ) && !recipeWords.includes(gWord)
+          );
+
+        // Skip this match if there's a conflicting differentiator
+        if (hasConflictingDifferentiator) {
+          continue;
+        }
+
         // Improved confidence calculation for word matches
         const confidence = this.calculateWordMatchConfidence(
           normalized,
@@ -326,8 +394,14 @@ export class IngredientMatcher {
   private getIngredientSynonyms(ingredient: string): string[] {
     // Common ingredient synonyms mapping
     const synonymMap: Record<string, string[]> = {
-      onion: ['yellow onion', 'white onion', 'sweet onion'],
-      tomato: ['tomatoes', 'roma tomato', 'cherry tomato'],
+      onion: ['yellow onion', 'white onion', 'sweet onion', 'red onion'],
+      tomato: [
+        'tomatoes',
+        'roma tomato',
+        'cherry tomato',
+        'grape tomato',
+        'plum tomato',
+      ],
       pepper: [
         'bell pepper',
         'sweet pepper',
@@ -348,6 +422,16 @@ export class IngredientMatcher {
       egg: ['eggs', 'chicken egg'],
       lemon: ['lemon juice', 'fresh lemon'],
       lime: ['lime juice', 'fresh lime'],
+      pasta: [
+        'spaghetti',
+        'penne',
+        'fettuccine',
+        'linguine',
+        'rigatoni',
+        'angel hair',
+      ],
+      spaghetti: ['pasta', 'noodles'],
+      noodles: ['pasta', 'spaghetti'],
     };
 
     const words = ingredient.split(' ');

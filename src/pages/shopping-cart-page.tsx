@@ -188,11 +188,15 @@ function ShoppingItemCard({
 // Main shopping cart page
 export default function ShoppingCartPage() {
   const groceries = useGroceriesQuery();
-  const {
-    loading: cartLoading,
-    removeFromCart,
-    isInCart,
-  } = useUserGroceryCart();
+  const { loading: cartLoading, removeFromCart } = useUserGroceryCart();
+
+  // Helper to check if ingredient is available in kitchen (across all categories)
+  const isAvailableInKitchen = (ingredientName: string): boolean => {
+    if (!groceries.groceries) return false;
+    return Object.values(groceries.groceries as Record<string, string[]>).some(
+      (items) => items?.includes(ingredientName)
+    );
+  };
 
   const {
     getChatResponse,
@@ -896,7 +900,8 @@ export default function ShoppingCartPage() {
                                 cuisineData.cuisine.toLowerCase()
                               );
                               const actuallyMissing = allStaples.filter(
-                                (staple) => !isInCart(staple.ingredient)
+                                (staple) =>
+                                  !isAvailableInKitchen(staple.ingredient)
                               );
                               const actualCoverage =
                                 allStaples.length > 0
@@ -1008,7 +1013,7 @@ export default function ShoppingCartPage() {
                 );
                 // Calculate actual missing ingredients by checking each staple against user's kitchen
                 const actuallyMissing = allStaples.filter(
-                  (staple) => !isInCart(staple.ingredient)
+                  (staple) => !isAvailableInKitchen(staple.ingredient)
                 );
                 const actualCoverage =
                   allStaples.length > 0
@@ -1053,7 +1058,7 @@ export default function ShoppingCartPage() {
                 )
                 .map((staple) => {
                   // Use the same logic as global ingredients page
-                  const isInUserCart = isInCart(staple.ingredient); // Multi-category aware check
+                  const isInUserCart = isAvailableInKitchen(staple.ingredient); // Check if available in kitchen
                   const isSystemAvailable = true; // All cuisine staples are system ingredients
                   const isHidden = false; // Cuisine staples are never hidden
 

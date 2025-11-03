@@ -79,6 +79,12 @@ export async function standardizeRecipeWithAI(
 }
 
 /**
+ * Minimum length for a line to be considered as description text
+ * Lines shorter than this are likely formatting artifacts or incomplete text
+ */
+const MIN_DESCRIPTION_LINE_LENGTH = 20;
+
+/**
  * Parse the AI-standardized recipe text into structured format
  */
 function parseStandardizedRecipe(text: string): StandardizedRecipe {
@@ -151,27 +157,22 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
 
     // Extract description: text after title but before first section header
     // We collect description lines before we hit the first section header
-    if (foundTitle && !currentSection) {
-      // Check if this is a section header - if so, stop collecting description
-      if (line.startsWith('## ')) {
-        // This is the first section header, set currentSection and continue to section processing below
-        // (Don't continue yet, let the section header processing handle it)
-      } else {
-        // This is descriptive text between title and first section
-        if (
-          line.length > 20 &&
-          !line.startsWith('- ') &&
-          !line.startsWith('* ') &&
-          !/^\d+\./.test(line)
-        ) {
-          if (description) {
-            description += ' ' + line;
-          } else {
-            description = line;
-          }
+    // Skip section headers - they're handled by the section detection below
+    if (foundTitle && !currentSection && !line.startsWith('## ')) {
+      // This is descriptive text between title and first section
+      if (
+        line.length > MIN_DESCRIPTION_LINE_LENGTH &&
+        !line.startsWith('- ') &&
+        !line.startsWith('* ') &&
+        !/^\d+\./.test(line)
+      ) {
+        if (description) {
+          description += ' ' + line;
+        } else {
+          description = line;
         }
-        continue;
       }
+      continue;
     }
 
     // Detect section headers

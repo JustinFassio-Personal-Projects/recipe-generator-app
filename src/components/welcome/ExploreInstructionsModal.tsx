@@ -37,8 +37,8 @@ export function ExploreInstructionsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-[95vw] sm:max-w-lg md:max-w-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-        <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-teal-600">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg md:max-w-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto !block">
+        <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-teal-600 mb-4">
           <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
           Explore the Recipe Community
         </DialogTitle>

@@ -54,7 +54,7 @@ export function WelcomeDialog({
   return (
     <Dialog open={shouldShow} onOpenChange={(open) => !open && dismissPopup()}>
       <DialogContent
-        className="max-w-md"
+        className="max-w-md max-h-[90vh] overflow-y-auto !block"
         onInteractOutside={onInteractOutside}
         onEscapeKeyDown={onEscapeKeyDown}
       >

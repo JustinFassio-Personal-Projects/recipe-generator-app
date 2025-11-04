@@ -12,6 +12,8 @@ import { VersionSelector } from './version-selector';
 import type { PublicRecipe, RecipeVersion } from '@/lib/types';
 import { useIngredientMatching } from '@/hooks/useIngredientMatching';
 import { getSafeImageUrl } from '@/lib/image-cache-utils';
+import { ProgressiveImage } from '@/components/shared/ProgressiveImage';
+import { FALLBACK_IMAGE_PATH } from '@/lib/constants';
 
 // Constants
 const RECIPE_TITLE_MAX_LENGTH = 45;
@@ -25,6 +27,7 @@ interface VersionedRecipeCardProps {
     latest_version?: number;
   };
   onView?: (recipe: PublicRecipe) => void;
+  onViewNew?: (recipe: PublicRecipe) => void; // New prop for new view page
   onSave?: (recipeId: string) => void;
   onRateVersion?: (
     recipeId: string,
@@ -39,6 +42,7 @@ interface VersionedRecipeCardProps {
 export function VersionedRecipeCard({
   recipe,
   onView,
+  onViewNew,
   onSave,
   onRateVersion,
   savingRecipeId,
@@ -114,20 +118,40 @@ export function VersionedRecipeCard({
       <div
         className={`${createDaisyUICardClasses('bordered')} group relative overflow-hidden border border-gray-200 transition-all duration-200 hover:border-gray-300 hover:shadow-lg`}
       >
-        {recipe.image_url && (
-          <div className="aspect-video overflow-hidden">
-            <img
-              src={getSafeImageUrl(
-                recipe.image_url!, // Safe due to conditional rendering guard
-                recipe.updated_at,
-                recipe.created_at,
-                '/recipe-generator-logo.png'
-              )}
-              alt={recipe.title}
-              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-            />
-          </div>
-        )}
+        {recipe.image_url &&
+          (() => {
+            const safeImageUrl = getSafeImageUrl(
+              recipe.image_url,
+              recipe.updated_at,
+              recipe.created_at,
+              FALLBACK_IMAGE_PATH
+            );
+            return (
+              safeImageUrl && (
+                <div
+                  className="aspect-video overflow-hidden cursor-pointer"
+                  onClick={() => onViewNew?.(recipe)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onViewNew?.(recipe);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  title="View recipe details (new view)"
+                >
+                  <ProgressiveImage
+                    src={safeImageUrl}
+                    alt={recipe.title}
+                    className="h-full w-full transition-transform duration-200 group-hover:scale-105"
+                    loading="lazy"
+                    placeholder={FALLBACK_IMAGE_PATH}
+                  />
+                </div>
+              )
+            );
+          })()}
 
         {/* Recipe Title */}
         <div className="px-4 pt-4 pb-2">

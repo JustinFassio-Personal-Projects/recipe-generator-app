@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { createDbClient, shouldRunDbTests } from './_utils/dbClient';
+import {
+  createDbClient,
+  shouldRunDbTests,
+} from '../../../tests/database/_utils/dbClient';
 import { setupDatabaseTests } from '../../test/database-setup';
 
 // Unmock Supabase for database tests
@@ -16,8 +19,8 @@ RUN
         console.log('Environment check:', {
           url: process.env.VITE_SUPABASE_URL,
           anonKey: process.env.VITE_SUPABASE_ANON_KEY,
-          serviceKey: process.env.SUPABASE_SERVICE_ROLE,
-          serviceKeyLength: process.env.SUPABASE_SERVICE_ROLE?.length,
+          serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+          serviceKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length,
         });
 
         // Use database setup for conditional mocking

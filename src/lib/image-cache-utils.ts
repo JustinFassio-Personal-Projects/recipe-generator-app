@@ -2,6 +2,8 @@
  * Utility functions for smart image caching and cache invalidation
  */
 
+import { FALLBACK_IMAGE_PATH } from '@/lib/constants';
+
 /**
  * Generates an optimized image URL with selective cache-busting
  * Only adds cache-busting parameters for Supabase storage URLs and recently updated content
@@ -65,16 +67,6 @@ export function getOptimizedImageUrlWithImageTimestamp(
  */
 export function isLikelyExpiredUrl(url: string): boolean {
   try {
-    // Check for expired DALL-E URLs
-    if (url.includes('oaidalleapiprodscus.blob.core.windows.net')) {
-      return true;
-    }
-
-    // Check for other temporary URLs that might expire
-    if (url.includes('blob.core.windows.net') && !url.includes('supabase')) {
-      return true;
-    }
-
     // Check for URLs with expiration timestamps in the query string
     if (url.includes('se=') && url.includes('st=')) {
       try {
@@ -83,12 +75,12 @@ export function isLikelyExpiredUrl(url: string): boolean {
         if (expiresParam) {
           const expiresTime = new Date(expiresParam);
           const now = new Date();
-          // If current time is past the expiration, consider it likely expired
           return now.getTime() >= expiresTime.getTime();
         }
       } catch {
-        // If we can't parse the expiration, assume it might be expired
-        return true;
+        // If we can't parse the expiration, DON'T assume it's expired
+        // Only return true if we're CERTAIN it's expired
+        return false;
       }
     }
 
@@ -107,11 +99,17 @@ export function getSafeImageUrl(
   createdAt: string,
   fallbackUrl?: string
 ): string {
-  // If URL is likely expired, return fallback or null
-  if (isLikelyExpiredUrl(imageUrl)) {
-    return fallbackUrl || '';
+  // If the image_url is already the fallback logo, return it as-is
+  if (imageUrl === FALLBACK_IMAGE_PATH || imageUrl === fallbackUrl) {
+    return imageUrl;
   }
 
-  // For valid URLs, return optimized URL
-  return getOptimizedImageUrl(imageUrl, updatedAt, createdAt);
+  // If URL is likely expired (for DALL-E URLs or expired Azure blob URLs), return fallback or default fallback
+  if (isLikelyExpiredUrl(imageUrl)) {
+    return fallbackUrl || FALLBACK_IMAGE_PATH;
+  }
+
+  // For all other URLs (including external URLs like Unsplash), apply cache-busting
+  const optimizedUrl = getOptimizedImageUrl(imageUrl, updatedAt, createdAt);
+  return optimizedUrl;
 }

@@ -9,7 +9,7 @@ import {
 
 // Profile field selection constants for consistency across queries
 export const PROFILE_FIELDS_FULL =
-  'id, username, full_name, avatar_url, bio, region, country, state_province, city, language, units, time_per_meal, skill_level, created_at, updated_at';
+  'id, username, full_name, avatar_url, bio, region, country, state_province, city, language, units, time_per_meal, skill_level, visit_count, last_visit_at, show_welcome_popup, created_at, updated_at';
 export const PROFILE_FIELDS_BASIC =
   'bio, region, country, state_province, city, language, units, time_per_meal, skill_level';
 
@@ -30,9 +30,9 @@ export async function signUp(
   email: string,
   password: string,
   fullName: string
-): Promise<{ success: boolean; error?: AuthError }> {
+): Promise<{ success: boolean; error?: AuthError; userId?: string }> {
   try {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -48,7 +48,7 @@ export async function signUp(
       };
     }
 
-    return { success: true };
+    return { success: true, userId: data.user?.id };
   } catch (error) {
     return {
       success: false,
@@ -65,9 +65,9 @@ export async function signUp(
 export async function signIn(
   email: string,
   password: string
-): Promise<{ success: boolean; error?: AuthError }> {
+): Promise<{ success: boolean; error?: AuthError; userId?: string }> {
   try {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -79,7 +79,7 @@ export async function signIn(
       };
     }
 
-    return { success: true };
+    return { success: true, userId: data.user?.id };
   } catch (error) {
     return {
       success: false,

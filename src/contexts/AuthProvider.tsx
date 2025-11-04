@@ -35,6 +35,9 @@ function createMinimalProfile(userId: string): Profile {
     units: null,
     time_per_meal: null,
     skill_level: null,
+    visit_count: 0,
+    last_visit_at: null,
+    show_welcome_popup: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -59,6 +62,9 @@ function createImmediateProfile(user: User): Profile {
     units: 'imperial',
     time_per_meal: 30,
     skill_level: 'beginner',
+    visit_count: 0,
+    last_visit_at: null,
+    show_welcome_popup: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };

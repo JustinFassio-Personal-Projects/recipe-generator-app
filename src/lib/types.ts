@@ -136,6 +136,10 @@ export type Profile = {
   units: string | null;
   time_per_meal: number | null;
   skill_level: string | null;
+  // Welcome popup tracking
+  visit_count: number;
+  last_visit_at: string | null;
+  show_welcome_popup: boolean;
   created_at: string;
   updated_at: string;
 };

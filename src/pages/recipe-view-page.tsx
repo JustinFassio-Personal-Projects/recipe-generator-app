@@ -15,6 +15,7 @@ import { recipeApi } from '@/lib/api';
 import { ratingApi } from '@/lib/api/features/rating-api';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { RecipeViewInstructionsModal } from '@/components/welcome/RecipeViewInstructionsModal';
 import type { Recipe, RecipeVersion } from '@/lib/types';
 
 export function RecipeViewPage() {
@@ -99,6 +100,28 @@ export function RecipeViewPage() {
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number>(1);
   const [isOwner, setIsOwner] = useState(false);
 
+  // Track updated recipe data for immediate UI updates
+  const [updatedRecipeData, setUpdatedRecipeData] = useState<Recipe | null>(
+    null
+  );
+
+  // Check if user has seen recipe view instructions
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  // Clear updated recipe data when baseRecipe changes (different recipe)
+  useEffect(() => {
+    setUpdatedRecipeData(null);
+  }, [baseRecipe?.id]);
+
+  // Show instructions modal on first visit
+  useEffect(() => {
+    const hasHiddenInstructions =
+      localStorage.getItem('hideRecipeViewInstructionsModal') === 'true';
+    if (!hasHiddenInstructions && baseRecipe) {
+      setShowInstructions(true);
+    }
+  }, [baseRecipe]);
+
   // Determine which content to display
   const recipe = baseRecipe;
   const displayContent = versionContent
@@ -107,16 +130,34 @@ export function RecipeViewPage() {
         title: versionContent.title,
         ingredients: versionContent.ingredients,
         instructions: versionContent.instructions,
-        notes: versionContent.notes,
-        setup: versionContent.setup,
+        notes: updatedRecipeData?.notes ?? versionContent.notes ?? null, // Use updated notes if available
+        // Use version setup if available, otherwise fall back to base recipe setup
+        setup:
+          versionContent.setup && versionContent.setup.length > 0
+            ? versionContent.setup
+            : baseRecipe?.setup || [],
         categories: versionContent.categories,
         cooking_time: versionContent.cooking_time,
         difficulty: versionContent.difficulty,
         creator_rating: versionContent.creator_rating,
         // Use version image_url if available, otherwise fall back to main recipe image_url
         image_url: versionContent.image_url || baseRecipe!.image_url,
+        // Preserve timestamps for image expiration checking
+        // If version has its own image, use version's created_at for both timestamps
+        // If version uses base recipe image, use base recipe's timestamps
+        updated_at: versionContent.image_url
+          ? versionContent.created_at
+          : baseRecipe!.updated_at,
+        created_at: versionContent.image_url
+          ? versionContent.created_at
+          : baseRecipe!.created_at,
       }
-    : baseRecipe;
+    : {
+        ...baseRecipe!,
+        // Use updated data if available, otherwise use base recipe data
+        notes: updatedRecipeData?.notes ?? baseRecipe?.notes ?? null,
+        setup: baseRecipe?.setup || [],
+      };
   // isLoading is true only if at least one query is loading and no data has been found yet
   const isLoading = (userLoading || publicLoading) && !recipe;
   // error if both queries have failed or neither query has returned data
@@ -367,7 +408,7 @@ export function RecipeViewPage() {
     return relaxedUuidRegex.test(str);
   };
 
-  if (!id || id === 'undefined' || !isValidUUID(id)) {
+  if (id === undefined || id === 'undefined' || !id || !isValidUUID(id)) {
     console.error('❌ Recipe ID is invalid in route:', {
       id,
       isValid: id ? isValidUUID(id) : false,
@@ -402,6 +443,20 @@ export function RecipeViewPage() {
     shouldFetchUser,
     hasUser: !!user,
     authLoading,
+  });
+
+  // Image debugging
+  console.log('🖼️ Image debug:', {
+    hasRecipe: !!recipe,
+    hasImageUrl: !!recipe?.image_url,
+    imageUrl: recipe?.image_url,
+    updatedAt: recipe?.updated_at,
+    createdAt: recipe?.created_at,
+    isViewingVersion: !!versionContent,
+    versionImageUrl: versionContent?.image_url,
+    displayContentImageUrl: displayContent?.image_url,
+    displayContentUpdatedAt: displayContent?.updated_at,
+    displayContentCreatedAt: displayContent?.created_at,
   });
 
   // Handle edit comment: scroll to comments and open the edit form
@@ -647,25 +702,37 @@ export function RecipeViewPage() {
     }
   };
 
+  const handleNotesUpdated = (updatedRecipe: Recipe) => {
+    console.log('🔄 Notes updated, updating local state:', updatedRecipe);
+    // Update local state to immediately reflect changes
+    setUpdatedRecipeData(updatedRecipe);
+  };
+
   const handleViewVersion = () => {
     setShowVersions(true);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Recipe View Instructions Modal */}
+      <RecipeViewInstructionsModal
+        isOpen={showInstructions}
+        onClose={() => setShowInstructions(false)}
+      />
+
+      <div className="mx-auto max-w-full sm:max-w-7xl px-4 py-8 sm:px-6 lg:px-8 overflow-x-hidden">
         {/* Version Navigation Header - Show for owned recipes OR when versions exist */}
         {(isOwner || versions.length > 0) && (
           <div className="mb-6">
             {/* Mobile-optimized header layout */}
             <div className="space-y-3 sm:space-y-0">
               {/* Top row: Back button and View Version (mobile: stacked, desktop: side by side) */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleBack}
-                  className="text-gray-600 hover:text-gray-900"
+                  className="text-gray-600 hover:text-gray-900 w-full sm:w-auto"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
@@ -677,7 +744,7 @@ export function RecipeViewPage() {
                     variant="outline"
                     size="sm"
                     onClick={handleViewVersion}
-                    className="hidden sm:flex items-center text-xs"
+                    className="hidden sm:flex items-center text-xs w-full sm:w-auto"
                   >
                     <GitBranch className="h-3 w-3 mr-1" />
                     View Version
@@ -722,7 +789,7 @@ export function RecipeViewPage() {
                     variant="outline"
                     size="sm"
                     onClick={handleViewVersion}
-                    className="sm:hidden text-xs"
+                    className="sm:hidden text-xs w-full"
                   >
                     <GitBranch className="h-3 w-3 mr-1" />
                     View Version
@@ -738,7 +805,7 @@ export function RecipeViewPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowVersions(!showVersions)}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto text-sm"
                 >
                   <GitBranch className="h-4 w-4 mr-2" />
                   {showVersions ? 'Hide' : 'View'} Versions ({versions.length})
@@ -751,9 +818,9 @@ export function RecipeViewPage() {
         {/* Current Version Info */}
         {(isOwner || versions.length > 0) && (
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge
                     variant={
                       versionContent?.version_number === 0 ||
@@ -786,18 +853,18 @@ export function RecipeViewPage() {
                       ' (Latest)'}
                   </Badge>
                   {versionContent?.version_name && (
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-gray-700 break-words">
                       {versionContent.version_name}
                     </span>
                   )}
                   {recipe && !versionContent?.version_name && (
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 break-words">
                       {recipe.title}
                     </span>
                   )}
                 </div>
                 {versionContent?.changelog && (
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-gray-600 mt-1 break-words">
                     <strong>
                       {versionContent.version_number === 0
                         ? 'Description:'
@@ -850,6 +917,7 @@ export function RecipeViewPage() {
             onBack={!versions.length ? handleBack : undefined} // Hide back button if we have version nav
             userComment={userComment}
             onEditComment={handleEditComment}
+            onNotesUpdated={handleNotesUpdated}
           />
         )}
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Eye, Users, TrendingUp, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ratingApi } from '@/lib/api/features/rating-api';
+import { recipeEvents } from '@/lib/vercel-analytics';
 
 interface AnalyticsPanelProps {
   recipeId: string;
@@ -130,6 +131,9 @@ export function AnalyticsPanel({
           user_id: user.id,
           viewed_at: new Date().toISOString(), // Fixed: column is 'viewed_at' not 'viewed_date'
         });
+
+        // Track recipe view in Vercel Analytics
+        recipeEvents.viewed(recipeId);
       }
     } catch (error) {
       console.error('❌ [AnalyticsPanel] Failed to track view:', error);

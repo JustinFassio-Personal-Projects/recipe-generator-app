@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
-import { createDbClient, shouldRunDbTests } from './_utils/dbClient';
-import { createUserAndProfile, uniqueUsername } from './_utils/factories';
-import { truncatePhase1Tables } from './_utils/cleanup';
+import {
+  createDbClient,
+  shouldRunDbTests,
+} from '../../../tests/database/_utils/dbClient';
+import {
+  createUserAndProfile,
+  uniqueUsername,
+} from '../../../tests/database/_utils/factories';
+import { truncatePhase1Tables } from '../../../tests/database/_utils/cleanup';
 
 // These tests expect DB functions:
 // - is_username_available(text)
@@ -131,4 +137,4 @@ RUN
         expect(secondClaim.data).toBe(true);
       });
     })
-  : describe.skip('Database: Username Functions (integration) - missing SUPABASE_SERVICE_ROLE, skipping', () => {});
+  : describe.skip('Database: Username Functions (integration) - missing SUPABASE_SERVICE_ROLE_KEY, skipping', () => {});

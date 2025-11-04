@@ -1,10 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { RecipeForm } from '@/components/recipes/recipe-form';
 import { Button } from '@/components/ui/button';
+import { WelcomeDialog } from '@/components/welcome/WelcomeDialog';
+import { ChatInstructionsModal } from '@/components/welcome/ChatInstructionsModal';
 import type { RecipeFormData } from '@/lib/schemas';
+import type { PersonaType } from '@/lib/openai';
+
+// Map chef IDs to PersonaType
+const CHEF_TO_PERSONA_MAP: Record<string, PersonaType> = {
+  'chef-marco': 'chef',
+  'dr-sarah': 'nutritionist',
+  'aunt-jenny': 'homeCook',
+};
+
+// Map chef IDs to chef names
+const CHEF_NAMES: Record<string, string> = {
+  'chef-marco': 'Chef Marco',
+  'dr-sarah': 'Dr. Sarah',
+  'aunt-jenny': 'Aunt Jenny',
+};
 
 export function ChatRecipePage() {
   const navigate = useNavigate();
@@ -12,6 +29,26 @@ export function ChatRecipePage() {
     null
   );
   const [showEditor, setShowEditor] = useState(false);
+  const [selectedChef, setSelectedChef] = useState<string | null>(null);
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  // Check if user has dismissed instructions before
+  useEffect(() => {
+    const hasHiddenInstructions =
+      localStorage.getItem('hideChatInstructionsModal') === 'true';
+    if (!hasHiddenInstructions && selectedChef) {
+      setShowInstructions(true);
+    }
+  }, [selectedChef]);
+
+  const handleChefSelected = (chefId: string) => {
+    setSelectedChef(chefId);
+  };
+
+  // Get the persona based on selected chef
+  const selectedPersona: PersonaType | undefined = selectedChef
+    ? CHEF_TO_PERSONA_MAP[selectedChef]
+    : undefined;
 
   const handleRecipeGenerated = (recipe: RecipeFormData) => {
     setGeneratedRecipe(recipe);
@@ -29,6 +66,21 @@ export function ChatRecipePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+      {/* Chef Selection Welcome Dialog */}
+      <WelcomeDialog
+        context="chat-recipe"
+        onChefSelected={handleChefSelected}
+      />
+
+      {/* Chat Instructions Modal */}
+      {selectedChef && (
+        <ChatInstructionsModal
+          isOpen={showInstructions}
+          onClose={() => setShowInstructions(false)}
+          chefName={CHEF_NAMES[selectedChef] || 'Your Chef'}
+        />
+      )}
+
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Button
@@ -69,7 +121,10 @@ export function ChatRecipePage() {
         <div
           className={`bg-base-100 rounded-lg shadow-sm ${showEditor ? 'hidden' : ''}`}
         >
-          <ChatInterface onRecipeGenerated={handleRecipeGenerated} />
+          <ChatInterface
+            onRecipeGenerated={handleRecipeGenerated}
+            defaultPersona={selectedPersona}
+          />
         </div>
 
         {/* Show RecipeForm when editor is active */}

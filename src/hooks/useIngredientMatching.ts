@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { useGroceries } from './useGroceries';
+import { useGroceriesQuery } from './useGroceriesQuery';
 import {
   IngredientMatcher,
   RecipeCompatibility,
   IngredientMatch,
 } from '@/lib/groceries/ingredient-matcher';
+import { logger } from '@/lib/logger';
 import type { Recipe } from '@/lib/types';
 
 export interface UseIngredientMatchingReturn {
@@ -28,7 +29,15 @@ export interface UseIngredientMatchingReturn {
 }
 
 export function useIngredientMatching(): UseIngredientMatchingReturn {
-  const { groceries, loading } = useGroceries();
+  const { groceries, loading } = useGroceriesQuery();
+
+  // Debug logging
+  logger.debug('[useIngredientMatching]', {
+    groceries,
+    groceriesKeys: Object.keys(groceries),
+    groceriesCount: Object.values(groceries).flat().length,
+    loading,
+  });
 
   const matcher = useMemo(() => {
     if (Object.keys(groceries).length === 0) return null;

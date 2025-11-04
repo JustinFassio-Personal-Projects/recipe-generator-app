@@ -8,6 +8,7 @@ import { useToast } from '../hooks/use-toast';
 import { FilterBar } from '@/components/recipes/FilterBar';
 import { useRecipeFilters } from '@/hooks/use-recipe-filters';
 import { useNavigate } from 'react-router-dom';
+import { ExploreInstructionsModal } from '@/components/welcome/ExploreInstructionsModal';
 
 export default function ExplorePage() {
   const [recipes, setRecipes] = useState<
@@ -27,6 +28,17 @@ export default function ExplorePage() {
   const { filters, updateFilters } = useRecipeFilters();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check if user has seen explore instructions before
+  const [showExploreInstructions, setShowExploreInstructions] = useState(false);
+
+  useEffect(() => {
+    const hasHiddenInstructions =
+      localStorage.getItem('hideExploreInstructionsModal') === 'true';
+    if (!hasHiddenInstructions) {
+      setShowExploreInstructions(true);
+    }
+  }, []);
 
   const loadPublicRecipes = useCallback(async () => {
     try {
@@ -155,6 +167,21 @@ export default function ExplorePage() {
           variant: 'destructive',
         });
       });
+  };
+
+  const handleViewRecipeNew = (recipe: Recipe | PublicRecipe) => {
+    const authorName = 'author_name' in recipe ? recipe.author_name : 'Unknown';
+    console.log('🔍 [Explore] View recipe clicked (new view):', {
+      recipeId: recipe.id,
+      recipeTitle: recipe.title,
+      isPublic: recipe.is_public,
+      authorName,
+      timestamp: new Date().toISOString(),
+    });
+
+    navigate(`/view-recipe/${recipe.id}`, {
+      state: { from: 'explore' },
+    });
   };
 
   // Remove handleEditRecipe - community recipes should not be editable
@@ -296,6 +323,14 @@ export default function ExplorePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Explore Instructions Modal */}
+      {showExploreInstructions && (
+        <ExploreInstructionsModal
+          isOpen={showExploreInstructions}
+          onClose={() => setShowExploreInstructions(false)}
+        />
+      )}
+
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Explore Recipes</h1>
         <p className="text-muted-foreground mb-6">
@@ -406,6 +441,7 @@ export default function ExplorePage() {
               key={recipe.id}
               recipe={recipe}
               onView={handleViewRecipe}
+              onViewNew={handleViewRecipeNew}
               onSave={handleSaveRecipe}
               onRateVersion={handleRateVersion}
               savingRecipeId={savingRecipeId}

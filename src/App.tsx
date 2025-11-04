@@ -8,6 +8,7 @@ import { AuthErrorBoundary } from '@/components/auth/AuthErrorBoundary';
 import { RecipesPage } from '@/pages/recipes-page';
 import { AddRecipePage } from '@/pages/add-recipe-page';
 import { RecipeViewPage } from '@/pages/recipe-view-page';
+import { ViewRecipePage } from '@/pages/view-recipe-page';
 import { ChatRecipePage } from '@/pages/chat-recipe-page';
 import { CoachChatPage } from '@/pages/coach-chat-page';
 import ProfilePage from '@/pages/profile-page';
@@ -24,6 +25,7 @@ import ShoppingCartPage from '@/pages/shopping-cart-page';
 import { SelectionProvider } from '@/contexts/SelectionContext';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage';
+import { usePageTracking } from '@/hooks/usePageTracking';
 
 import { Toaster } from '@/components/ui/toaster';
 
@@ -37,6 +39,9 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
+  // Track page views on route changes
+  usePageTracking();
+
   return (
     <Routes>
       {/* Public routes - redirect to /recipes if authenticated */}
@@ -131,6 +136,17 @@ function AppContent() {
             <Header />
             <main>
               <RecipeViewPage />
+            </main>
+          </div>
+        }
+      />
+      <Route
+        path="/view-recipe/:id"
+        element={
+          <div className="bg-base-100 min-h-screen">
+            <Header />
+            <main>
+              <ViewRecipePage />
             </main>
           </div>
         }

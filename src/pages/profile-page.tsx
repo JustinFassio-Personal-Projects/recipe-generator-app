@@ -33,6 +33,7 @@ import {
   CookingSaveButton,
 } from '@/components/profile/cooking';
 import { EmailCard, PasswordCard } from '@/components/profile/account';
+import { AppPreferencesCard } from '@/components/profile/preferences/AppPreferencesCard';
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, error: authError } = useAuth();
@@ -64,7 +65,7 @@ export default function ProfilePage() {
     };
 
     loadData();
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Note: Profile loading is handled by AuthProvider automatically
 
@@ -400,6 +401,9 @@ export default function ProfilePage() {
               className="mt-4"
             />
           </CookingSection>
+
+          {/* App Preferences Section */}
+          <AppPreferencesCard />
         </div>
       )}
 

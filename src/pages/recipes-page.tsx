@@ -7,6 +7,7 @@ import { RecipeCard } from '@/components/recipes/recipe-card';
 import { FilterBar } from '@/components/recipes/FilterBar';
 import { Button } from '@/components/ui/button';
 import { FloatingActionButton } from '@/components/ui/fab';
+import { WelcomeDialog } from '@/components/welcome/WelcomeDialog';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,6 +39,13 @@ export function RecipesPage() {
   const handleViewRecipe = useCallback(
     (recipe: Recipe) => {
       navigate(`/recipe/${recipe.id}`);
+    },
+    [navigate]
+  );
+
+  const handleViewRecipeNew = useCallback(
+    (recipe: Recipe) => {
+      navigate(`/view-recipe/${recipe.id}`);
     },
     [navigate]
   );
@@ -74,6 +82,9 @@ export function RecipesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+      {/* Welcome Dialog - shows based on user visit patterns */}
+      <WelcomeDialog />
+
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -179,6 +190,7 @@ export function RecipesPage() {
                 recipe={recipe}
                 onEdit={handleEditRecipe}
                 onView={handleViewRecipe}
+                onViewNew={handleViewRecipeNew}
                 showShareButton={true}
                 onShareToggle={handleShareToggle}
               />

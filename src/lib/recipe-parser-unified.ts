@@ -1,5 +1,4 @@
 import type { RecipeFormData } from './schemas';
-import { parseIngredientText } from './groceries/ingredient-parser';
 
 /**
  * Unified Recipe Parser - Single source of truth for all recipe parsing
@@ -191,9 +190,11 @@ function tryPatternParsing(content: string): RecipeParseResult {
     const ingredients: string[] = [];
     const instructions: string[] = [];
     const categories: string[] = [];
+    const setup: string[] = [];
 
     let inIngredientsSection = false;
     let inInstructionsSection = false;
+    let inSetupSection = false;
 
     for (const line of lines) {
       const lowerLine = line.toLowerCase();
@@ -201,6 +202,19 @@ function tryPatternParsing(content: string): RecipeParseResult {
       // Detect sections
       if (lowerLine.includes('ingredient')) {
         inIngredientsSection = true;
+        inInstructionsSection = false;
+        inSetupSection = false;
+        continue;
+      }
+
+      if (
+        lowerLine.includes('setup') ||
+        lowerLine.includes('prep') ||
+        lowerLine.includes('mise en place') ||
+        lowerLine.match(/\bprepare\b/)
+      ) {
+        inSetupSection = true;
+        inIngredientsSection = false;
         inInstructionsSection = false;
         continue;
       }
@@ -212,6 +226,7 @@ function tryPatternParsing(content: string): RecipeParseResult {
       ) {
         inIngredientsSection = false;
         inInstructionsSection = true;
+        inSetupSection = false;
         continue;
       }
 
@@ -219,7 +234,8 @@ function tryPatternParsing(content: string): RecipeParseResult {
       if (
         title === 'Recipe from Text' &&
         !inIngredientsSection &&
-        !inInstructionsSection
+        !inInstructionsSection &&
+        !inSetupSection
       ) {
         if (lowerLine.includes('recipe:') || lowerLine.includes('title:')) {
           title = line.replace(/^(recipe|title):\s*/i, '');
@@ -250,6 +266,28 @@ function tryPatternParsing(content: string): RecipeParseResult {
           .trim();
         if (cleanIngredient.length > 2) {
           ingredients.push(cleanIngredient);
+        }
+      }
+
+      // Extract setup items
+      if (
+        inSetupSection &&
+        (line.match(/^[-*•]\s+/) || // Bullet points
+          line.match(/^\d+\.\s+/) || // Numbered lists
+          lowerLine.includes('soak') ||
+          lowerLine.includes('marinate') ||
+          lowerLine.includes('preheat') ||
+          lowerLine.includes('chop') ||
+          lowerLine.includes('dice') ||
+          lowerLine.includes('slice') ||
+          lowerLine.match(/\bprepare\b/))
+      ) {
+        const cleanSetup = line
+          .replace(/^[-*•]\s+/, '')
+          .replace(/^\d+\.\s+/, '')
+          .trim();
+        if (cleanSetup.length > 3) {
+          setup.push(cleanSetup);
         }
       }
 
@@ -286,7 +324,7 @@ function tryPatternParsing(content: string): RecipeParseResult {
       instructions: instructions.join('\n'),
       notes: '',
       categories,
-      setup: [],
+      setup,
       image_url: null,
     };
 
@@ -301,7 +339,7 @@ function tryPatternParsing(content: string): RecipeParseResult {
 
 /**
  * Normalize ingredients to string array regardless of input format
- * Uses the new ingredient parser to clean ingredient names by removing quantities, units, and size adjectives
+ * Preserves full ingredient text including amounts and prep instructions
  */
 function normalizeIngredients(ingredients: unknown): string[] {
   if (!Array.isArray(ingredients)) {
@@ -326,10 +364,9 @@ function normalizeIngredients(ingredients: unknown): string[] {
         rawIngredient = String(item);
       }
 
-      // Use the new ingredient parser to clean the ingredient name
-      // This removes quantities, units, and size adjectives for consistent storage
-      const parsed = parseIngredientText(rawIngredient);
-      return parsed.name;
+      // Return the full ingredient text with amounts and prep
+      // Grocery matching will use parseIngredientText() to extract clean names when needed
+      return rawIngredient.trim();
     })
     .filter((item) => item.length > 0);
 }

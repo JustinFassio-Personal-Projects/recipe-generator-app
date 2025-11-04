@@ -6,6 +6,7 @@ import { IngredientMatcher } from './groceries/ingredient-matcher';
 import { getUserGroceries } from './user-preferences';
 import { handleError } from './api/shared/error-handling';
 import { versioningApi } from './api/features/versioning-api';
+import { recipeEvents } from './vercel-analytics';
 
 // Configuration constants for ingredient filtering
 const INGREDIENT_MATCH_CONFIDENCE_THRESHOLD = 50; // Minimum confidence score for ingredient matching (0-100)
@@ -242,6 +243,13 @@ export const recipeApi = {
     try {
       // Step 1: Fetch the recipe
       console.log('📋 [API] Fetching public recipe from database...');
+      console.log('🔍 [API] Query details:', {
+        table: 'recipes',
+        id: id.trim(),
+        isPublic: true,
+        hasAuth: !!supabase.auth.getSession(),
+      });
+
       const { data: recipe, error: recipeError } = await supabase
         .from('recipes')
         .select('*')
@@ -642,6 +650,9 @@ export const recipeApi = {
         console.log('✅ Version 0 created successfully for new recipe');
       }
 
+      // Track recipe creation event
+      recipeEvents.created(data.id, data.title, data.categories || undefined);
+
       return data;
     } catch (error) {
       if (error instanceof Error) {
@@ -678,6 +689,11 @@ export const recipeApi = {
       await this.deleteImageFromStorage(currentRecipe.image_url);
     }
 
+    // Track recipe update event
+    if (data) {
+      recipeEvents.updated(id, data.title);
+    }
+
     return data;
   },
 
@@ -693,6 +709,9 @@ export const recipeApi = {
     const { error } = await supabase.from('recipes').delete().eq('id', id);
 
     if (error) handleError(error, 'Delete recipe');
+
+    // Track recipe deletion event
+    recipeEvents.deleted(id);
 
     // Clean up associated image if it exists
     if (recipe?.image_url) {
@@ -735,6 +754,12 @@ export const recipeApi = {
       .single();
 
     if (error) handleError(error, 'Save public recipe');
+
+    // Track recipe save event
+    if (data) {
+      recipeEvents.saved(data.id);
+    }
+
     return data;
   },
 

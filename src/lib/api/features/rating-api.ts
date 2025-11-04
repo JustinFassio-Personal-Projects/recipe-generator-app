@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { handleError } from '@/lib/api/shared/error-handling';
+import { recipeEvents } from '@/lib/vercel-analytics';
 
 export interface CommentRow {
   id: string;
@@ -38,6 +39,14 @@ export const ratingApi = {
       onConflict: 'recipe_id,user_id',
     });
     if (error) handleError(error, 'Submit rating with optional comment');
+
+    // Track rating event in Vercel Analytics
+    recipeEvents.rated(recipeId, rating);
+
+    // Track comment event if provided
+    if (comment) {
+      recipeEvents.commented(recipeId);
+    }
   },
 
   async getComments(

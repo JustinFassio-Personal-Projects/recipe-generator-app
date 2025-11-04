@@ -25,6 +25,7 @@ import ShoppingCartPage from '@/pages/shopping-cart-page';
 import { SelectionProvider } from '@/contexts/SelectionContext';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage';
+import { usePageTracking } from '@/hooks/usePageTracking';
 
 import { Toaster } from '@/components/ui/toaster';
 
@@ -38,6 +39,9 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
+  // Track page views on route changes
+  usePageTracking();
+
   return (
     <Routes>
       {/* Public routes - redirect to /recipes if authenticated */}

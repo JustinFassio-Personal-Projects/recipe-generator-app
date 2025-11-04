@@ -1,4 +1,6 @@
 // Advanced error tracking and alerting system
+import { errorEvents } from './vercel-analytics';
+
 export interface ErrorEvent {
   id: string;
   timestamp: number;
@@ -96,6 +98,14 @@ class ErrorTracker {
       const errorEvent = this.errors.get(errorKey)!;
       this.logError(errorEvent);
     }
+
+    // Send error to Vercel Analytics for production monitoring
+    errorEvents.error(
+      message,
+      category,
+      level,
+      details.stackTrace?.substring(0, 200) // Limit stack trace size
+    );
 
     return errorKey;
   }

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { subscriptionEvents } from '@/lib/vercel-analytics';
 
 export function SubscriptionSuccessPage() {
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ export function SubscriptionSuccessPage() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Track subscription conversion
+    subscriptionEvents.converted('Premium Plan', 5.99, 'monthly');
+
     // Invalidate subscription queries to refetch updated status
     queryClient.invalidateQueries({ queryKey: ['subscription'] });
     queryClient.invalidateQueries({ queryKey: ['subscription-status'] });

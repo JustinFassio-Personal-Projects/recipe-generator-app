@@ -1,5 +1,4 @@
 import type { RecipeFormData } from './schemas';
-import { parseIngredientText } from './groceries/ingredient-parser';
 
 /**
  * Unified Recipe Parser - Single source of truth for all recipe parsing
@@ -340,7 +339,7 @@ function tryPatternParsing(content: string): RecipeParseResult {
 
 /**
  * Normalize ingredients to string array regardless of input format
- * Uses the new ingredient parser to clean ingredient names by removing quantities, units, and size adjectives
+ * Preserves full ingredient text including amounts and prep instructions
  */
 function normalizeIngredients(ingredients: unknown): string[] {
   if (!Array.isArray(ingredients)) {
@@ -365,10 +364,9 @@ function normalizeIngredients(ingredients: unknown): string[] {
         rawIngredient = String(item);
       }
 
-      // Use the new ingredient parser to clean the ingredient name
-      // This removes quantities, units, and size adjectives for consistent storage
-      const parsed = parseIngredientText(rawIngredient);
-      return parsed.name;
+      // Return the full ingredient text with amounts and prep
+      // Grocery matching will use parseIngredientText() to extract clean names when needed
+      return rawIngredient.trim();
     })
     .filter((item) => item.length > 0);
 }

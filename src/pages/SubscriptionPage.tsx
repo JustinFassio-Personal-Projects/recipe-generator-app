@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { subscriptionEvents } from '@/lib/vercel-analytics';
 
 export function SubscriptionPage() {
   const navigate = useNavigate();
@@ -31,6 +32,9 @@ export function SubscriptionPage() {
       setUser(user);
       setAuthLoading(false);
     });
+
+    // Track subscription plan view
+    subscriptionEvents.planViewed('Premium Plan', 5.99);
   }, []);
 
   if (authLoading) {
@@ -65,6 +69,9 @@ export function SubscriptionPage() {
   const isInTrial = status?.is_in_trial;
 
   const handleSubscribe = () => {
+    // Track checkout started event
+    subscriptionEvents.checkoutStarted('Premium Plan', 5.99);
+
     createCheckout.mutate();
   };
 

@@ -8,8 +8,8 @@ import { resolve } from 'path';
 // Load in handler to ensure it runs in serverless context
 const loadEnv = () => {
   if (
-    process.env.NODE_ENV !== 'production' ||
-    process.env.VERCEL_ENV === 'development'
+    process.env.NODE_ENV !== 'production' &&
+    process.env.VERCEL_ENV !== 'production'
   ) {
     try {
       config({ path: resolve(process.cwd(), '.env.local'), override: false });

@@ -19,6 +19,38 @@ export const setupDatabaseTests = () => {
     vi.clearAllMocks();
 
     // Restore real fetch for database tests
+    // Use Node.js built-in fetch (available in Node 18+)
+    // Import undici which provides the real fetch implementation
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { fetch: undiciFetch } = require('undici');
+      global.fetch = undiciFetch;
+    } catch {
+      // Fallback: If undici is not available, try to use global fetch
+      // Node 18+ has fetch built-in, but it might be in a different location
+      const globalFetch = globalThis.fetch as typeof fetch & {
+        mockImplementation?: unknown;
+      };
+      if (
+        typeof globalFetch === 'function' &&
+        !globalFetch.mockImplementation
+      ) {
+        global.fetch = globalFetch;
+      } else {
+        // Last resort: try to import node-fetch
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const nodeFetch = require('node-fetch');
+          global.fetch = nodeFetch as typeof fetch;
+        } catch {
+          throw new Error(
+            'Real fetch is required for database tests. Please install undici or ensure Node.js 18+ is used.'
+          );
+        }
+      }
+    }
+
+    // Restore all other mocks
     vi.restoreAllMocks();
 
     // Unmock Supabase for database tests

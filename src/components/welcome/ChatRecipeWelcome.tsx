@@ -139,7 +139,7 @@ export function ChatRecipeWelcome({
         <Button
           onClick={handleContinue}
           disabled={!selectedChef}
-          className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 disabled:opacity-50"
+          className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 py-6"
         >
           {selectedChef
             ? `Start Cooking with ${CHEF_PERSONALITIES.find((c) => c.id === selectedChef)?.name}!`

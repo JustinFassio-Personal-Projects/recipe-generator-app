@@ -23,6 +23,9 @@ const CHEF_NAMES: Record<string, string> = {
   'aunt-jenny': 'Aunt Jenny',
 };
 
+// Delay to ensure WelcomeDialog fully closes before ChatInstructionsModal opens
+const DIALOG_TRANSITION_DELAY = 300;
+
 export function ChatRecipePage() {
   const navigate = useNavigate();
   const [generatedRecipe, setGeneratedRecipe] = useState<RecipeFormData | null>(
@@ -32,18 +35,23 @@ export function ChatRecipePage() {
   const [selectedChef, setSelectedChef] = useState<string | null>(null);
   const [showInstructions, setShowInstructions] = useState(false);
 
-  // Check if user has dismissed instructions before
+  const handleChefSelected = (chefId: string) => {
+    setSelectedChef(chefId);
+  };
+
+  // Show ChatInstructionsModal after chef is selected (with delay to prevent dialog conflicts)
   useEffect(() => {
     const hasHiddenInstructions =
       localStorage.getItem('hideChatInstructionsModal') === 'true';
     if (!hasHiddenInstructions && selectedChef) {
-      setShowInstructions(true);
+      // Add a small delay to ensure WelcomeDialog has fully closed
+      // before ChatInstructionsModal attempts to open, preventing conflicts
+      const timer = setTimeout(() => {
+        setShowInstructions(true);
+      }, DIALOG_TRANSITION_DELAY);
+      return () => clearTimeout(timer);
     }
-  }, [selectedChef]);
-
-  const handleChefSelected = (chefId: string) => {
-    setSelectedChef(chefId);
-  };
+  }, [selectedChef]); // Re-run when selectedChef changes
 
   // Get the persona based on selected chef
   const selectedPersona: PersonaType | undefined = selectedChef
@@ -72,7 +80,7 @@ export function ChatRecipePage() {
         onChefSelected={handleChefSelected}
       />
 
-      {/* Chat Instructions Modal */}
+      {/* Chat Instructions Modal - shows after chef selection */}
       {selectedChef && (
         <ChatInstructionsModal
           isOpen={showInstructions}

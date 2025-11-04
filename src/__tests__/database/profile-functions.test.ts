@@ -1,10 +1,14 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeAll, vi } from 'vitest';
 import {
   createDbClient,
   shouldRunDbTests,
 } from '../../../tests/database/_utils/dbClient';
 import { createUserAndProfile } from '../../../tests/database/_utils/factories';
 import { truncatePhase1Tables } from '../../../tests/database/_utils/cleanup';
+import { setupDatabaseTests } from '../../test/database-setup';
+
+// Unmock Supabase for database tests
+vi.unmock('@supabase/supabase-js');
 
 // Expected DB function:
 // - get_complete_user_profile(user_id uuid)
@@ -14,7 +18,11 @@ const RUN = shouldRunDbTests();
 
 RUN
   ? describe('Database: Profile Functions (integration)', () => {
-      const admin = createDbClient('service');
+      let admin: ReturnType<typeof createDbClient>;
+
+      beforeAll(() => {
+        admin = setupDatabaseTests();
+      });
 
       afterEach(async () => {
         await truncatePhase1Tables(admin);

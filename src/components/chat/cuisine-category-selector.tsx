@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CategoryFilterSection } from '@/components/recipes/filters/CategoryFilterSection';
@@ -36,6 +37,25 @@ export function CuisineCategorySelector({
     moods: selectedMoods,
     availableIngredients: selectedIngredients,
   } = selections;
+
+  // Accordion state management - only one filter section open at a time
+  const [openFilterSection, setOpenFilterSection] = useState<
+    'categories' | 'cuisines' | 'moods' | 'ingredients' | null
+  >(null);
+
+  // Accordion behavior handlers
+  const handleFilterSectionToggle = (
+    sectionType: 'categories' | 'cuisines' | 'moods' | 'ingredients',
+    isCurrentlyOpen: boolean
+  ) => {
+    if (isCurrentlyOpen) {
+      // If this section is open, close it
+      setOpenFilterSection(null);
+    } else {
+      // If this section is closed, open it and close others
+      setOpenFilterSection(sectionType);
+    }
+  };
 
   const handleCategoriesChange = (categories: string[]) => {
     updateSelections({ categories });
@@ -135,6 +155,10 @@ export function CuisineCategorySelector({
             onCategoriesChange={handleCategoriesChange}
             variant="dropdown"
             className="w-full sm:w-48"
+            isOpen={openFilterSection === 'categories'}
+            onToggle={(isOpen) =>
+              handleFilterSectionToggle('categories', isOpen)
+            }
           />
 
           {/* Cuisine Filter */}
@@ -143,6 +167,8 @@ export function CuisineCategorySelector({
             onCuisinesChange={handleCuisinesChange}
             variant="dropdown"
             className="w-full sm:w-48"
+            isOpen={openFilterSection === 'cuisines'}
+            onToggle={(isOpen) => handleFilterSectionToggle('cuisines', isOpen)}
           />
 
           {/* Mood Filter */}
@@ -151,6 +177,8 @@ export function CuisineCategorySelector({
             onMoodsChange={handleMoodsChange}
             variant="dropdown"
             className="w-full sm:w-48"
+            isOpen={openFilterSection === 'moods'}
+            onToggle={(isOpen) => handleFilterSectionToggle('moods', isOpen)}
           />
 
           {/* Ingredients Filter */}
@@ -159,6 +187,10 @@ export function CuisineCategorySelector({
             onIngredientsChange={handleIngredientsChange}
             variant="dropdown"
             className="w-full sm:w-48"
+            isOpen={openFilterSection === 'ingredients'}
+            onToggle={(isOpen) =>
+              handleFilterSectionToggle('ingredients', isOpen)
+            }
           />
         </div>
 

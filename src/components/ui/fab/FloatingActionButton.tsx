@@ -32,13 +32,28 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     setIsOpen(!isOpen);
   };
 
+  // Get button style based on item ID
+  const getMenuItemStyle = (itemId: string) => {
+    if (itemId === 'ai-create') {
+      // AI Recipe Creator - orange gradient
+      return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border border-orange-600 hover:from-orange-600 hover:to-orange-700';
+    } else if (itemId === 'add-recipe') {
+      // Add Recipe - cream background with green border
+      return 'bg-stone-50 border border-success text-success hover:bg-stone-100';
+    }
+    // Default style
+    return 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50';
+  };
+
   return (
     <div className={cn('fixed z-50', positionClasses[position])}>
       {/* Main FAB Button */}
       <button
         onClick={handleButtonClick}
         className={cn(
-          'btn btn-circle btn-neutral h-14 w-14 shadow',
+          'h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-all',
+          'bg-gradient-to-r from-orange-500 to-orange-600 text-white border border-orange-600',
+          'hover:from-orange-600 hover:to-orange-700',
           isOpen && 'scale-105'
         )}
         aria-label="Open menu"
@@ -56,11 +71,14 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 item.onClick();
                 setIsOpen(false);
               }}
-              className="btn btn-sm btn-neutral whitespace-nowrap shadow-lg"
+              className={cn(
+                'btn-sm whitespace-nowrap shadow-lg rounded-md px-4 py-2 flex items-center gap-2 transition-all',
+                getMenuItemStyle(item.id)
+              )}
               aria-label={item.label}
             >
               {item.icon}
-              <span className="ml-2">{item.label}</span>
+              <span>{item.label}</span>
             </button>
           ))}
         </div>

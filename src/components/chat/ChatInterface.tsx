@@ -30,6 +30,9 @@ interface ChatInterfaceProps {
   defaultPersona?: PersonaType;
 }
 
+// Maximum height for textarea input (matches Tailwind max-h-32 = 128px)
+const MAX_TEXTAREA_HEIGHT = 128;
+
 export function ChatInterface({
   onRecipeGenerated,
   defaultPersona,
@@ -52,7 +55,7 @@ export function ChatInterface({
   const { selections, updateSelections } = useSelections();
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = React.useState('');
 
   useEffect(() => {
@@ -69,21 +72,39 @@ export function ChatInterface({
     }
   }, [generatedRecipe, onRecipeGenerated]);
 
+  // Auto-resize textarea when input value changes
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      const newHeight = Math.min(
+        inputRef.current.scrollHeight,
+        MAX_TEXTAREA_HEIGHT
+      );
+      inputRef.current.style.height = `${newHeight}px`;
+    }
+  }, [inputValue]);
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
     const messageContent = inputValue.trim();
     setInputValue('');
 
+    // Reset textarea height after sending
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
+
     await sendMessage(messageContent, selections);
     inputRef.current?.focus();
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
+    // Shift+Enter will naturally create a new line in textarea
   };
 
   const handleSaveRecipe = () => {
@@ -393,18 +414,26 @@ export function ChatInterface({
 
       {/* Chat Input - Always visible and accessible */}
       <div className="bg-base-100 rounded-b-lg border-t p-4 sticky bottom-0 shadow-lg">
-        <div className="flex items-center space-x-2">
-          <input
+        <div className="flex items-end space-x-2">
+          <textarea
             ref={inputRef}
-            type="text"
             value={inputValue}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
               setInputValue(e.target.value)
             }
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="Type your message here..."
             disabled={isLoading}
-            className={`${createDaisyUIInputClasses('bordered')} flex-1 min-h-[44px]`}
+            rows={1}
+            className={`${createDaisyUIInputClasses('bordered')} 
+              flex-1 min-h-[44px] max-h-32 
+              resize-none overflow-y-auto overflow-x-hidden 
+              whitespace-pre-wrap break-words`}
+            style={{
+              resize: 'none',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+            }}
           />
           <Button
             onClick={handleSendMessage}

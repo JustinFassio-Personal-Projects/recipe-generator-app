@@ -101,17 +101,16 @@ export function RecipesPage() {
 
             <div className="flex flex-col gap-2 self-start sm:flex-row sm:self-auto">
               <Button
-                variant={
-                  location.pathname === '/chat-recipe' ? 'default' : 'ghost'
-                }
                 onClick={() => navigate('/chat-recipe')}
+                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 border border-orange-600"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 AI Recipe Creator
               </Button>
               <Button
+                variant="outline"
                 onClick={() => navigate('/add')}
-                className="bg-success text-success-content hover:bg-success/80"
+                className="border-success text-success hover:bg-success/10"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Recipe

@@ -23,6 +23,9 @@ const CHEF_NAMES: Record<string, string> = {
   'aunt-jenny': 'Aunt Jenny',
 };
 
+// Delay to ensure WelcomeDialog fully closes before ChatInstructionsModal opens
+const DIALOG_TRANSITION_DELAY = 300;
+
 export function ChatRecipePage() {
   const navigate = useNavigate();
   const [generatedRecipe, setGeneratedRecipe] = useState<RecipeFormData | null>(
@@ -45,7 +48,7 @@ export function ChatRecipePage() {
       // before ChatInstructionsModal attempts to open, preventing conflicts
       const timer = setTimeout(() => {
         setShowInstructions(true);
-      }, 300); // 300ms delay
+      }, DIALOG_TRANSITION_DELAY);
       return () => clearTimeout(timer);
     }
   }, [selectedChef]); // Re-run when selectedChef changes

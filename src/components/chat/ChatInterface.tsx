@@ -30,6 +30,9 @@ interface ChatInterfaceProps {
   defaultPersona?: PersonaType;
 }
 
+// Maximum height for textarea input (matches Tailwind max-h-32 = 128px)
+const MAX_TEXTAREA_HEIGHT = 128;
+
 export function ChatInterface({
   onRecipeGenerated,
   defaultPersona,
@@ -73,7 +76,10 @@ export function ChatInterface({
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
-      const newHeight = Math.min(inputRef.current.scrollHeight, 128); // max-h-32 = 128px
+      const newHeight = Math.min(
+        inputRef.current.scrollHeight,
+        MAX_TEXTAREA_HEIGHT
+      );
       inputRef.current.style.height = `${newHeight}px`;
     }
   }, [inputValue]);
@@ -419,7 +425,10 @@ export function ChatInterface({
             placeholder="Type your message here..."
             disabled={isLoading}
             rows={1}
-            className={`${createDaisyUIInputClasses('bordered')} flex-1 min-h-[44px] max-h-32 resize-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-words`}
+            className={`${createDaisyUIInputClasses('bordered')} 
+              flex-1 min-h-[44px] max-h-32 
+              resize-none overflow-y-auto overflow-x-hidden 
+              whitespace-pre-wrap break-words`}
             style={{
               resize: 'none',
               wordWrap: 'break-word',

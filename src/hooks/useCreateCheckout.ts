@@ -41,15 +41,32 @@ export function useCreateCheckout() {
 
       console.log('[Checkout] API response status:', response.status);
 
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('[Checkout] API error:', error);
-        throw new Error(error.error || 'Failed to create checkout session');
+      // Safely parse response - handle empty or invalid JSON
+      let responseData:
+        | CheckoutResponse
+        | { error?: string; details?: string; debug?: unknown };
+      const responseText = await response.text();
+
+      try {
+        responseData = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('[Checkout] Failed to parse JSON response:', parseError);
+        console.error('[Checkout] Response text:', responseText);
+        throw new Error('Invalid response from server');
       }
 
-      const data: CheckoutResponse = await response.json();
+      if (!response.ok) {
+        console.error('[Checkout] API error:', responseData);
+        const errorData = responseData as {
+          error?: string;
+          details?: string;
+          debug?: unknown;
+        };
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+
       console.log('[Checkout] Success! Redirecting to Stripe...');
-      return data;
+      return responseData as CheckoutResponse;
     },
     onSuccess: (data) => {
       // Redirect to Stripe Checkout

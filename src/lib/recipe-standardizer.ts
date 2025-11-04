@@ -79,6 +79,12 @@ export async function standardizeRecipeWithAI(
 }
 
 /**
+ * Minimum length for a line to be considered as description text
+ * Lines shorter than this are likely formatting artifacts or incomplete text
+ */
+const MIN_DESCRIPTION_LINE_LENGTH = 20;
+
+/**
  * Parse the AI-standardized recipe text into structured format
  */
 function parseStandardizedRecipe(text: string): StandardizedRecipe {
@@ -88,12 +94,14 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
     .filter((line) => line.length > 0);
 
   let title = '';
+  let description = '';
   const setup: string[] = [];
   const ingredients: string[] = [];
   const instructions: string[] = [];
   const notes: string[] = [];
 
   let currentSection = '';
+  let foundTitle = false;
 
   // Extract categories from the entire text first
   const categories: string[] = [];
@@ -143,6 +151,27 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
           ''
         )
         .trim();
+      foundTitle = true;
+      continue;
+    }
+
+    // Extract description: text after title but before first section header
+    // We collect description lines before we hit the first section header
+    // Skip section headers - they're handled by the section detection below
+    if (foundTitle && !currentSection && !line.startsWith('## ')) {
+      // This is descriptive text between title and first section
+      if (
+        line.length > MIN_DESCRIPTION_LINE_LENGTH &&
+        !line.startsWith('- ') &&
+        !line.startsWith('* ') &&
+        !/^\d+\./.test(line)
+      ) {
+        if (description) {
+          description += ' ' + line;
+        } else {
+          description = line;
+        }
+      }
       continue;
     }
 
@@ -212,7 +241,7 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
 
   return {
     title: title || 'Untitled Recipe',
-    description: '',
+    description: description.trim(),
     setup,
     ingredients,
     instructions,

@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Divider } from '@/components/ui/divider';
 import { AppTitle } from '@/components/ui/app-title';
 import { StackedImages } from '@/components/auth/StackedImages';
+import { authEvents } from '@/lib/vercel-analytics';
 
 export function AuthForm() {
   const { user } = useAuth();
@@ -48,7 +49,7 @@ export function AuthForm() {
       return;
     }
 
-    const { success, error } = await signUp(email, password, fullName);
+    const { success, error, userId } = await signUp(email, password, fullName);
 
     if (!success && error) {
       console.error('Signup error details:', {
@@ -62,6 +63,11 @@ export function AuthForm() {
         variant: 'destructive',
       });
     } else {
+      // Track sign up event
+      if (userId) {
+        authEvents.signUp(userId, email);
+      }
+
       toast({
         title: 'Success',
         description:
@@ -83,7 +89,7 @@ export function AuthForm() {
     e.preventDefault();
     setLoading(true);
 
-    const { success, error } = await signIn(email, password);
+    const { success, error, userId } = await signIn(email, password);
 
     if (!success && error) {
       toast({
@@ -92,6 +98,11 @@ export function AuthForm() {
         variant: 'destructive',
       });
     } else {
+      // Track sign in event
+      if (userId) {
+        authEvents.signIn(userId, email);
+      }
+
       toast({
         title: 'Success',
         description: 'Signed in successfully!',
@@ -115,6 +126,9 @@ export function AuthForm() {
         variant: 'destructive',
       });
     } else {
+      // Track magic link request
+      authEvents.magicLink(email);
+
       toast({
         title: 'Success',
         description: 'Check your email for a magic link to sign in!',

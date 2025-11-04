@@ -4,6 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Sparkles } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { subscriptionEvents } from '@/lib/vercel-analytics';
+import {
+  getSubscriptionPlanDetails,
+  SUBSCRIPTION_CONFIG,
+} from '@/config/subscription';
 
 export function SubscriptionSuccessPage() {
   const navigate = useNavigate();
@@ -12,6 +17,14 @@ export function SubscriptionSuccessPage() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Track subscription conversion using centralized config
+    const planDetails = getSubscriptionPlanDetails();
+    subscriptionEvents.converted(
+      planDetails.plan,
+      planDetails.price,
+      planDetails.interval
+    );
+
     // Invalidate subscription queries to refetch updated status
     queryClient.invalidateQueries({ queryKey: ['subscription'] });
     queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
@@ -40,7 +53,11 @@ export function SubscriptionSuccessPage() {
               <ul className="text-sm text-left space-y-2">
                 <li>✓ You now have unlimited access to all AI features</li>
                 <li>✓ Your trial lasts for 7 days from today</li>
-                <li>✓ After the trial, you'll be charged $5.99/month</li>
+                <li>
+                  ✓ After the trial, you'll be charged $
+                  {SUBSCRIPTION_CONFIG.PREMIUM_PLAN.price}/
+                  {SUBSCRIPTION_CONFIG.PREMIUM_PLAN.interval}
+                </li>
                 <li>✓ Cancel anytime from your account settings</li>
               </ul>
             </div>

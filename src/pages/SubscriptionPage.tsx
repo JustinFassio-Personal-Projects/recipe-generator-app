@@ -18,6 +18,10 @@ import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { subscriptionEvents } from '@/lib/vercel-analytics';
+import {
+  getSubscriptionPlanDetails,
+  SUBSCRIPTION_CONFIG,
+} from '@/config/subscription';
 
 export function SubscriptionPage() {
   const navigate = useNavigate();
@@ -33,8 +37,9 @@ export function SubscriptionPage() {
       setAuthLoading(false);
     });
 
-    // Track subscription plan view
-    subscriptionEvents.planViewed('Premium Plan', 5.99);
+    // Track subscription plan view using centralized config
+    const planDetails = getSubscriptionPlanDetails();
+    subscriptionEvents.planViewed(planDetails.plan, planDetails.price);
   }, []);
 
   if (authLoading) {
@@ -69,8 +74,9 @@ export function SubscriptionPage() {
   const isInTrial = status?.is_in_trial;
 
   const handleSubscribe = () => {
-    // Track checkout started event
-    subscriptionEvents.checkoutStarted('Premium Plan', 5.99);
+    // Track checkout started event using centralized config
+    const planDetails = getSubscriptionPlanDetails();
+    subscriptionEvents.checkoutStarted(planDetails.plan, planDetails.price);
 
     createCheckout.mutate();
   };
@@ -128,12 +134,16 @@ export function SubscriptionPage() {
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Sparkles className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle className="text-3xl">Premium Plan</CardTitle>
+              <CardTitle className="text-3xl">
+                {SUBSCRIPTION_CONFIG.PREMIUM_PLAN.name}
+              </CardTitle>
               <CardDescription>
                 Everything you need to cook smarter
               </CardDescription>
               <div className="mt-4">
-                <span className="text-4xl font-bold">$5.99</span>
+                <span className="text-4xl font-bold">
+                  ${SUBSCRIPTION_CONFIG.PREMIUM_PLAN.price}
+                </span>
                 <span className="text-muted-foreground">/month</span>
               </div>
               <Badge variant="secondary" className="mt-2">
@@ -209,7 +219,9 @@ export function SubscriptionPage() {
                 • Cancel anytime during the trial - no charges
               </p>
               <p className="text-sm">
-                • After trial: $5.99/month, billed monthly
+                • After trial: ${SUBSCRIPTION_CONFIG.PREMIUM_PLAN.price}/
+                {SUBSCRIPTION_CONFIG.PREMIUM_PLAN.interval}, billed{' '}
+                {SUBSCRIPTION_CONFIG.PREMIUM_PLAN.interval}
               </p>
             </CardContent>
           </Card>

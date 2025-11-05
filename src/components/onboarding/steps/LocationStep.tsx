@@ -115,7 +115,7 @@ export function LocationStep({
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select your country" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="start">
                 {AVAILABLE_COUNTRIES.map((countryOption) => (
                   <SelectItem
                     key={countryOption.value}
@@ -144,7 +144,7 @@ export function LocationStep({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select your state/province" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" side="bottom" align="start">
                   {availableStates.map((state) => (
                     <SelectItem key={state.value} value={state.value}>
                       {state.label}
@@ -165,7 +165,7 @@ export function LocationStep({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select your city" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" side="bottom" align="start">
                   {availableCities.map((cityOption) => (
                     <SelectItem key={cityOption} value={cityOption}>
                       {cityOption}

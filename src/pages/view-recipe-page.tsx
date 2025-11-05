@@ -743,13 +743,15 @@ export function ViewRecipePage() {
   };
 
   // Generate meta tags for social sharing
-  const metaTags = recipe
+  // Use displayContent to get version-specific data if available, otherwise use base recipe
+  const metaRecipe = displayContent || recipe;
+  const metaTags = metaRecipe
     ? generateRecipeMetaTags({
-        title: recipe.title,
-        description: recipe.description
-          ? truncateDescription(recipe.description, 160)
-          : `${recipe.title} - A delicious recipe with ${recipe.ingredients.length} ingredients`,
-        image: recipe.image_url,
+        title: metaRecipe.title,
+        description: metaRecipe.description
+          ? truncateDescription(metaRecipe.description, 160)
+          : `${metaRecipe.title} - A delicious recipe with ${metaRecipe.ingredients.length} ingredients`,
+        image: metaRecipe.image_url || undefined,
         url: buildRecipeUrl(recipe.id, { shared: isSharedView, ref: shareRef }),
         siteName: 'Recipe Generator',
         type: 'article',
@@ -759,10 +761,13 @@ export function ViewRecipePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
       {/* Dynamic meta tags for social sharing */}
-      {recipe && (
+      {recipe && metaRecipe && (
         <Helmet>
-          <title>{recipe.title} - Recipe Generator</title>
+          <title>{metaRecipe.title} - Recipe Generator</title>
           {Object.entries(metaTags).map(([key, value]) => {
+            // Skip empty values (e.g., missing image)
+            if (!value) return null;
+
             // generateRecipeMetaTags currently only returns keys starting with 'og:' or 'twitter:'
             // Both use the 'property' attribute. The fallback is kept for future extensibility
             // if additional meta tag types are added (e.g., standard HTML meta tags with 'name' attribute)

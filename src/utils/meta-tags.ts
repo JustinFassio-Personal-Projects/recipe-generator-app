@@ -13,6 +13,31 @@ export interface RecipeMetaTags {
 }
 
 /**
+ * Ensure an image URL is absolute for Open Graph meta tags
+ * Social media crawlers require absolute URLs (with protocol and domain)
+ */
+function ensureAbsoluteImageUrl(imageUrl: string): string {
+  // If already absolute (starts with http:// or https://), return as-is
+  if (/^https?:\/\//i.test(imageUrl)) {
+    return imageUrl;
+  }
+
+  // Convert relative URL to absolute using current origin
+  const baseUrl =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : 'https://recipegenerator.app';
+
+  // Handle absolute paths (starting with /)
+  if (imageUrl.startsWith('/')) {
+    return `${baseUrl}${imageUrl}`;
+  }
+
+  // Handle relative paths
+  return `${baseUrl}/${imageUrl}`;
+}
+
+/**
  * Generate Open Graph meta tags for a recipe
  */
 export function generateOpenGraphTags(
@@ -27,9 +52,9 @@ export function generateOpenGraphTags(
     'og:site_name': recipe.siteName || 'Recipe Generator',
   };
 
-  // Add image if available
+  // Add image if available (ensure it's absolute for Open Graph)
   if (recipe.image) {
-    tags['og:image'] = recipe.image;
+    tags['og:image'] = ensureAbsoluteImageUrl(recipe.image);
     tags['og:image:alt'] = recipe.title;
     tags['og:image:width'] = '1200';
     tags['og:image:height'] = '630';
@@ -51,9 +76,9 @@ export function generateTwitterCardTags(
       recipe.description || 'Delicious recipe from Recipe Generator',
   };
 
-  // Add image if available
+  // Add image if available (ensure it's absolute for Twitter Card)
   if (recipe.image) {
-    tags['twitter:image'] = recipe.image;
+    tags['twitter:image'] = ensureAbsoluteImageUrl(recipe.image);
     tags['twitter:image:alt'] = recipe.title;
   }
 

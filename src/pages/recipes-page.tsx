@@ -227,7 +227,7 @@ export function RecipesPage() {
 
         {/* Profile Onboarding Wizard Modal */}
         <Dialog open={showOnboarding} onOpenChange={setShowOnboarding}>
-          <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden">
+          <DialogContent className="max-w-2xl h-[90vh] p-0 flex flex-col overflow-y-auto">
             <ProfileOnboardingWizard onClose={() => setShowOnboarding(false)} />
           </DialogContent>
         </Dialog>

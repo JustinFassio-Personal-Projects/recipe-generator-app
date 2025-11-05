@@ -26,16 +26,7 @@ export interface OnboardingFormData {
 
 const STORAGE_KEY = 'onboarding_progress';
 
-const getInitialData = (): OnboardingFormData => {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch (e) {
-      console.error('[Onboarding] Failed to parse stored onboarding data:', e);
-    }
-  }
-
+const getDefaultData = (): OnboardingFormData => {
   return {
     dietary_restrictions: [],
     allergies: [],
@@ -54,16 +45,112 @@ const getInitialData = (): OnboardingFormData => {
   };
 };
 
+const getInitialData = (): OnboardingFormData => {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error('[Onboarding] Failed to parse stored onboarding data:', e);
+    }
+  }
+
+  return getDefaultData();
+};
+
 export function useProfileOnboarding() {
   const { user, refreshProfile } = useAuth();
   const [formData, setFormData] = useState<OnboardingFormData>(getInitialData);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  // Persist to localStorage whenever formData changes
+  // Load existing profile data from database on mount
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-  }, [formData]);
+    const loadExistingProfile = async () => {
+      if (!user) {
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      try {
+        // Check if localStorage has in-progress data
+        const hasLocalStorage = !!localStorage.getItem(STORAGE_KEY);
+
+        // If there's in-progress data in localStorage, use that
+        if (hasLocalStorage) {
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        // Otherwise, load from database
+        const [profileResult, safetyResult, cookingResult] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
+          supabase
+            .from('user_safety')
+            .select('*')
+            .eq('user_id', user.id)
+            .single(),
+          supabase
+            .from('cooking_preferences')
+            .select('*')
+            .eq('user_id', user.id)
+            .single(),
+        ]);
+
+        const defaults = getDefaultData();
+        const mergedData: OnboardingFormData = {
+          // From profiles table
+          full_name: profileResult.data?.full_name ?? defaults.full_name,
+          country: profileResult.data?.country ?? defaults.country,
+          state_province:
+            profileResult.data?.state_province ?? defaults.state_province,
+          city: profileResult.data?.city ?? defaults.city,
+          skill_level: profileResult.data?.skill_level ?? defaults.skill_level,
+          units: profileResult.data?.units ?? defaults.units,
+          time_per_meal:
+            profileResult.data?.time_per_meal ?? defaults.time_per_meal,
+
+          // From user_safety table
+          dietary_restrictions:
+            safetyResult.data?.dietary_restrictions ??
+            defaults.dietary_restrictions,
+          allergies: safetyResult.data?.allergies ?? defaults.allergies,
+          medical_conditions:
+            safetyResult.data?.medical_conditions ??
+            defaults.medical_conditions,
+
+          // From cooking_preferences table
+          preferred_cuisines:
+            cookingResult.data?.preferred_cuisines ??
+            defaults.preferred_cuisines,
+          available_equipment:
+            cookingResult.data?.available_equipment ??
+            defaults.available_equipment,
+          spice_tolerance:
+            cookingResult.data?.spice_tolerance ?? defaults.spice_tolerance,
+          disliked_ingredients:
+            cookingResult.data?.disliked_ingredients ??
+            defaults.disliked_ingredients,
+        };
+
+        setFormData(mergedData);
+      } catch (error) {
+        console.error('[Onboarding] Failed to load existing profile:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadExistingProfile();
+  }, [user]);
+
+  // Persist to localStorage whenever formData changes (but only after initial load)
+  useEffect(() => {
+    if (!isLoadingProfile) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    }
+  }, [formData, isLoadingProfile]);
 
   const updateFormData = useCallback((updates: Partial<OnboardingFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
@@ -185,5 +272,6 @@ export function useProfileOnboarding() {
     prevStep,
     saveToDatabase,
     isSaving,
+    isLoadingProfile,
   };
 }

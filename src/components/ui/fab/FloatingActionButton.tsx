@@ -37,6 +37,9 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     if (itemId === 'ai-create') {
       // AI Recipe Creator - orange gradient
       return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border border-orange-600 hover:from-orange-600 hover:to-orange-700';
+    } else if (itemId === 'update-profile') {
+      // Update Profile - purple gradient
+      return 'bg-gradient-to-r from-purple-500 to-purple-600 text-white border border-purple-600 hover:from-purple-600 hover:to-purple-700';
     } else if (itemId === 'add-recipe') {
       // Add Recipe - cream background with green border
       return 'bg-stone-50 border border-success text-success hover:bg-stone-100';

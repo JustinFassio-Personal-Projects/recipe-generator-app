@@ -1,6 +1,6 @@
 import { createDaisyUICardClasses } from '@/lib/card-migration';
 import { createDaisyUISkeletonClasses } from '@/lib/skeleton-migration';
-import { Plus, ChefHat, Sparkles } from 'lucide-react';
+import { Plus, ChefHat, Sparkles, User } from 'lucide-react';
 import { useRecipes } from '@/hooks/use-recipes';
 import { useRecipeFilters } from '@/hooks/use-recipe-filters';
 import { RecipeCard } from '@/components/recipes/recipe-card';
@@ -8,8 +8,10 @@ import { FilterBar } from '@/components/recipes/FilterBar';
 import { Button } from '@/components/ui/button';
 import { FloatingActionButton } from '@/components/ui/fab';
 import { WelcomeDialog } from '@/components/welcome/WelcomeDialog';
+import { ProfileOnboardingWizard } from '@/components/onboarding/ProfileOnboardingWizard';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { Recipe } from '@/lib/types';
@@ -20,6 +22,7 @@ export function RecipesPage() {
   const queryClient = useQueryClient();
   const { filters, updateFilters } = useRecipeFilters();
   const { data: recipes = [], isLoading, error } = useRecipes(filters);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Force-refresh recipes when navigated to with a refresh flag
   useEffect(() => {
@@ -208,6 +211,12 @@ export function RecipesPage() {
               onClick: () => navigate('/chat-recipe'),
             },
             {
+              id: 'update-profile',
+              icon: <User className="h-4 w-4" />,
+              label: 'Update Profile',
+              onClick: () => setShowOnboarding(true),
+            },
+            {
               id: 'add-recipe',
               icon: <Plus className="h-4 w-4" />,
               label: 'Add Recipe',
@@ -215,6 +224,13 @@ export function RecipesPage() {
             },
           ]}
         />
+
+        {/* Profile Onboarding Wizard Modal */}
+        <Dialog open={showOnboarding} onOpenChange={setShowOnboarding}>
+          <DialogContent className="max-w-2xl h-[90vh] p-0 overflow-hidden">
+            <ProfileOnboardingWizard onClose={() => setShowOnboarding(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -84,54 +84,72 @@ export function useProfileOnboarding() {
         }
 
         // Otherwise, load from database
-        const [profileResult, safetyResult, cookingResult] = await Promise.all([
-          supabase.from('profiles').select('*').eq('id', user.id).single(),
-          supabase
-            .from('user_safety')
-            .select('*')
-            .eq('user_id', user.id)
-            .single(),
-          supabase
-            .from('cooking_preferences')
-            .select('*')
-            .eq('user_id', user.id)
-            .single(),
-        ]);
+        // Use Promise.allSettled to handle partial failures gracefully
+        // (e.g., if user_safety or cooking_preferences don't exist yet)
+        const [profileResult, safetyResult, cookingResult] =
+          await Promise.allSettled([
+            supabase.from('profiles').select('*').eq('id', user.id).single(),
+            supabase
+              .from('user_safety')
+              .select('*')
+              .eq('user_id', user.id)
+              .single(),
+            supabase
+              .from('cooking_preferences')
+              .select('*')
+              .eq('user_id', user.id)
+              .single(),
+          ]);
 
         const defaults = getDefaultData();
+
+        // Extract data from Promise.allSettled results, handling failures gracefully
+        const profileData =
+          profileResult.status === 'fulfilled' &&
+          !profileResult.value.error &&
+          profileResult.value.data
+            ? profileResult.value.data
+            : null;
+        const safetyData =
+          safetyResult.status === 'fulfilled' &&
+          !safetyResult.value.error &&
+          safetyResult.value.data
+            ? safetyResult.value.data
+            : null;
+        const cookingData =
+          cookingResult.status === 'fulfilled' &&
+          !cookingResult.value.error &&
+          cookingResult.value.data
+            ? cookingResult.value.data
+            : null;
+
         const mergedData: OnboardingFormData = {
           // From profiles table
-          full_name: profileResult.data?.full_name ?? defaults.full_name,
-          country: profileResult.data?.country ?? defaults.country,
+          full_name: profileData?.full_name ?? defaults.full_name,
+          country: profileData?.country ?? defaults.country,
           state_province:
-            profileResult.data?.state_province ?? defaults.state_province,
-          city: profileResult.data?.city ?? defaults.city,
-          skill_level: profileResult.data?.skill_level ?? defaults.skill_level,
-          units: profileResult.data?.units ?? defaults.units,
-          time_per_meal:
-            profileResult.data?.time_per_meal ?? defaults.time_per_meal,
+            profileData?.state_province ?? defaults.state_province,
+          city: profileData?.city ?? defaults.city,
+          skill_level: profileData?.skill_level ?? defaults.skill_level,
+          units: profileData?.units ?? defaults.units,
+          time_per_meal: profileData?.time_per_meal ?? defaults.time_per_meal,
 
           // From user_safety table
           dietary_restrictions:
-            safetyResult.data?.dietary_restrictions ??
-            defaults.dietary_restrictions,
-          allergies: safetyResult.data?.allergies ?? defaults.allergies,
+            safetyData?.dietary_restrictions ?? defaults.dietary_restrictions,
+          allergies: safetyData?.allergies ?? defaults.allergies,
           medical_conditions:
-            safetyResult.data?.medical_conditions ??
-            defaults.medical_conditions,
+            safetyData?.medical_conditions ?? defaults.medical_conditions,
 
           // From cooking_preferences table
           preferred_cuisines:
-            cookingResult.data?.preferred_cuisines ??
-            defaults.preferred_cuisines,
+            cookingData?.preferred_cuisines ?? defaults.preferred_cuisines,
           available_equipment:
-            cookingResult.data?.available_equipment ??
-            defaults.available_equipment,
+            cookingData?.available_equipment ?? defaults.available_equipment,
           spice_tolerance:
-            cookingResult.data?.spice_tolerance ?? defaults.spice_tolerance,
+            cookingData?.spice_tolerance ?? defaults.spice_tolerance,
           disliked_ingredients:
-            cookingResult.data?.disliked_ingredients ??
-            defaults.disliked_ingredients,
+            cookingData?.disliked_ingredients ?? defaults.disliked_ingredients,
         };
 
         setFormData(mergedData);

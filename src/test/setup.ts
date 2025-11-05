@@ -83,6 +83,13 @@ vi.mock('react-router-dom', () => ({
   Route: ({ children }: { children: React.ReactNode }) => children,
   useNavigate: vi.fn(() => vi.fn()),
   useParams: vi.fn(() => ({})),
+  useLocation: vi.fn(() => ({
+    pathname: '/auth/signin',
+    search: '',
+    hash: '',
+    state: null,
+    key: 'default',
+  })),
 }));
 
 // Mock API Client

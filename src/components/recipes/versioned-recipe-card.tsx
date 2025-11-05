@@ -8,6 +8,7 @@ import { Eye, Star, MoreHorizontal, Save, GitBranch } from 'lucide-react';
 import CategoryChip from '@/components/ui/CategoryChip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ShareButton } from './ShareButton';
 import { VersionSelector } from './version-selector';
 import type { PublicRecipe, RecipeVersion } from '@/lib/types';
 import { useIngredientMatching } from '@/hooks/useIngredientMatching';
@@ -166,8 +167,17 @@ export function VersionedRecipeCard({
           <p className="text-xs text-gray-500 mt-1">by {recipe.author_name}</p>
         </div>
 
-        {/* Action Button - Top Right */}
-        <div className="absolute top-2 right-2 z-20">
+        {/* Action Buttons - Top Right */}
+        <div className="absolute top-2 right-2 z-20 flex space-x-1">
+          <div className="btn-circle btn-sm bg-white/95 hover:bg-white border border-gray-200 hover:border-gray-300 shadow-lg flex items-center justify-center">
+            <ShareButton
+              recipe={recipe}
+              variant="ghost"
+              size="icon"
+              showLabel={false}
+              className="h-8 w-8 p-0 border-0 shadow-none"
+            />
+          </div>
           <button
             onClick={() => setShowVersions(!showVersions)}
             className="btn btn-circle btn-ghost btn-sm bg-white/95 hover:bg-white border border-gray-200 hover:border-gray-300 shadow-lg"

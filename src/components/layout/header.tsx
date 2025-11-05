@@ -268,37 +268,65 @@ export function Header() {
             tabIndex={0}
             className="menu dropdown-content menu-sm rounded-box bg-base-100 z-[100] mt-3 w-52 border p-2 shadow"
           >
-            <li className="menu-title">
-              <span className="text-xs">
-                {profile?.username ? (
-                  <span className="text-base-content/60">
-                    @{profile.username}
+            {user ? (
+              <>
+                <li className="menu-title">
+                  <span className="text-xs">
+                    {profile?.username ? (
+                      <span className="text-base-content/60">
+                        @{profile.username}
+                      </span>
+                    ) : profile?.full_name ? (
+                      profile.full_name
+                    ) : (
+                      user?.email || 'User'
+                    )}
                   </span>
-                ) : profile?.full_name ? (
-                  profile.full_name
-                ) : (
-                  user?.email || 'User'
-                )}
-              </span>
-            </li>
-            <li>
-              <button
-                onClick={() => navigate('/profile')}
-                className="flex items-center"
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Account Settings
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={handleSignOut}
-                className="text-error flex items-center"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </button>
-            </li>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate('/profile')}
+                    className="flex items-center"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Account Settings
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={handleSignOut}
+                    className="text-error flex items-center"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="menu-title">
+                  <span className="text-xs text-base-content/60">Account</span>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate('/auth/signup')}
+                    className="flex items-center"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Sign Up
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate('/auth/signin')}
+                    className="flex items-center"
+                  >
+                    <LogOut className="mr-2 h-4 w-4 rotate-180" />
+                    Sign In
+                  </button>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       </div>

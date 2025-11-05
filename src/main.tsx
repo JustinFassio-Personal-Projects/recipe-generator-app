@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { HelmetProvider } from 'react-helmet-async';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/shared/feedback/ErrorBoundary';
 import { Analytics, type BeforeSendEvent } from '@vercel/analytics/react';
@@ -45,11 +46,13 @@ function beforeSend(event: BeforeSendEvent): BeforeSendEvent | null {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-    <Analytics beforeSend={beforeSend} />
-    <SpeedInsights />
+    <HelmetProvider>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+      <Analytics beforeSend={beforeSend} />
+      <SpeedInsights />
+    </HelmetProvider>
   </StrictMode>
 );
 

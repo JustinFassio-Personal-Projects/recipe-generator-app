@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { signUp, signIn, signInWithMagicLink, resetPassword } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -15,15 +15,34 @@ import { authEvents } from '@/lib/vercel-analytics';
 export function AuthForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [subscribeEmails, setSubscribeEmails] = useState(false);
+
+  // Determine initial tab based on URL path
+  const getInitialTab = (): 'signin' | 'signup' | 'magic-link' | 'reset' => {
+    if (location.pathname === '/auth/signup') {
+      return 'signup';
+    }
+    return 'signin';
+  };
+
   const [activeTab, setActiveTab] = useState<
     'signin' | 'signup' | 'magic-link' | 'reset'
-  >('signin');
+  >(getInitialTab());
+
+  // Update tab when URL changes
+  useEffect(() => {
+    if (location.pathname === '/auth/signup') {
+      setActiveTab('signup');
+    } else if (location.pathname === '/auth/signin') {
+      setActiveTab('signin');
+    }
+  }, [location.pathname]);
 
   // Redirect if already authenticated
   useEffect(() => {

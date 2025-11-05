@@ -76,10 +76,15 @@ describe('RecipeCard', () => {
 
   // Helper function to get action buttons
   const getActionButtons = () => {
+    // Share button can have different labels based on state
+    const shareButton =
+      screen.queryByLabelText('Share to Explore') ||
+      screen.queryByLabelText('Remove from Explore');
+
     return {
       viewButton: screen.getByLabelText('View recipe'),
       editButton: screen.getByLabelText('Edit recipe'),
-      shareButton: screen.queryByLabelText('Share recipe'),
+      shareButton,
       deleteButton: screen.getByLabelText('Delete recipe'),
     };
   };

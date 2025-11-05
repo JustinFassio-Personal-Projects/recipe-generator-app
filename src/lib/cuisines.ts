@@ -196,13 +196,171 @@ export const ALL_CUISINES = [
   ...CUISINE_REGIONS['Oceania'].cuisines,
 ] as const;
 
-// Legacy support - maintain existing CUISINE_OPTIONS for backward compatibility
-export const CUISINE_OPTIONS = [...ALL_CUISINES] as const;
+// Cuisines sorted by popularity in North America
+// Based on restaurant industry data and consumer trends
+export const POPULAR_CUISINES_NA = [
+  // Top 15 Most Popular
+  'American',
+  'Mexican',
+  'Italian',
+  'Chinese',
+  'Japanese',
+  'Thai',
+  'Indian',
+  'French',
+  'Greek',
+  'Spanish',
+  'Korean',
+  'Vietnamese',
+  'Brazilian',
+  'Caribbean',
+  'Lebanese',
+
+  // Other Popular Cuisines
+  'Middle Eastern',
+  'Turkish',
+  'Mediterranean',
+  'Filipino',
+  'Peruvian',
+  'Colombian',
+  'Argentine',
+  'German',
+  'British',
+  'Irish',
+
+  // Asian Cuisines
+  'Indonesian',
+  'Malaysian',
+  'Singaporean',
+  'Pakistani',
+  'Bangladeshi',
+  'Sri Lankan',
+  'Nepalese',
+  'Cambodian',
+  'Laotian',
+  'Myanmar',
+  'Mongolian',
+
+  // European Cuisines
+  'Polish',
+  'Hungarian',
+  'Czech',
+  'Russian',
+  'Ukrainian',
+  'Dutch',
+  'Belgian',
+  'Swedish',
+  'Norwegian',
+  'Danish',
+  'Finnish',
+  'Swiss',
+  'Austrian',
+  'Portuguese',
+
+  // Middle Eastern & North African
+  'Iranian',
+  'Israeli',
+  'Moroccan',
+  'Egyptian',
+  'Tunisian',
+  'Algerian',
+  'Syrian',
+  'Iraqi',
+  'Jordanian',
+  'Palestinian',
+  'Yemeni',
+
+  // Sub-Saharan African
+  'Ethiopian',
+  'Nigerian',
+  'South African',
+  'Kenyan',
+  'Senegalese',
+  'Ghanaian',
+  'Ugandan',
+  'Tanzanian',
+  'Zimbabwean',
+  'Zambian',
+  'Malawian',
+  'Mozambican',
+  'Angolan',
+  'Namibian',
+  'Botswanan',
+
+  // Americas - Other
+  'Canadian',
+  'Chilean',
+  'Venezuelan',
+  'Ecuadorian',
+  'Uruguayan',
+  'Paraguayan',
+  'Guatemalan',
+  'Honduran',
+  'Salvadoran',
+  'Nicaraguan',
+  'Costa Rican',
+  'Panamanian',
+  'Belizean',
+  'Jamaican',
+  'Trinidadian',
+  'Barbadian',
+  'Bahamian',
+  'Cuban',
+  'Dominican',
+  'Haitian',
+
+  // Oceania & Pacific
+  'Hawaiian',
+  'Polynesian',
+  'Fijian',
+  'Maori',
+  'Australian',
+  'Papuan',
+  'Solomon Islander',
+  'Vanuatuan',
+  'New Caledonian',
+  'Samoan',
+
+  // Central Asian
+  'Kazakh',
+  'Uzbek',
+  'Kyrgyz',
+  'Tajik',
+  'Turkmen',
+  'Afghan',
+  'Azerbaijani',
+
+  // Southeast Asian - Remaining
+  'Bruneian',
+  'Timorese',
+
+  // European - Remaining
+  'Belarusian',
+  'Lithuanian',
+  'Latvian',
+  'Estonian',
+  'Romanian',
+  'Bulgarian',
+  'Serbian',
+  'Croatian',
+  'Slovenian',
+  'Slovak',
+  'Moldovan',
+
+  // Fusion & Modern
+  'Tex-Mex',
+  'Fusion',
+  'Cajun',
+  'Soul Food',
+] as const;
+
+// Default export - use popularity-sorted list for better UX
+export const CUISINE_OPTIONS = POPULAR_CUISINES_NA;
 
 // Cuisine labels mapping (for display purposes)
 export const CUISINE_LABELS: Record<Cuisine, string> = ALL_CUISINES.reduce(
   (acc, cuisine) => {
-    acc[cuisine] = cuisine;
+    acc[cuisine as Cuisine] = cuisine;
     return acc;
   },
   {} as Record<Cuisine, string>
@@ -230,5 +388,5 @@ export function searchCuisines(query: string): Cuisine[] {
   const lowerQuery = query.toLowerCase();
   return ALL_CUISINES.filter((cuisine) =>
     cuisine.toLowerCase().includes(lowerQuery)
-  );
+  ) as Cuisine[];
 }

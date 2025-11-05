@@ -10,28 +10,41 @@ import {
   getStateProvinceByValue,
   getCitiesByStateProvince,
   getCitiesByCountry,
-} from '@/lib/geographic-data';
+} from '@/lib/geographic-data/';
 
 describe('Geographic Data', () => {
-  describe('NORTH_AMERICAN_COUNTRIES', () => {
-    it('should contain expected countries', () => {
-      expect(NORTH_AMERICAN_COUNTRIES).toHaveLength(4);
-      expect(NORTH_AMERICAN_COUNTRIES.map((c) => c.value)).toEqual([
-        'United States',
-        'Canada',
-        'Mexico',
-        'Other',
-      ]);
+  describe('NORTH_AMERICAN_COUNTRIES (AVAILABLE_COUNTRIES)', () => {
+    it('should contain all countries including North America, Europe, and South America', () => {
+      // We now have 27 countries (3 North America + 18 Europe + 5 South America + 1 Other)
+      expect(NORTH_AMERICAN_COUNTRIES).toHaveLength(27);
+
+      // Check that it includes the original North American countries
+      const countryValues = NORTH_AMERICAN_COUNTRIES.map((c) => c.value);
+      expect(countryValues).toContain('United States');
+      expect(countryValues).toContain('Canada');
+      expect(countryValues).toContain('Mexico');
+      expect(countryValues).toContain('Other');
+
+      // Check that it includes some European countries
+      expect(countryValues).toContain('United Kingdom');
+      expect(countryValues).toContain('Germany');
+      expect(countryValues).toContain('France');
+
+      // Check that it includes some South American countries
+      expect(countryValues).toContain('Brazil');
+      expect(countryValues).toContain('Argentina');
     });
 
-    it('should have proper structure for each country', () => {
+    it('should have proper structure for each country including flag', () => {
       NORTH_AMERICAN_COUNTRIES.forEach((country) => {
         expect(country).toHaveProperty('value');
         expect(country).toHaveProperty('label');
         expect(country).toHaveProperty('code');
+        expect(country).toHaveProperty('flag');
         expect(typeof country.value).toBe('string');
         expect(typeof country.label).toBe('string');
         expect(typeof country.code).toBe('string');
+        expect(typeof country.flag).toBe('string');
       });
     });
   });

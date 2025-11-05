@@ -9,6 +9,7 @@ import {
   getCuisinesByRegion,
   getCuisineRegion,
 } from '@/lib/cuisines';
+import type { Cuisine } from '@/lib/types';
 
 // Configuration constants
 const TOTAL_WORLD_COUNTRIES = 168; // Total number of recognized world countries
@@ -104,7 +105,7 @@ export class CuisineAgent {
    * Get regional context for a specific cuisine
    */
   getCuisineContext(cuisine: string): RegionalCuisineContext | null {
-    const region = getCuisineRegion(cuisine);
+    const region = getCuisineRegion(cuisine as Cuisine);
     if (!region) return null;
 
     const regionData = CUISINE_REGIONS[region];
@@ -439,7 +440,7 @@ export class CuisineAgent {
     let score = 0.5; // Base score
 
     // Regional proximity bonus
-    const region1 = getCuisineRegion(cuisine1);
+    const region1 = getCuisineRegion(cuisine1 as Cuisine);
     if (region1 === region2) {
       score += 0.2; // Same region
     } else if (this.areRegionsProximate(region1, region2)) {

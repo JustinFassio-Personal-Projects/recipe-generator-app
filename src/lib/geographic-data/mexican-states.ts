@@ -1,0 +1,62 @@
+// Mexican States
+
+import type { StateProvince } from './types';
+
+export const MEXICAN_STATES: StateProvince[] = [
+  {
+    value: 'Aguascalientes',
+    label: 'Aguascalientes',
+    code: 'AG',
+    country: 'Mexico',
+  },
+  {
+    value: 'Baja California',
+    label: 'Baja California',
+    code: 'BC',
+    country: 'Mexico',
+  },
+  {
+    value: 'Baja California Sur',
+    label: 'Baja California Sur',
+    code: 'BS',
+    country: 'Mexico',
+  },
+  { value: 'Campeche', label: 'Campeche', code: 'CM', country: 'Mexico' },
+  { value: 'Chiapas', label: 'Chiapas', code: 'CS', country: 'Mexico' },
+  { value: 'Chihuahua', label: 'Chihuahua', code: 'CH', country: 'Mexico' },
+  { value: 'Coahuila', label: 'Coahuila', code: 'CO', country: 'Mexico' },
+  { value: 'Colima', label: 'Colima', code: 'CL', country: 'Mexico' },
+  { value: 'Durango', label: 'Durango', code: 'DG', country: 'Mexico' },
+  { value: 'Guanajuato', label: 'Guanajuato', code: 'GT', country: 'Mexico' },
+  { value: 'Guerrero', label: 'Guerrero', code: 'GR', country: 'Mexico' },
+  { value: 'Hidalgo', label: 'Hidalgo', code: 'HG', country: 'Mexico' },
+  { value: 'Jalisco', label: 'Jalisco', code: 'JA', country: 'Mexico' },
+  { value: 'Mexico', label: 'Mexico', code: 'MX', country: 'Mexico' },
+  { value: 'Michoacan', label: 'Michoacan', code: 'MI', country: 'Mexico' },
+  { value: 'Morelos', label: 'Morelos', code: 'MO', country: 'Mexico' },
+  { value: 'Nayarit', label: 'Nayarit', code: 'NA', country: 'Mexico' },
+  { value: 'Nuevo Leon', label: 'Nuevo Leon', code: 'NL', country: 'Mexico' },
+  { value: 'Oaxaca', label: 'Oaxaca', code: 'OA', country: 'Mexico' },
+  { value: 'Puebla', label: 'Puebla', code: 'PU', country: 'Mexico' },
+  { value: 'Queretaro', label: 'Queretaro', code: 'QE', country: 'Mexico' },
+  {
+    value: 'Quintana Roo',
+    label: 'Quintana Roo',
+    code: 'QR',
+    country: 'Mexico',
+  },
+  {
+    value: 'San Luis Potosi',
+    label: 'San Luis Potosi',
+    code: 'SL',
+    country: 'Mexico',
+  },
+  { value: 'Sinaloa', label: 'Sinaloa', code: 'SI', country: 'Mexico' },
+  { value: 'Sonora', label: 'Sonora', code: 'SO', country: 'Mexico' },
+  { value: 'Tabasco', label: 'Tabasco', code: 'TB', country: 'Mexico' },
+  { value: 'Tamaulipas', label: 'Tamaulipas', code: 'TM', country: 'Mexico' },
+  { value: 'Tlaxcala', label: 'Tlaxcala', code: 'TL', country: 'Mexico' },
+  { value: 'Veracruz', label: 'Veracruz', code: 'VE', country: 'Mexico' },
+  { value: 'Yucatan', label: 'Yucatan', code: 'YU', country: 'Mexico' },
+  { value: 'Zacatecas', label: 'Zacatecas', code: 'ZA', country: 'Mexico' },
+];

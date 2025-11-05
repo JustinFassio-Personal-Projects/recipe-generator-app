@@ -32,7 +32,7 @@ const getInitialData = (): OnboardingFormData => {
     try {
       return JSON.parse(stored);
     } catch (e) {
-      console.error('Failed to parse stored onboarding data:', e);
+      console.error('[Onboarding] Failed to parse stored onboarding data:', e);
     }
   }
 
@@ -80,7 +80,7 @@ export function useProfileOnboarding() {
   const saveToDatabase = useCallback(
     async (overrideData?: Partial<OnboardingFormData>): Promise<boolean> => {
       if (!user) {
-        console.error('❌ No user found');
+        console.error('[Onboarding] No user found');
         return false;
       }
 
@@ -90,13 +90,9 @@ export function useProfileOnboarding() {
         const dataToSave = overrideData
           ? { ...formData, ...overrideData }
           : formData;
-        console.log('💾 Saving onboarding data to database...');
-        console.log('User ID:', user.id);
-        console.log('Data to save:', dataToSave);
 
         // Save profile data
-        console.log('👤 Upserting profile data...');
-        const { data: profileData, error: profileError } = await supabase
+        const { error: profileError } = await supabase
           .from('profiles')
           .update({
             full_name: dataToSave.full_name,
@@ -112,14 +108,12 @@ export function useProfileOnboarding() {
           .select();
 
         if (profileError) {
-          console.error('❌ Profile update error:', profileError);
+          console.error('[Onboarding] Profile update error:', profileError);
           throw profileError;
         }
-        console.log('✅ Profile data saved successfully:', profileData);
 
         // Save user safety data (allergies, dietary restrictions, and medical conditions)
-        console.log('🛡️ Upserting user_safety data...');
-        const { data: safetyData, error: safetyError } = await supabase
+        const { error: safetyError } = await supabase
           .from('user_safety')
           .upsert(
             {
@@ -136,14 +130,12 @@ export function useProfileOnboarding() {
           .select();
 
         if (safetyError) {
-          console.error('❌ Safety data upsert error:', safetyError);
+          console.error('[Onboarding] Safety data upsert error:', safetyError);
           throw safetyError;
         }
-        console.log('✅ Safety data saved successfully:', safetyData);
 
         // Save cooking preferences
-        console.log('👨‍🍳 Upserting cooking preferences...');
-        const { data: cookingData, error: cookingError } = await supabase
+        const { error: cookingError } = await supabase
           .from('cooking_preferences')
           .upsert(
             {
@@ -161,22 +153,22 @@ export function useProfileOnboarding() {
           .select();
 
         if (cookingError) {
-          console.error('❌ Cooking preferences upsert error:', cookingError);
+          console.error(
+            '[Onboarding] Cooking preferences upsert error:',
+            cookingError
+          );
           throw cookingError;
         }
-        console.log('✅ Cooking preferences saved successfully:', cookingData);
 
         // Clear local storage
         localStorage.removeItem(STORAGE_KEY);
 
         // Refresh profile
-        console.log('🔄 Refreshing profile...');
         await refreshProfile();
-        console.log('✅ Profile refreshed successfully');
 
         return true;
       } catch (error) {
-        console.error('❌ Failed to save onboarding data:', error);
+        console.error('[Onboarding] Failed to save onboarding data:', error);
         return false;
       } finally {
         setIsSaving(false);

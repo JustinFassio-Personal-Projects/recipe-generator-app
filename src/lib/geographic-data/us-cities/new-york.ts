@@ -117,7 +117,6 @@ export const NEW_YORK_CITIES = [
   'Malone',
 
   // Finger Lakes
-  'Rochester',
   'Ithaca',
   'Elmira',
   'Corning',

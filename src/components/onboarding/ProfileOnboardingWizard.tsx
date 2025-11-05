@@ -105,7 +105,6 @@ export function ProfileOnboardingWizard({
     city: string | null;
   }) => {
     updateFormData(data);
-    console.log('🎯 Location data to save:', data);
     const success = await saveToDatabase(data);
     if (success) {
       handleNext();
@@ -153,10 +152,6 @@ export function ProfileOnboardingWizard({
   // Step 12: Disliked Ingredients (Optional)
   const handleDislikedIngredientsNext = async (value: string[]) => {
     updateFormData({ disliked_ingredients: value });
-    console.log('🎯 All collected data:', {
-      ...formData,
-      disliked_ingredients: value,
-    });
     const success = await saveToDatabase({ disliked_ingredients: value });
     if (success) {
       handleNext();

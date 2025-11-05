@@ -99,8 +99,6 @@ export type StateProvinceName =
   | 'Guerrero'
   | 'Hidalgo'
   | 'Jalisco'
-  | 'Mexico City'
-  | 'Mexico State'
   | 'Michoacán'
   | 'Morelos'
   | 'Nayarit'

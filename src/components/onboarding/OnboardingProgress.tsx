@@ -22,7 +22,9 @@ export function OnboardingProgress({
             initial={false}
             animate={{
               backgroundColor:
-                index <= current ? 'rgb(var(--primary))' : 'rgb(229, 231, 235)',
+                index <= current
+                  ? 'var(--color-primary)'
+                  : 'rgb(229, 231, 235)',
             }}
           />
         ))}

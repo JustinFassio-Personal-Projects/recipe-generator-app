@@ -14,7 +14,6 @@ export const TEXAS_CITIES = [
   'Lubbock',
 
   // Houston Metro
-  'Houston',
   'Pasadena',
   'Pearland',
   'League City',
@@ -54,7 +53,6 @@ export const TEXAS_CITIES = [
   'Allen',
   'Flower Mound',
   'Mesquite',
-  'Waco',
   'Wichita Falls',
   'Rowlett',
   'Grapevine',

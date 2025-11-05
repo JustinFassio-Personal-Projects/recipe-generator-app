@@ -7,6 +7,7 @@ import { MoodFilterSection } from '@/components/recipes/filters/MoodFilterSectio
 import { IngredientFilterSection } from '@/components/recipes/filters/IngredientFilterSection';
 import CategoryChip from '@/components/ui/CategoryChip';
 import { useSelections } from '@/contexts/SelectionContext';
+import type { Cuisine } from '@/lib/types';
 
 export interface CuisineCategorySelectorProps {
   onSelectionChange: (selection: {
@@ -67,11 +68,12 @@ export function CuisineCategorySelector({
     });
   };
 
-  const handleCuisinesChange = (cuisines: string[]) => {
-    updateSelections({ cuisines });
+  const handleCuisinesChange = (cuisines: Cuisine[]) => {
+    const cuisineStrings = cuisines as string[];
+    updateSelections({ cuisines: cuisineStrings });
     onSelectionChange({
       categories: selectedCategories,
-      cuisines,
+      cuisines: cuisineStrings,
       moods: selectedMoods,
       availableIngredients: selectedIngredients,
     });
@@ -163,7 +165,7 @@ export function CuisineCategorySelector({
 
           {/* Cuisine Filter */}
           <CuisineFilterSection
-            selectedCuisines={selectedCuisines}
+            selectedCuisines={selectedCuisines as Cuisine[]}
             onCuisinesChange={handleCuisinesChange}
             variant="dropdown"
             className="w-full sm:w-48"

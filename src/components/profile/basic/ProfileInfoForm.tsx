@@ -20,7 +20,7 @@ import {
   NORTH_AMERICAN_COUNTRIES,
   getStatesProvincesByCountry,
   getCitiesByStateProvince,
-} from '@/lib/geographic-data';
+} from '@/lib/geographic-data/';
 
 // Username validation constant
 const USERNAME_PATTERN = '^[a-z0-9_]+$';

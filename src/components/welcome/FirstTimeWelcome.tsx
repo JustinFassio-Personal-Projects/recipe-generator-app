@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChefHat, Sparkles, Zap } from 'lucide-react';
+import { ChefHat, Sparkles, Zap, User } from 'lucide-react';
+import { ProfileOnboardingWizard } from '@/components/onboarding/ProfileOnboardingWizard';
 
 interface FirstTimeWelcomeProps {
   onClose: () => void;
@@ -15,6 +16,7 @@ export function FirstTimeWelcome({
 }: FirstTimeWelcomeProps) {
   const navigate = useNavigate();
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const handleCreateRecipe = async () => {
     if (dontShowAgain && onDisablePermanently) {
@@ -31,6 +33,23 @@ export function FirstTimeWelcome({
     onClose();
     navigate('/explore');
   };
+
+  const handleCreateProfile = async () => {
+    if (dontShowAgain && onDisablePermanently) {
+      await onDisablePermanently();
+    }
+    setShowOnboarding(true);
+  };
+
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false);
+    onClose();
+  };
+
+  // Show onboarding wizard if user clicked Create Profile
+  if (showOnboarding) {
+    return <ProfileOnboardingWizard onClose={handleOnboardingClose} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -79,6 +98,20 @@ export function FirstTimeWelcome({
               <div className="font-semibold">Explore Other Creations</div>
               <div className="text-xs opacity-90">
                 Discover recipes from the community
+              </div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={handleCreateProfile}
+            className="w-full justify-start gap-3 bg-gradient-to-r from-purple-500 to-purple-600 py-6 text-left hover:from-purple-600 hover:to-purple-700"
+            size="lg"
+          >
+            <User className="h-5 w-5 flex-shrink-0" />
+            <div className="flex-1">
+              <div className="font-semibold">Create Profile</div>
+              <div className="text-xs opacity-90">
+                Set up your personalized cooking profile
               </div>
             </div>
           </Button>

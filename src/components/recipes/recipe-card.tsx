@@ -7,22 +7,24 @@ import {
   Trash2,
   Edit,
   Eye,
-  Share,
   Check,
-  Loader2,
   ShoppingCart,
+  Share,
+  Loader2,
 } from 'lucide-react';
 import { ProgressiveImage } from '@/components/shared/ProgressiveImage';
 import CategoryChip from '@/components/ui/CategoryChip';
 import { Badge } from '@/components/ui/badge';
+import { ShareButton } from '@/components/recipes/ShareButton';
 import { useIngredientMatching } from '@/hooks/useIngredientMatching';
 import type { Recipe, PublicRecipe } from '@/lib/types';
 import { getSafeImageUrl } from '@/lib/image-cache-utils';
 import { FALLBACK_IMAGE_PATH } from '@/lib/constants';
 import { useDeleteRecipe } from '@/hooks/use-recipes';
 import { useState } from 'react';
-import { recipeApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthProvider';
+import { recipeApi } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,10 +61,11 @@ export function RecipeCard({
   showEditDelete = true, // Default to true for backward compatibility
 }: RecipeCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isSharing, setIsSharing] = useState(false);
+  const [isTogglingPublic, setIsTogglingPublic] = useState(false);
   const [isPublic, setIsPublic] = useState(recipe.is_public);
   const deleteRecipe = useDeleteRecipe();
   const { user } = useAuth();
+  const { toast } = useToast();
   const ingredientMatching = useIngredientMatching();
 
   // Calculate compatibility
@@ -95,29 +98,57 @@ export function RecipeCard({
     setShowDeleteDialog(false);
   };
 
-  const handleShareToggle = async () => {
-    setIsSharing(true);
+  const handleShareSuccess = () => {
+    // Call the callback if it exists, handling both signature types
+    if (onShareToggle) {
+      if (onShareToggle.length === 2) {
+        // Callback expects (recipeId, isPublic) parameters
+        (onShareToggle as (recipeId: string, isPublic: boolean) => void)(
+          recipe.id,
+          recipe.is_public
+        );
+      } else {
+        // Callback expects no parameters
+        (onShareToggle as () => void)();
+      }
+    }
+  };
+
+  const handleTogglePublic = async () => {
+    setIsTogglingPublic(true);
     try {
       await recipeApi.toggleRecipePublic(recipe.id, !isPublic);
       setIsPublic(!isPublic);
-      // Call the callback if it exists, handling both signature types
+
+      toast({
+        title: !isPublic
+          ? 'Recipe shared to Explore'
+          : 'Recipe removed from Explore',
+        description: !isPublic
+          ? 'Your recipe is now visible on the Explore page'
+          : 'Your recipe is now private',
+      });
+
+      // Call the callback if it exists
       if (onShareToggle) {
         if (onShareToggle.length === 2) {
-          // Callback expects (recipeId, isPublic) parameters
           (onShareToggle as (recipeId: string, isPublic: boolean) => void)(
             recipe.id,
             !isPublic
           );
         } else {
-          // Callback expects no parameters
           (onShareToggle as () => void)();
         }
       }
     } catch (error) {
-      console.error('Error toggling recipe sharing:', error);
-      // No need to revert state - it was never changed if API call failed
+      console.error('Error toggling recipe public status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update recipe sharing status',
+        variant: 'destructive',
+      });
     } finally {
-      setIsSharing(false);
+      setIsTogglingPublic(false);
     }
   };
 
@@ -200,20 +231,46 @@ export function RecipeCard({
             </button>
           )}
           {canShare && (
-            <button
-              onClick={handleShareToggle}
-              disabled={isSharing}
-              className="btn btn-circle btn-ghost btn-sm bg-white/95 hover:bg-white border border-gray-200 hover:border-gray-300 shadow-lg disabled:opacity-50"
-              aria-label={isPublic ? 'Unshare recipe' : 'Share recipe'}
-            >
-              {isSharing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isPublic ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <Share className="h-4 w-4" />
-              )}
-            </button>
+            <>
+              {/* Share to Explore Page Toggle */}
+              <button
+                onClick={handleTogglePublic}
+                disabled={isTogglingPublic}
+                className={`btn btn-circle btn-ghost btn-sm bg-white/95 hover:bg-white border shadow-lg disabled:opacity-50 ${
+                  isPublic
+                    ? 'border-green-300 text-green-600 hover:text-green-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                aria-label={
+                  isPublic ? 'Remove from Explore' : 'Share to Explore'
+                }
+                title={
+                  isPublic
+                    ? 'Remove from Explore page'
+                    : 'Share to Explore page'
+                }
+              >
+                {isTogglingPublic ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isPublic ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Share className="h-4 w-4" />
+                )}
+              </button>
+
+              {/* Share Link Button */}
+              <div className="btn-circle btn-sm bg-white/95 hover:bg-white border border-gray-200 hover:border-gray-300 shadow-lg flex items-center justify-center">
+                <ShareButton
+                  recipe={recipe}
+                  variant="ghost"
+                  size="icon"
+                  showLabel={false}
+                  className="h-8 w-8 p-0 border-0 shadow-none"
+                  onShareSuccess={handleShareSuccess}
+                />
+              </div>
+            </>
           )}
           {showEditDelete && (
             <button

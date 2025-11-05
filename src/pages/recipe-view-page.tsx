@@ -1,9 +1,11 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useRecipe, usePublicRecipe } from '@/hooks/use-recipes';
 import { useState, useEffect, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { RecipeView } from '@/components/recipes/recipe-view';
 import { VersionSelector } from '@/components/recipes/version-selector';
 import { RecipeAnalyticsDashboard } from '@/components/recipes/recipe-analytics-dashboard';
+import { ShareButton } from '@/components/recipes/ShareButton';
 import { createDaisyUICardClasses } from '@/lib/card-migration';
 import { createDaisyUISkeletonClasses } from '@/lib/skeleton-migration';
 import { ChefHat, GitBranch, ArrowLeft } from 'lucide-react';
@@ -16,6 +18,11 @@ import { ratingApi } from '@/lib/api/features/rating-api';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { RecipeViewInstructionsModal } from '@/components/welcome/RecipeViewInstructionsModal';
+import {
+  generateRecipeMetaTags,
+  buildRecipeUrl,
+  truncateDescription,
+} from '@/utils/meta-tags';
 import type { Recipe, RecipeVersion } from '@/lib/types';
 
 export function RecipeViewPage() {
@@ -30,6 +37,10 @@ export function RecipeViewPage() {
   const requestedVersion = searchParams.get('version')
     ? parseInt(searchParams.get('version')!)
     : null;
+
+  // Extract share tracking parameters
+  const isSharedView = searchParams.get('shared') === 'true';
+  const shareRef = searchParams.get('ref') || undefined;
 
   // Debug route parameters
   console.log('🔍 [RecipeViewPage] Route debug:', {
@@ -398,6 +409,24 @@ export function RecipeViewPage() {
     }
   }, [recipe, isOwner]);
 
+  // Track share views when recipe is accessed via shared link
+  useEffect(() => {
+    if (recipe && isSharedView && id) {
+      const trackView = async () => {
+        try {
+          await recipeApi.trackShareView(id, shareRef, navigator.userAgent);
+          console.log('✅ Share view tracked:', {
+            recipe_id: id,
+            ref: shareRef,
+          });
+        } catch (error) {
+          console.error('❌ Failed to track share view:', error);
+        }
+      };
+      trackView();
+    }
+  }, [recipe, isSharedView, id, shareRef]);
+
   // CRITICAL: Handle invalid route parameter AFTER all hooks are declared
   // This prevents React Hooks violation
   const isValidUUID = (str: string): boolean => {
@@ -712,8 +741,36 @@ export function RecipeViewPage() {
     setShowVersions(true);
   };
 
+  // Generate meta tags for social sharing
+  const metaTags = recipe
+    ? generateRecipeMetaTags({
+        title: recipe.title,
+        description: recipe.description
+          ? truncateDescription(recipe.description, 160)
+          : `${recipe.title} - A delicious recipe with ${recipe.ingredients.length} ingredients`,
+        image: recipe.image_url,
+        url: buildRecipeUrl(recipe.id, { shared: isSharedView, ref: shareRef }),
+        siteName: 'Recipe Generator',
+        type: 'article',
+      })
+    : {};
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+      {/* Dynamic meta tags for social sharing */}
+      {recipe && (
+        <Helmet>
+          <title>{recipe.title} - Recipe Generator</title>
+          {Object.entries(metaTags).map(([key, value]) => {
+            if (key.startsWith('og:') || key.startsWith('twitter:')) {
+              return <meta key={key} property={key} content={value} />;
+            }
+            return <meta key={key} name={key} content={value} />;
+          })}
+          <link rel="canonical" href={buildRecipeUrl(recipe.id)} />
+        </Helmet>
+      )}
+
       {/* Recipe View Instructions Modal */}
       <RecipeViewInstructionsModal
         isOpen={showInstructions}
@@ -728,15 +785,27 @@ export function RecipeViewPage() {
             <div className="space-y-3 sm:space-y-0">
               {/* Top row: Back button and View Version (mobile: stacked, desktop: side by side) */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBack}
-                  className="text-gray-600 hover:text-gray-900 w-full sm:w-auto"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBack}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+
+                  {/* Share Button */}
+                  {recipe && (
+                    <ShareButton
+                      recipe={recipe}
+                      variant="outline"
+                      size="sm"
+                      showLabel={true}
+                    />
+                  )}
+                </div>
 
                 {/* View Version button - only show on desktop or when there are versions */}
                 {versions.length > 0 && (

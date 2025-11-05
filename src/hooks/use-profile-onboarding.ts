@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { supabase } from '@/lib/supabase';
 
@@ -64,6 +64,8 @@ export function useProfileOnboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  // Track if data was just loaded from database to avoid immediately persisting
+  const justLoadedFromDatabase = useRef(false);
 
   // Load existing profile data from database on mount
   useEffect(() => {
@@ -152,6 +154,8 @@ export function useProfileOnboarding() {
             cookingData?.disliked_ingredients ?? defaults.disliked_ingredients,
         };
 
+        // Mark that we just loaded from database
+        justLoadedFromDatabase.current = true;
         setFormData(mergedData);
       } catch (error) {
         console.error('[Onboarding] Failed to load existing profile:', error);
@@ -164,8 +168,16 @@ export function useProfileOnboarding() {
   }, [user]);
 
   // Persist to localStorage whenever formData changes (but only after initial load)
+  // Skip persistence if data was just loaded from database (user hasn't modified it yet)
   useEffect(() => {
     if (!isLoadingProfile) {
+      // If data was just loaded from database, skip the first persistence
+      // This allows user modifications to persist, but prevents overwriting
+      // localStorage with database data that hasn't been modified
+      if (justLoadedFromDatabase.current) {
+        justLoadedFromDatabase.current = false;
+        return;
+      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
     }
   }, [formData, isLoadingProfile]);

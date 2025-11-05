@@ -413,7 +413,9 @@ export function ViewRecipePage() {
     if (recipe && isSharedView && id) {
       const trackView = async () => {
         try {
-          await recipeApi.trackShareView(id, shareRef, navigator.userAgent);
+          const userAgent =
+            typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
+          await recipeApi.trackShareView(id, shareRef, userAgent);
           console.log('✅ Share view tracked:', {
             recipe_id: id,
             ref: shareRef,
@@ -761,6 +763,9 @@ export function ViewRecipePage() {
         <Helmet>
           <title>{recipe.title} - Recipe Generator</title>
           {Object.entries(metaTags).map(([key, value]) => {
+            // generateRecipeMetaTags currently only returns keys starting with 'og:' or 'twitter:'
+            // Both use the 'property' attribute. The fallback is kept for future extensibility
+            // if additional meta tag types are added (e.g., standard HTML meta tags with 'name' attribute)
             if (key.startsWith('og:') || key.startsWith('twitter:')) {
               return <meta key={key} property={key} content={value} />;
             }

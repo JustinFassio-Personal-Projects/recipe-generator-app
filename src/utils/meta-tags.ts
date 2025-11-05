@@ -111,11 +111,17 @@ export function truncateDescription(
     return description;
   }
 
-  // Truncate at word boundary
-  const truncated = description.substring(0, maxLength);
+  // Truncate at word boundary, accounting for 3-character ellipsis
+  // Search within maxLength - 3 to ensure we never exceed maxLength
+  const searchLength = maxLength - 3;
+  const truncated = description.substring(0, searchLength);
   const lastSpace = truncated.lastIndexOf(' ');
 
-  return lastSpace > 0
-    ? truncated.substring(0, lastSpace) + '...'
-    : truncated + '...';
+  if (lastSpace > 0) {
+    // Found word boundary - truncate there
+    return truncated.substring(0, lastSpace) + '...';
+  } else {
+    // No word boundary found - hard truncate to ensure we never exceed maxLength
+    return description.substring(0, maxLength - 3) + '...';
+  }
 }

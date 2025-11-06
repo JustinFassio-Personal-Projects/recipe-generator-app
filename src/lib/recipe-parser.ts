@@ -813,7 +813,10 @@ function extractFromUnstructuredText(text: string): ParsedRecipe {
   const categories = extractCategoriesFromMarkdown(text);
 
   // Generate description
-  const description = generateRecipeDescription('Recipe from Text', ingredients);
+  const description = generateRecipeDescription(
+    'Recipe from Text',
+    ingredients
+  );
 
   return {
     title: 'Recipe from Text',

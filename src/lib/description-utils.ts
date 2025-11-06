@@ -18,4 +18,3 @@ export function generateRecipeDescription(
 
   return `A flavorful ${normalizedTitle.toLowerCase()} recipe.`;
 }
-

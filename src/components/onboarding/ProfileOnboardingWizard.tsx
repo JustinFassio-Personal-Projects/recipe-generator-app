@@ -34,6 +34,7 @@ export function ProfileOnboardingWizard({
     nextStep: handleNext,
     prevStep: handleBack,
     saveToDatabase,
+    isLoadingProfile,
   } = useProfileOnboarding();
 
   const handleReviewProfile = () => {
@@ -286,6 +287,16 @@ export function ProfileOnboardingWizard({
         return <WelcomeStep onNext={handleWelcomeNext} />;
     }
   };
+
+  // Show loading state while fetching existing profile data
+  if (isLoadingProfile) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <p className="mt-4 text-gray-600">Loading your profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-white">

@@ -34,6 +34,7 @@ import { recipeApi } from '@/lib/api';
 import { Recipe } from '@/lib/types';
 import { RecipeVersions } from './recipe-versions';
 import { ProgressiveImage } from '@/components/shared/ProgressiveImage';
+import { useHasPremiumAccess } from '@/hooks/useSubscription';
 
 interface RecipeFormProps {
   recipe?: Recipe;
@@ -56,6 +57,7 @@ export function RecipeForm({
   const updateRecipe = useUpdateRecipe();
   const uploadImage = useUploadImage();
   const autoImageGeneration = useAutoImageGeneration();
+  const { hasAccess, isLoading: isSubscriptionLoading } = useHasPremiumAccess();
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -71,6 +73,14 @@ export function RecipeForm({
   const [isMobile, setIsMobile] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+
+  // Scroll to top when component mounts (only if initialData is not present)
+  // If initialData is present, the effect below will handle scrolling after form is populated
+  useEffect(() => {
+    if (!initialData) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [initialData]);
 
   // Cleanup effect to prevent memory leaks
   useEffect(() => {
@@ -161,8 +171,12 @@ export function RecipeForm({
     name: 'setup' as FieldArrayPath<RecipeFormData>,
   });
 
+  // Scroll to top when form is loaded with parsed recipe data
   useEffect(() => {
     if (initialData) {
+      // Scroll to top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
       reset({
         title: initialData.title || '',
         description: initialData.description || '',
@@ -327,6 +341,23 @@ export function RecipeForm({
   const onSubmit = async (data: RecipeFormData) => {
     console.log('🚀 FORM SUBMIT TRIGGERED - Starting recipe submission');
     let uploadedImageUrl: string | null = null;
+
+    // Check subscription for new recipes (AI-created recipes)
+    if (!existingRecipe) {
+      // Block save if user doesn't have premium access
+      // Note: Button is already disabled when isSubscriptionLoading is true,
+      // so this check handles the case when subscription status is known
+      if (!hasAccess) {
+        toast({
+          title: 'Premium Subscription Required',
+          description:
+            'You need a premium subscription to save AI-created recipes. Start your free trial today!',
+          variant: 'destructive',
+        });
+        navigate('/subscription');
+        return;
+      }
+    }
 
     try {
       // Mobile-specific debugging
@@ -886,7 +917,8 @@ export function RecipeForm({
             createRecipe.isPending ||
             updateRecipe.isPending ||
             uploadImage.isPending ||
-            !isOnline
+            !isOnline ||
+            (!existingRecipe && isSubscriptionLoading)
           }
         >
           {createRecipe.isPending ||

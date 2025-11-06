@@ -74,10 +74,13 @@ export function RecipeForm({
   const [lastError, setLastError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Scroll to top when component mounts
+  // Scroll to top when component mounts (only if initialData is not present)
+  // If initialData is present, the effect below will handle scrolling after form is populated
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    if (!initialData) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [initialData]);
 
   // Cleanup effect to prevent memory leaks
   useEffect(() => {
@@ -341,16 +344,9 @@ export function RecipeForm({
 
     // Check subscription for new recipes (AI-created recipes)
     if (!existingRecipe) {
-      // Handle loading state
-      if (isSubscriptionLoading) {
-        toast({
-          title: 'Checking subscription...',
-          description: 'Please wait while we verify your subscription status.',
-        });
-        return;
-      }
-
       // Block save if user doesn't have premium access
+      // Note: Button is already disabled when isSubscriptionLoading is true,
+      // so this check handles the case when subscription status is known
       if (!hasAccess) {
         toast({
           title: 'Premium Subscription Required',

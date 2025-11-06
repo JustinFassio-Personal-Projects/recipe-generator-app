@@ -918,7 +918,7 @@ export function RecipeForm({
             updateRecipe.isPending ||
             uploadImage.isPending ||
             !isOnline ||
-            (!existingRecipe && isSubscriptionLoading)
+            (!existingRecipe && isSubscriptionLoading) // Disable if new recipe and subscription is loading
           }
         >
           {createRecipe.isPending ||

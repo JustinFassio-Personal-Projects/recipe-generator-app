@@ -1,4 +1,5 @@
 import type { RecipeFormData } from './schemas';
+import { generateRecipeDescription } from './description-utils';
 
 /**
  * Unified Recipe Parser - Single source of truth for all recipe parsing
@@ -108,10 +109,27 @@ function tryParseStructuredJSON(content: string): RecipeParseResult {
       return { success: false };
     }
 
+    const normalizedIngredients = normalizeIngredients(parsed.ingredients);
+
+    // Extract description or generate one if missing
+    let description = '';
+    if (
+      parsed.description &&
+      typeof parsed.description === 'string' &&
+      parsed.description.trim()
+    ) {
+      description = parsed.description.trim();
+    } else {
+      description = generateRecipeDescription(
+        String(parsed.title),
+        normalizedIngredients
+      );
+    }
+
     const recipe: RecipeFormData = {
       title: String(parsed.title),
-      description: String(parsed.description || ''),
-      ingredients: normalizeIngredients(parsed.ingredients),
+      description,
+      ingredients: normalizedIngredients,
       instructions: String(parsed.instructions),
       notes: String(parsed.notes || ''),
       categories: Array.isArray(parsed.categories)
@@ -317,9 +335,15 @@ function tryPatternParsing(content: string): RecipeParseResult {
       return { success: false };
     }
 
+    // Generate description if not found
+    const description = generateRecipeDescription(
+      title || 'Untitled Recipe',
+      ingredients
+    );
+
     const recipe: RecipeFormData = {
       title,
-      description: '',
+      description,
       ingredients,
       instructions: instructions.join('\n'),
       notes: '',

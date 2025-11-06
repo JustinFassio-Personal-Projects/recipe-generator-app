@@ -10,6 +10,7 @@ import {
   standardizeRecipeWithAI,
   convertToParsedRecipe,
 } from './recipe-standardizer';
+import { generateRecipeDescription } from './description-utils';
 
 // Convert markdown formatting to plain text
 function convertMarkdownToPlainText(text: string): string {
@@ -135,8 +136,16 @@ function parseJsonRecipe(parsed: Record<string, unknown>): ParsedRecipe {
   const notes = parseNotes(parsed);
   const categories = parseCategories(parsed);
   const setup = parseSetup(parsed);
-  const description =
-    typeof parsed.description === 'string' ? parsed.description : '';
+
+  // Extract description or generate one if missing
+  let description =
+    typeof parsed.description === 'string' && parsed.description.trim()
+      ? parsed.description.trim()
+      : '';
+
+  if (!description) {
+    description = generateRecipeDescription(title, ingredients);
+  }
 
   return {
     title,
@@ -732,9 +741,15 @@ function parseFlexibleRecipe(text: string): ParsedRecipe {
   // Extract categories from markdown text
   const categories = extractCategoriesFromMarkdown(text);
 
+  // Generate description if not found
+  const description = generateRecipeDescription(
+    title || 'Untitled Recipe',
+    ingredients
+  );
+
   return {
     title,
-    description: '',
+    description,
     ingredients,
     instructions: instructions.join('\n'),
     notes: notes.join('\n'),
@@ -797,9 +812,15 @@ function extractFromUnstructuredText(text: string): ParsedRecipe {
   // Extract categories from unstructured text
   const categories = extractCategoriesFromMarkdown(text);
 
+  // Generate description
+  const description = generateRecipeDescription(
+    'Recipe from Text',
+    ingredients
+  );
+
   return {
     title: 'Recipe from Text',
-    description: '',
+    description,
     ingredients,
     instructions: instructions.join('\n'),
     notes: '',

@@ -1,4 +1,6 @@
 // Standardized recipe format interface
+import { generateRecipeDescription } from './description-utils';
+
 export interface StandardizedRecipe {
   title: string;
   description: string;
@@ -81,8 +83,9 @@ export async function standardizeRecipeWithAI(
 /**
  * Minimum length for a line to be considered as description text
  * Lines shorter than this are likely formatting artifacts or incomplete text
+ * Reduced from 20 to 10 to capture shorter but valid description lines
  */
-const MIN_DESCRIPTION_LINE_LENGTH = 20;
+const MIN_DESCRIPTION_LINE_LENGTH = 10;
 
 /**
  * Parse the AI-standardized recipe text into structured format
@@ -160,11 +163,16 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
     // Skip section headers - they're handled by the section detection below
     if (foundTitle && !currentSection && !line.startsWith('## ')) {
       // This is descriptive text between title and first section
+      // More lenient: accept lines that are descriptive text (not list items or numbers)
       if (
         line.length > MIN_DESCRIPTION_LINE_LENGTH &&
         !line.startsWith('- ') &&
         !line.startsWith('* ') &&
-        !/^\d+\./.test(line)
+        !line.startsWith('• ') &&
+        !/^\d+\./.test(line) &&
+        !line.match(
+          /^(ingredient|instruction|setup|prep|note|category|cuisine|course|technique):/i
+        )
       ) {
         if (description) {
           description += ' ' + line;
@@ -239,9 +247,18 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
     notes.unshift(`Categories: ${categories.join(', ')}`);
   }
 
+  // If no description was extracted, generate one from title and ingredients
+  let finalDescription = description.trim();
+  if (!finalDescription) {
+    finalDescription = generateRecipeDescription(
+      title || 'Untitled Recipe',
+      ingredients
+    );
+  }
+
   return {
     title: title || 'Untitled Recipe',
-    description: description.trim(),
+    description: finalDescription,
     setup,
     ingredients,
     instructions,

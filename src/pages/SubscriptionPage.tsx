@@ -152,7 +152,7 @@ export function SubscriptionPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4 mb-6">
-                <Feature text="Unlimited AI recipe generation" />
+                <Feature text="AI recipe generation" />
                 <Feature text="Advanced recipe customization" />
                 <Feature text="AI-powered meal planning" />
                 <Feature text="Smart grocery list optimization" />
@@ -201,7 +201,7 @@ export function SubscriptionPage() {
               <CardTitle className="text-lg">What's Included</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Feature text="No limits on AI recipe requests" />
+              <Feature text="AI image generation" />
               <Feature text="Access to all premium features" />
               <Feature text="Regular updates and improvements" />
             </CardContent>

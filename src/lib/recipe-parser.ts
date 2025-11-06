@@ -135,8 +135,20 @@ function parseJsonRecipe(parsed: Record<string, unknown>): ParsedRecipe {
   const notes = parseNotes(parsed);
   const categories = parseCategories(parsed);
   const setup = parseSetup(parsed);
-  const description =
-    typeof parsed.description === 'string' ? parsed.description : '';
+
+  // Extract description or generate one if missing
+  let description =
+    typeof parsed.description === 'string' && parsed.description.trim()
+      ? parsed.description.trim()
+      : '';
+
+  // Generate description if not provided
+  if (!description && ingredients.length > 0) {
+    const mainIngredients = ingredients.slice(0, 3).join(', ');
+    description = `A delicious ${title.toLowerCase()} featuring ${mainIngredients}.`;
+  } else if (!description) {
+    description = `A flavorful ${title.toLowerCase()} recipe.`;
+  }
 
   return {
     title,
@@ -732,9 +744,18 @@ function parseFlexibleRecipe(text: string): ParsedRecipe {
   // Extract categories from markdown text
   const categories = extractCategoriesFromMarkdown(text);
 
+  // Generate description if not found
+  let description = '';
+  if (ingredients.length > 0) {
+    const mainIngredients = ingredients.slice(0, 3).join(', ');
+    description = `A delicious ${title.toLowerCase()} featuring ${mainIngredients}.`;
+  } else {
+    description = `A flavorful ${title.toLowerCase()} recipe.`;
+  }
+
   return {
     title,
-    description: '',
+    description,
     ingredients,
     instructions: instructions.join('\n'),
     notes: notes.join('\n'),
@@ -797,9 +818,18 @@ function extractFromUnstructuredText(text: string): ParsedRecipe {
   // Extract categories from unstructured text
   const categories = extractCategoriesFromMarkdown(text);
 
+  // Generate description
+  let description = '';
+  if (ingredients.length > 0) {
+    const mainIngredients = ingredients.slice(0, 3).join(', ');
+    description = `A delicious recipe featuring ${mainIngredients}.`;
+  } else {
+    description = 'A flavorful recipe.';
+  }
+
   return {
     title: 'Recipe from Text',
-    description: '',
+    description,
     ingredients,
     instructions: instructions.join('\n'),
     notes: '',

@@ -108,9 +108,28 @@ function tryParseStructuredJSON(content: string): RecipeParseResult {
       return { success: false };
     }
 
+    // Extract description or generate one if missing
+    let description = '';
+    if (
+      parsed.description &&
+      typeof parsed.description === 'string' &&
+      parsed.description.trim()
+    ) {
+      description = parsed.description.trim();
+    } else {
+      // Generate description from title and ingredients
+      const ingredients = normalizeIngredients(parsed.ingredients);
+      if (ingredients.length > 0) {
+        const mainIngredients = ingredients.slice(0, 3).join(', ');
+        description = `A delicious ${String(parsed.title).toLowerCase()} featuring ${mainIngredients}.`;
+      } else {
+        description = `A flavorful ${String(parsed.title).toLowerCase()} recipe.`;
+      }
+    }
+
     const recipe: RecipeFormData = {
       title: String(parsed.title),
-      description: String(parsed.description || ''),
+      description,
       ingredients: normalizeIngredients(parsed.ingredients),
       instructions: String(parsed.instructions),
       notes: String(parsed.notes || ''),
@@ -317,9 +336,18 @@ function tryPatternParsing(content: string): RecipeParseResult {
       return { success: false };
     }
 
+    // Generate description if not found
+    let description = '';
+    if (ingredients.length > 0) {
+      const mainIngredients = ingredients.slice(0, 3).join(', ');
+      description = `A delicious ${title.toLowerCase()} featuring ${mainIngredients}.`;
+    } else {
+      description = `A flavorful ${title.toLowerCase()} recipe.`;
+    }
+
     const recipe: RecipeFormData = {
       title,
-      description: '',
+      description,
       ingredients,
       instructions: instructions.join('\n'),
       notes: '',

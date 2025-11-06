@@ -10,6 +10,7 @@ import {
   standardizeRecipeWithAI,
   convertToParsedRecipe,
 } from './recipe-standardizer';
+import { generateRecipeDescription } from './description-utils';
 
 // Convert markdown formatting to plain text
 function convertMarkdownToPlainText(text: string): string {
@@ -142,12 +143,8 @@ function parseJsonRecipe(parsed: Record<string, unknown>): ParsedRecipe {
       ? parsed.description.trim()
       : '';
 
-  // Generate description if not provided
-  if (!description && ingredients.length > 0) {
-    const mainIngredients = ingredients.slice(0, 3).join(', ');
-    description = `A delicious ${title.toLowerCase()} featuring ${mainIngredients}.`;
-  } else if (!description) {
-    description = `A flavorful ${title.toLowerCase()} recipe.`;
+  if (!description) {
+    description = generateRecipeDescription(title, ingredients);
   }
 
   return {
@@ -745,13 +742,10 @@ function parseFlexibleRecipe(text: string): ParsedRecipe {
   const categories = extractCategoriesFromMarkdown(text);
 
   // Generate description if not found
-  let description = '';
-  if (ingredients.length > 0) {
-    const mainIngredients = ingredients.slice(0, 3).join(', ');
-    description = `A delicious ${title.toLowerCase()} featuring ${mainIngredients}.`;
-  } else {
-    description = `A flavorful ${title.toLowerCase()} recipe.`;
-  }
+  const description = generateRecipeDescription(
+    title || 'Untitled Recipe',
+    ingredients
+  );
 
   return {
     title,
@@ -819,13 +813,7 @@ function extractFromUnstructuredText(text: string): ParsedRecipe {
   const categories = extractCategoriesFromMarkdown(text);
 
   // Generate description
-  let description = '';
-  if (ingredients.length > 0) {
-    const mainIngredients = ingredients.slice(0, 3).join(', ');
-    description = `A delicious recipe featuring ${mainIngredients}.`;
-  } else {
-    description = 'A flavorful recipe.';
-  }
+  const description = generateRecipeDescription('Recipe from Text', ingredients);
 
   return {
     title: 'Recipe from Text',

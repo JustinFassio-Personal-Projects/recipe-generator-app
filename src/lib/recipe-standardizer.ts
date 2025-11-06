@@ -1,4 +1,6 @@
 // Standardized recipe format interface
+import { generateRecipeDescription } from './description-utils';
+
 export interface StandardizedRecipe {
   title: string;
   description: string;
@@ -247,13 +249,11 @@ function parseStandardizedRecipe(text: string): StandardizedRecipe {
 
   // If no description was extracted, generate one from title and ingredients
   let finalDescription = description.trim();
-  if (!finalDescription && title && ingredients.length > 0) {
-    // Generate a basic description from available information
-    const mainIngredients = ingredients.slice(0, 3).join(', ');
-    finalDescription = `A delicious ${title.toLowerCase()} featuring ${mainIngredients}.`;
-  } else if (!finalDescription) {
-    // Last resort: use title as description base
-    finalDescription = `A flavorful ${title.toLowerCase()} recipe.`;
+  if (!finalDescription) {
+    finalDescription = generateRecipeDescription(
+      title || 'Untitled Recipe',
+      ingredients
+    );
   }
 
   return {

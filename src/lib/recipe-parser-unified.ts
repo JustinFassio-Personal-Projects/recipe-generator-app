@@ -1,4 +1,5 @@
 import type { RecipeFormData } from './schemas';
+import { generateRecipeDescription } from './description-utils';
 
 /**
  * Unified Recipe Parser - Single source of truth for all recipe parsing
@@ -108,6 +109,8 @@ function tryParseStructuredJSON(content: string): RecipeParseResult {
       return { success: false };
     }
 
+    const normalizedIngredients = normalizeIngredients(parsed.ingredients);
+
     // Extract description or generate one if missing
     let description = '';
     if (
@@ -117,20 +120,16 @@ function tryParseStructuredJSON(content: string): RecipeParseResult {
     ) {
       description = parsed.description.trim();
     } else {
-      // Generate description from title and ingredients
-      const ingredients = normalizeIngredients(parsed.ingredients);
-      if (ingredients.length > 0) {
-        const mainIngredients = ingredients.slice(0, 3).join(', ');
-        description = `A delicious ${String(parsed.title).toLowerCase()} featuring ${mainIngredients}.`;
-      } else {
-        description = `A flavorful ${String(parsed.title).toLowerCase()} recipe.`;
-      }
+      description = generateRecipeDescription(
+        String(parsed.title),
+        normalizedIngredients
+      );
     }
 
     const recipe: RecipeFormData = {
       title: String(parsed.title),
       description,
-      ingredients: normalizeIngredients(parsed.ingredients),
+      ingredients: normalizedIngredients,
       instructions: String(parsed.instructions),
       notes: String(parsed.notes || ''),
       categories: Array.isArray(parsed.categories)
@@ -337,13 +336,10 @@ function tryPatternParsing(content: string): RecipeParseResult {
     }
 
     // Generate description if not found
-    let description = '';
-    if (ingredients.length > 0) {
-      const mainIngredients = ingredients.slice(0, 3).join(', ');
-      description = `A delicious ${title.toLowerCase()} featuring ${mainIngredients}.`;
-    } else {
-      description = `A flavorful ${title.toLowerCase()} recipe.`;
-    }
+    const description = generateRecipeDescription(
+      title || 'Untitled Recipe',
+      ingredients
+    );
 
     const recipe: RecipeFormData = {
       title,

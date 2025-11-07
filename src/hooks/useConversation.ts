@@ -4,6 +4,11 @@ import type { RecipeFormData } from '@/lib/schemas';
 import { toast } from '@/hooks/use-toast';
 import { parseRecipeFromText } from '@/lib/recipe-parser';
 import { useAuth } from '@/contexts/AuthProvider';
+import {
+  createConversationThread,
+  saveMessage,
+  linkConversationToReport,
+} from '@/lib/conversation-db';
 
 // Helper function to validate and convert ingredients to strings
 function validateAndConvertIngredients(ingredients: unknown): string[] {
@@ -94,6 +99,11 @@ export function useConversation(
   const [showSaveRecipeButton, setShowSaveRecipeButton] = useState(false);
   const [hasEvaluationReport, setHasEvaluationReport] = useState(false);
   const [generatedEvaluationReport, setGeneratedEvaluationReport] = useState<
+    string | null
+  >(null);
+
+  // Conversation persistence state
+  const [conversationThreadId, setConversationThreadId] = useState<
     string | null
   >(null);
 
@@ -238,6 +248,24 @@ I'll ensure all recommendations are safe for your dietary needs and tailored to 
       };
 
       setMessages([welcomeMessage]);
+
+      // Create conversation thread for persistence
+      if (user?.id && selectedPersona === 'drLunaClearwater') {
+        try {
+          const thread = await createConversationThread(
+            user.id,
+            selectedPersona,
+            `Dr. Luna Conversation - ${new Date().toLocaleDateString()}`
+          );
+          setConversationThreadId(thread.id);
+
+          // Save welcome message
+          await saveMessage(thread.id, 'assistant', welcomeContent);
+          console.log('Conversation thread created:', thread.id);
+        } catch (error) {
+          console.error('Failed to create conversation thread:', error);
+        }
+      }
     },
     [user?.id]
   );
@@ -300,6 +328,15 @@ I'll ensure all recommendations are safe for your dietary needs and tailored to 
       setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
 
+      // Save user message to database if Dr. Luna conversation
+      if (conversationThreadId && persona === 'drLunaClearwater') {
+        try {
+          await saveMessage(conversationThreadId, 'user', enhancedContent);
+        } catch (error) {
+          console.error('Failed to save user message:', error);
+        }
+      }
+
       try {
         // Use smart routing to handle both Assistant API and Chat Completions
         const response = await openaiAPI.sendMessageWithPersona(
@@ -323,6 +360,19 @@ I'll ensure all recommendations are safe for your dietary needs and tailored to 
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
+
+        // Save assistant message to database if Dr. Luna conversation
+        if (conversationThreadId && persona === 'drLunaClearwater') {
+          try {
+            await saveMessage(
+              conversationThreadId,
+              'assistant',
+              response.message
+            );
+          } catch (error) {
+            console.error('Failed to save assistant message:', error);
+          }
+        }
 
         // Check if AI is asking if user is ready to save the recipe
         // Regex pattern to detect if the AI is prompting the user to save or finalize a recipe.
@@ -1062,10 +1112,36 @@ Generate realistic data based on our conversation.`,
       }
 
       // Save the evaluation report
-      saveReport(
+      await saveReport(
         user.id,
         reportData as unknown as Parameters<typeof saveReport>[1]
       );
+
+      // Link conversation to evaluation report if we have a conversation thread
+      if (conversationThreadId && reportData.user_evaluation_report) {
+        try {
+          const reportId = (
+            reportData.user_evaluation_report as { report_id: string }
+          ).report_id;
+          if (reportId) {
+            // Query database directly for the report's database ID
+            const { supabase } = await import('@/lib/supabase');
+            const { data: dbReport, error: queryError } = await supabase
+              .from('evaluation_reports')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('report_id', reportId)
+              .single();
+
+            if (!queryError && dbReport?.id) {
+              await linkConversationToReport(conversationThreadId, dbReport.id);
+              console.log('Conversation linked to evaluation report');
+            }
+          }
+        } catch (linkError) {
+          console.error('Failed to link conversation to report:', linkError);
+        }
+      }
 
       toast({
         title: 'Evaluation Report Saved!',

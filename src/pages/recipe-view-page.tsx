@@ -22,6 +22,7 @@ import {
   generateRecipeMetaTags,
   buildRecipeUrl,
   truncateDescription,
+  generateRecipeStructuredData,
 } from '@/utils/meta-tags';
 import type { Recipe, RecipeVersion } from '@/lib/types';
 
@@ -752,22 +753,59 @@ export function RecipeViewPage() {
         url: buildRecipeUrl(recipe.id, { shared: isSharedView, ref: shareRef }),
         siteName: 'Recipe Generator',
         type: 'article',
+        ingredientsCount: recipe.ingredients.length,
+        cookingTime: recipe.cooking_time || undefined,
+        difficulty: recipe.difficulty || undefined,
       })
     : {};
+
+  // Generate structured data for SEO
+  const structuredData = recipe
+    ? generateRecipeStructuredData({
+        name: recipe.title,
+        description: recipe.description || undefined,
+        image: recipe.image_url || undefined,
+        ingredients: recipe.ingredients as Array<
+          string | { name?: string | null }
+        >,
+        instructions: recipe.instructions,
+        url: buildRecipeUrl(recipe.id),
+        cookingTime: recipe.cooking_time || undefined,
+        recipeCategory: recipe.categories,
+        datePublished: recipe.created_at,
+      })
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
       {/* Dynamic meta tags for social sharing */}
       {recipe && (
         <Helmet>
-          <title>{recipe.title} - Recipe Generator</title>
+          <title>{recipe.title} | Recipe Generator</title>
+          <meta
+            name="description"
+            content={
+              recipe.description
+                ? truncateDescription(recipe.description, 160)
+                : `${recipe.title} - A delicious recipe with ${recipe.ingredients.length} ingredients`
+            }
+          />
           {Object.entries(metaTags).map(([key, value]) => {
+            // Skip empty values
+            if (!value) return null;
+
             if (key.startsWith('og:') || key.startsWith('twitter:')) {
               return <meta key={key} property={key} content={value} />;
             }
             return <meta key={key} name={key} content={value} />;
           })}
           <link rel="canonical" href={buildRecipeUrl(recipe.id)} />
+          {/* Recipe Structured Data (JSON-LD) for SEO */}
+          {structuredData && (
+            <script type="application/ld+json">
+              {JSON.stringify(structuredData)}
+            </script>
+          )}
         </Helmet>
       )}
 

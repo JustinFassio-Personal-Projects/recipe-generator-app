@@ -25,6 +25,7 @@ import {
   generateRecipeMetaTags,
   buildRecipeUrl,
   truncateDescription,
+  generateRecipeStructuredData,
 } from '@/utils/meta-tags';
 import type { Recipe, RecipeVersion } from '@/lib/types';
 
@@ -755,15 +756,43 @@ export function ViewRecipePage() {
         url: buildRecipeUrl(recipe.id, { shared: isSharedView, ref: shareRef }),
         siteName: 'Recipe Generator',
         type: 'article',
+        ingredientsCount: metaRecipe.ingredients.length,
+        cookingTime: metaRecipe.cooking_time || undefined,
+        difficulty: metaRecipe.difficulty || undefined,
       })
     : {};
+
+  // Generate structured data for SEO
+  const structuredData = metaRecipe
+    ? generateRecipeStructuredData({
+        name: metaRecipe.title,
+        description: metaRecipe.description || undefined,
+        image: metaRecipe.image_url || undefined,
+        ingredients: metaRecipe.ingredients as Array<
+          string | { name?: string | null }
+        >,
+        instructions: metaRecipe.instructions,
+        url: buildRecipeUrl(recipe.id),
+        cookingTime: metaRecipe.cooking_time || undefined,
+        recipeCategory: metaRecipe.categories,
+        datePublished: metaRecipe.created_at,
+      })
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
       {/* Dynamic meta tags for social sharing */}
       {recipe && metaRecipe && (
         <Helmet>
-          <title>{metaRecipe.title} - Recipe Generator</title>
+          <title>{metaRecipe.title} | Recipe Generator</title>
+          <meta
+            name="description"
+            content={
+              metaRecipe.description
+                ? truncateDescription(metaRecipe.description, 160)
+                : `${metaRecipe.title} - A delicious recipe with ${metaRecipe.ingredients.length} ingredients`
+            }
+          />
           {Object.entries(metaTags).map(([key, value]) => {
             // Skip empty values (e.g., missing image)
             if (!value) return null;
@@ -777,6 +806,12 @@ export function ViewRecipePage() {
             return <meta key={key} name={key} content={value} />;
           })}
           <link rel="canonical" href={buildRecipeUrl(recipe.id)} />
+          {/* Recipe Structured Data (JSON-LD) for SEO */}
+          {structuredData && (
+            <script type="application/ld+json">
+              {JSON.stringify(structuredData)}
+            </script>
+          )}
         </Helmet>
       )}
 

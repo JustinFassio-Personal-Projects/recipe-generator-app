@@ -93,7 +93,13 @@ export function generateOpenGraphTags(
   const absoluteImageUrl = ensureAbsoluteImageUrl(imageUrl);
 
   tags['og:image'] = absoluteImageUrl;
-  tags['og:image:secure_url'] = absoluteImageUrl.replace('http://', 'https://');
+  // Only set secure_url if the original URL is HTTP (not HTTPS)
+  if (absoluteImageUrl.startsWith('http://')) {
+    tags['og:image:secure_url'] = absoluteImageUrl.replace(
+      /^http:\/\//,
+      'https://'
+    );
+  }
   tags['og:image:alt'] = recipe.title;
   tags['og:image:width'] = '1200';
   tags['og:image:height'] = '630';

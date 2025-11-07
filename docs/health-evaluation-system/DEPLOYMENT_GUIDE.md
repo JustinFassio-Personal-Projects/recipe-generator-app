@@ -34,7 +34,7 @@ supabase db pull
 
 1. Open Supabase Dashboard
 2. Go to SQL Editor
-3. Open the migration file: `supabase/migrations/20250107000000_health_evaluation_system.sql`
+3. Open the migration file: `supabase/migrations/20251107000000_health_evaluation_system.sql`
 4. Copy the entire contents
 5. Paste into SQL Editor and execute
 6. Verify all tables created successfully

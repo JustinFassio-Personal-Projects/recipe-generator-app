@@ -13,7 +13,7 @@
 
 #### 1.1 Database Schema ✅
 
-**File:** `supabase/migrations/20250107000000_health_evaluation_system.sql`
+**File:** `supabase/migrations/20251107000000_health_evaluation_system.sql`
 
 - ✅ `conversation_threads` - Chat session persistence
 - ✅ `conversation_messages` - Message storage with context
@@ -421,7 +421,7 @@ All functions are documented with JSDoc comments including:
 
 **Core Libraries (11 files):**
 
-1. `supabase/migrations/20250107000000_health_evaluation_system.sql`
+1. `supabase/migrations/20251107000000_health_evaluation_system.sql`
 2. `src/lib/conversation-db.ts`
 3. `src/lib/progress-tracking-api.ts`
 4. `src/lib/progress-analysis/comparison-engine.ts`

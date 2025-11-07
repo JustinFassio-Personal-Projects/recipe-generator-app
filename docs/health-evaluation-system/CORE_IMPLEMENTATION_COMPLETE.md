@@ -39,7 +39,7 @@ The health evaluation system's core backend has been **fully implemented** and i
 
 **Database & Infrastructure:**
 
-1. `supabase/migrations/20250107000000_health_evaluation_system.sql` - Complete database schema
+1. `supabase/migrations/20251107000000_health_evaluation_system.sql` - Complete database schema
 
 **Conversation System:** 2. `src/lib/conversation-db.ts` - Conversation persistence layer
 

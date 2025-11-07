@@ -309,6 +309,11 @@ export class TrendAnalyzer {
   ): number {
     const n = dataPoints.length;
 
+    // Need at least 3 points for regression standard error (n-2 degrees of freedom)
+    if (n < 3) {
+      return 0;
+    }
+
     let sumSquaredErrors = 0;
     for (let i = 0; i < n; i++) {
       const predicted = stats.slope * i + stats.intercept;

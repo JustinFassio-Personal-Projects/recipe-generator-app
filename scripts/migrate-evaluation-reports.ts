@@ -34,7 +34,7 @@ async function migrateEvaluationReports(): Promise<MigrationResult> {
   const result: MigrationResult = {
     total_reports: 0,
     processed_reports: 0,
-    created_metrics: number,
+    created_metrics: 0,
     created_milestones: 0,
     errors: [],
     user_summary: {},

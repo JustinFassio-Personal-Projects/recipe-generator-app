@@ -1124,21 +1124,17 @@ Generate realistic data based on our conversation.`,
             reportData.user_evaluation_report as { report_id: string }
           ).report_id;
           if (reportId) {
-            // Get the report from database to get its ID
-            const { getUserEvaluationReportsFromDB } = await import(
-              '@/lib/evaluation-report-db'
-            );
-            const reports = await getUserEvaluationReportsFromDB(user.id);
-            const savedReport = reports.find(
-              (r) =>
-                r.report_data?.user_evaluation_report?.report_id === reportId
-            );
+            // Query database directly for the report's database ID
+            const { supabase } = await import('@/lib/supabase');
+            const { data: dbReport, error: queryError } = await supabase
+              .from('evaluation_reports')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('report_id', reportId)
+              .single();
 
-            if (savedReport?.id) {
-              await linkConversationToReport(
-                conversationThreadId,
-                savedReport.id
-              );
+            if (!queryError && dbReport?.id) {
+              await linkConversationToReport(conversationThreadId, dbReport.id);
               console.log('Conversation linked to evaluation report');
             }
           }

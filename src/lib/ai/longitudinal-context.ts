@@ -12,7 +12,6 @@ import {
   getProgressSummaryByCategory,
 } from '../progress-tracking-api';
 import { MilestoneManager } from '../milestones/milestone-manager';
-import { TrendAnalyzer } from '../progress-analysis/trend-analyzer';
 import type { EvaluationReport } from '../evaluation-report-types';
 
 // ============================================================================
@@ -57,11 +56,9 @@ export interface LongitudinalContext {
 // ============================================================================
 
 export class LongitudinalContextBuilder {
-  private trendAnalyzer: TrendAnalyzer;
   private milestoneManager: MilestoneManager;
 
   constructor() {
-    this.trendAnalyzer = new TrendAnalyzer();
     this.milestoneManager = new MilestoneManager();
   }
 
@@ -251,7 +248,10 @@ export class LongitudinalContextBuilder {
     achievedMilestones: Array<{ achieved_at?: string; milestone_name: string }>
   ): LongitudinalContext['milestones'] {
     const recentAchievements = achievedMilestones
-      .filter((m) => m.achieved_at)
+      .filter(
+        (m): m is { achieved_at: string; milestone_name: string } =>
+          !!m.achieved_at
+      )
       .sort(
         (a, b) =>
           new Date(b.achieved_at).getTime() - new Date(a.achieved_at).getTime()
@@ -281,7 +281,7 @@ export class LongitudinalContextBuilder {
 
     // Extract topics from conversation titles
     const topics = history
-      .filter((c) => c.title)
+      .filter((c): c is { created_at: string; title: string } => !!c.title)
       .map((c) => c.title)
       .slice(0, 5);
 

@@ -1130,10 +1130,11 @@ Generate realistic data based on our conversation.`,
             );
             const reports = await getUserEvaluationReportsFromDB(user.id);
             const savedReport = reports.find(
-              (r) => r.user_evaluation_report.report_id === reportId
+              (r) =>
+                r.report_data?.user_evaluation_report?.report_id === reportId
             );
 
-            if (savedReport && savedReport.id) {
+            if (savedReport?.id) {
               await linkConversationToReport(
                 conversationThreadId,
                 savedReport.id

@@ -44,12 +44,9 @@ function ensureAbsoluteImageUrl(imageUrl: string): string {
 }
 
 /**
- * Generate Open Graph meta tags for a recipe
+ * Enhance description with recipe metadata (ingredients count, cooking time, difficulty)
  */
-export function generateOpenGraphTags(
-  recipe: RecipeMetaTags
-): Record<string, string> {
-  // Enhance description with recipe metadata
+function enhanceDescriptionWithMetadata(recipe: RecipeMetaTags): string {
   let enhancedDescription =
     recipe.description || 'Delicious recipe from Recipe Generator';
 
@@ -70,6 +67,17 @@ export function generateOpenGraphTags(
     }
     enhancedDescription = `${metadata.join(' | ')} - ${enhancedDescription}`;
   }
+
+  return enhancedDescription;
+}
+
+/**
+ * Generate Open Graph meta tags for a recipe
+ */
+export function generateOpenGraphTags(
+  recipe: RecipeMetaTags
+): Record<string, string> {
+  const enhancedDescription = enhanceDescriptionWithMetadata(recipe);
 
   const tags: Record<string, string> = {
     'og:title': recipe.title,
@@ -100,27 +108,7 @@ export function generateOpenGraphTags(
 export function generateTwitterCardTags(
   recipe: RecipeMetaTags
 ): Record<string, string> {
-  // Enhance description with recipe metadata
-  let enhancedDescription =
-    recipe.description || 'Delicious recipe from Recipe Generator';
-
-  if (recipe.ingredientsCount || recipe.cookingTime || recipe.difficulty) {
-    const metadata = [];
-    if (recipe.ingredientsCount) {
-      metadata.push(`${recipe.ingredientsCount} ingredients`);
-    }
-    if (recipe.cookingTime) {
-      const formattedCookingTime =
-        typeof recipe.cookingTime === 'number'
-          ? `${recipe.cookingTime} min`
-          : recipe.cookingTime;
-      metadata.push(formattedCookingTime);
-    }
-    if (recipe.difficulty) {
-      metadata.push(`${recipe.difficulty} difficulty`);
-    }
-    enhancedDescription = `${metadata.join(' | ')} - ${enhancedDescription}`;
-  }
+  const enhancedDescription = enhanceDescriptionWithMetadata(recipe);
 
   // Use recipe image or fallback to default
   const imageUrl = recipe.image || DEFAULT_OG_IMAGE;

@@ -69,6 +69,50 @@ export function ShareButton({
   };
 
   /**
+   * Generate enhanced share text with emojis and metadata
+   */
+  const generateShareText = (): string => {
+    const parts = ['🍳 Check out this recipe:', recipe.title, ''];
+
+    // Add recipe metadata
+    const metadata = [];
+    if (recipe.ingredients?.length) {
+      metadata.push(`✨ ${recipe.ingredients.length} ingredients`);
+    }
+    if (recipe.cooking_time) {
+      metadata.push(`⏱️ ${recipe.cooking_time} min`);
+    }
+    if (recipe.difficulty) {
+      const difficultyEmoji =
+        recipe.difficulty.toLowerCase() === 'easy'
+          ? '👍'
+          : recipe.difficulty.toLowerCase() === 'medium'
+            ? '👨‍🍳'
+            : '⭐';
+      metadata.push(`${difficultyEmoji} ${recipe.difficulty} difficulty`);
+    }
+
+    if (metadata.length > 0) {
+      parts.push(metadata.join(' | '));
+      parts.push('');
+    }
+
+    // Add description if available (truncated)
+    if (recipe.description) {
+      const truncated =
+        recipe.description.length > 100
+          ? recipe.description.substring(0, 100) + '...'
+          : recipe.description;
+      parts.push(truncated);
+      parts.push('');
+    }
+
+    parts.push('Created with Recipe Generator 🍽️');
+
+    return parts.join('\n');
+  };
+
+  /**
    * Try native share API (mobile)
    */
   const tryNativeShare = async (url: string): Promise<boolean> => {
@@ -78,8 +122,8 @@ export function ShareButton({
 
     try {
       await navigator.share({
-        title: recipe.title,
-        text: recipe.description || `Check out this recipe: ${recipe.title}`,
+        title: `🍳 ${recipe.title}`,
+        text: generateShareText(),
         url,
       });
 

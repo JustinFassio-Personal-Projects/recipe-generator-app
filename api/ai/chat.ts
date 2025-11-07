@@ -271,6 +271,33 @@ async function buildSystemPrompt(
 
 When the user first engages with you, acknowledge their profile and show you understand their specific needs before proceeding with recipe creation.`;
 
+  // Add longitudinal context for Dr. Luna Clearwater
+  if (persona === 'drLunaClearwater' && userId) {
+    try {
+      // Dynamic import to avoid bundling issues
+      const { buildLongitudinalContext, formatContextSummary } = await import(
+        '../../src/lib/ai/longitudinal-context'
+      );
+
+      const longitudinalContext = await buildLongitudinalContext(userId);
+      const contextSummary = formatContextSummary(longitudinalContext);
+
+      if (
+        contextSummary &&
+        longitudinalContext.user_history.total_evaluations > 0
+      ) {
+        systemPrompt += `\n\n**LONGITUDINAL PATIENT CONTEXT:**\n\nYou have access to this patient's complete health journey:\n\n${contextSummary}\n\n**How to Use This Context:**\n- Reference their progress journey when discussing health strategies\n- Acknowledge improvements and celebrate achievements\n- Address recurring patterns or areas of concern\n- Provide context-aware recommendations based on what has worked (or not worked) for them\n- Show continuity by remembering previous evaluations and conversations\n- Adjust recommendations based on their progress trajectory\n\nThis longitudinal awareness allows you to provide truly personalized, history-informed guidance rather than generic health advice.`;
+
+        console.log(
+          `[AI Chat] Enhanced Dr. Luna prompt with longitudinal context for user ${userId}`
+        );
+      }
+    } catch (error) {
+      console.error('[AI Chat] Failed to load longitudinal context:', error);
+      // Continue without longitudinal context rather than failing
+    }
+  }
+
   // Add save recipe prompt
   systemPrompt += `\n\nIMPORTANT: After providing a complete recipe or when the user seems satisfied with a recipe discussion, always ask: "Ready to Create and Save the Recipe?" This will allow the user to save the recipe to their collection.
 

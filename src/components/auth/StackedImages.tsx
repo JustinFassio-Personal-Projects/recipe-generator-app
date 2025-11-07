@@ -19,6 +19,10 @@ const COLORS = [
   'from-purple-400 to-violet-500',
 ];
 
+const FALLBACK_RECIPE_COUNT = 0;
+const FALLBACK_AVERAGE_RATING = 4.5;
+const FALLBACK_TOP_CHEFS = ['Alice', 'Bob', 'Cora'];
+
 // Map recipe categories to emojis
 const getCategoryEmoji = (recipe: PublicRecipe): string => {
   const categories = recipe.categories?.join(' ').toLowerCase() || '';
@@ -94,9 +98,9 @@ export function StackedImages({
         console.error('Error loading recipe stats:', err);
         // Use fallback data
         setTopRecipes([]);
-        setRecipeCount(0);
-        setAverageRating(4.5);
-        setTopChefs(['Alice', 'Bob', 'Cora']);
+        setRecipeCount(FALLBACK_RECIPE_COUNT);
+        setAverageRating(FALLBACK_AVERAGE_RATING);
+        setTopChefs(FALLBACK_TOP_CHEFS);
       } finally {
         setLoading(false);
       }
@@ -261,7 +265,10 @@ export function StackedImages({
               <Star className="w-6 h-6 text-white fill-current" />
             </div>
             <div className="text-lg font-bold text-gray-900">
-              {averageRating > 0 ? `${averageRating}` : '4.5'}+
+              {averageRating > 0
+                ? `${averageRating}`
+                : `${FALLBACK_AVERAGE_RATING}`}
+              +
             </div>
             <div className="text-xs text-gray-500">Avg Rating</div>
           </div>

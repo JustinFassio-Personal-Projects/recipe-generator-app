@@ -94,7 +94,7 @@ export function StackedImages({
         console.error('Error loading recipe stats:', err);
         // Use fallback data
         setTopRecipes([]);
-        setRecipeCount(12);
+        setRecipeCount(0);
         setAverageRating(4.5);
         setTopChefs(['Alice', 'Bob', 'Cora']);
       } finally {

@@ -1,13 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGroceriesQuery } from '@/hooks/useGroceriesQuery';
 import { useShoppingCartAI } from '@/hooks/useShoppingCartAI';
 import { useUserGroceryCart } from '@/hooks/useUserGroceryCart';
 import { ShoppingCartChat } from '@/components/shopping-cart/ShoppingCartChat';
 import { IngredientCard } from '@/components/groceries/IngredientCard';
-import { Check, ShoppingCart, Brain } from 'lucide-react';
+import {
+  Check,
+  ShoppingCart,
+  Brain,
+  ShoppingBag,
+  Package as PackageIcon,
+  ChefHat,
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { upsertSystemIngredient } from '@/lib/ingredients/upsertSystemIngredient';
 import { extractIngredientsFromTranscript } from '@/lib/ingredients/extractFromTranscript';
+import { useNavigate } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 // Shopping item component - commented out as unused
 /*
@@ -187,6 +204,7 @@ function ShoppingItemCard({
 
 // Main shopping cart page
 export default function ShoppingCartPage() {
+  const navigate = useNavigate();
   const groceries = useGroceriesQuery();
   const { loading: cartLoading, removeFromCart } = useUserGroceryCart();
 
@@ -219,11 +237,42 @@ export default function ShoppingCartPage() {
     () => new Set()
   );
 
+  // Virtual shopping cart - tracks items that have been "purchased" during this session
+  const [virtualCart, setVirtualCart] = useState<Set<string>>(() => new Set());
+
+  // Modal state for checkout confirmation
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null
+  );
+
   // Assistant transcript and extracted ingredients (session only)
   const [assistantTranscript, setAssistantTranscript] = useState('');
   const [extractedIngredients, setExtractedIngredients] = useState<string[]>(
     []
   );
+
+  /**
+   * Helper to defer navigation to the next tick.
+   * This allows React state updates (modal closing, state clearing) to complete
+   * before triggering navigation, preventing potential race conditions.
+   */
+  const deferNavigation = (path: string) => {
+    setTimeout(() => navigate(path), 0);
+  };
+
+  // Prevent navigation away from page when virtual cart has items
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (virtualCart.size > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [virtualCart.size]);
 
   // Kitchen inventory integration functions
   const handleAddToGroceriesAsUnavailable = async (
@@ -413,6 +462,115 @@ export default function ShoppingCartPage() {
     }
   };
 
+  // Handle adding virtual cart items to kitchen
+  const handleAddToKitchen = async () => {
+    console.log('🎯 handleAddToKitchen called!');
+    const cartItems = Array.from(virtualCart);
+    console.log('🛒 Virtual cart items:', cartItems);
+
+    if (cartItems.length === 0) {
+      console.log('⚠️ Cart is empty, closing modal');
+      setShowCheckoutModal(false);
+      if (pendingNavigation) {
+        deferNavigation(pendingNavigation);
+        setPendingNavigation(null);
+      }
+      return;
+    }
+
+    console.log('✅ Proceeding with adding items to kitchen');
+    try {
+      console.log('🛒 Adding items to kitchen:', cartItems);
+      console.log('📋 Current shopping list:', groceries.shoppingList);
+      console.log('🏠 Current groceries:', groceries.groceries);
+
+      // First, ensure all ingredients exist in the system
+      for (const ingredient of cartItems) {
+        const category = categorizeIngredient(ingredient);
+        await upsertSystemIngredient(ingredient, category);
+      }
+
+      // Now toggle each ingredient sequentially, awaiting each mutation
+      for (const ingredient of cartItems) {
+        const category = categorizeIngredient(ingredient);
+        console.log(`Processing ${ingredient} in category ${category}`);
+
+        // Check current state before toggle
+        const isInGroceries = groceries.hasIngredient(category, ingredient);
+        const isInShoppingList = (
+          groceries.shoppingList as Record<string, string>
+        )[ingredient];
+        console.log(
+          `${ingredient} - In groceries: ${isInGroceries}, In shopping list: ${isInShoppingList}`
+        );
+
+        // Toggle ingredient to make it available in kitchen (awaited)
+        // Since it's currently in shopping list (unavailable), toggling will make it available
+        await groceries.toggleIngredientAsync(category, ingredient);
+        console.log(`✅ ${ingredient} toggled successfully`);
+      }
+
+      console.log('✅ All mutations complete');
+
+      toast({
+        title: 'Added to Kitchen',
+        description: `${cartItems.length} item${cartItems.length > 1 ? 's' : ''} added to your kitchen inventory`,
+      });
+
+      // Clear virtual cart and session completed AFTER mutations complete
+      setVirtualCart(new Set());
+      setSessionCompleted(new Set());
+      setShowCheckoutModal(false);
+
+      // Proceed with navigation if pending
+      if (pendingNavigation) {
+        deferNavigation(pendingNavigation);
+        setPendingNavigation(null);
+      }
+    } catch (error) {
+      console.error('Error adding items to kitchen:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add some items to kitchen inventory',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle discarding virtual cart items (return to shopping list)
+  const handleDiscardCart = () => {
+    const cartItems = Array.from(virtualCart);
+
+    // Clear virtual cart and session completed state
+    setVirtualCart(new Set());
+    setSessionCompleted(new Set());
+    setShowCheckoutModal(false);
+
+    toast({
+      title: 'Items Returned',
+      description: `${cartItems.length} item${cartItems.length > 1 ? 's' : ''} returned to shopping list`,
+    });
+
+    // Proceed with navigation if pending
+    if (pendingNavigation) {
+      deferNavigation(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  };
+
+  // Handle manual checkout (when user clicks a button to finish shopping)
+  const handleFinishShopping = () => {
+    if (virtualCart.size > 0) {
+      setShowCheckoutModal(true);
+    } else {
+      toast({
+        title: 'No Items',
+        description:
+          'Your virtual cart is empty. Mark items as completed to add them to your cart.',
+      });
+    }
+  };
+
   if (groceries.loading) {
     return (
       <div className="container mx-auto p-6">
@@ -440,18 +598,45 @@ export default function ShoppingCartPage() {
         {/* Mobile-optimized header layout */}
         <div className="space-y-3 sm:space-y-0">
           {/* Top row: Title and icon (mobile: stacked, desktop: side by side) */}
-          <div className="flex items-center gap-3">
-            <ShoppingCart className="w-8 h-8 text-primary" />
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Shopping Cart</h1>
-              <p className="text-sm sm:text-base text-base-content/70">
-                {allItems.length} items • {incompleteItems.length} remaining
-              </p>
+          <div className="flex items-center gap-3 justify-between">
+            <div className="flex items-center gap-3">
+              <ShoppingCart className="w-8 h-8 text-primary" />
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold">
+                  Shopping List
+                </h1>
+                <p className="text-sm sm:text-base text-base-content/70">
+                  {allItems.length} items • {incompleteItems.length} remaining
+                </p>
+              </div>
             </div>
+
+            {/* Virtual Cart Badge */}
+            {virtualCart.size > 0 && (
+              <div className="badge badge-success badge-lg gap-2">
+                <ShoppingBag className="w-4 h-4" />
+                {virtualCart.size} in cart
+              </div>
+            )}
           </div>
 
           {/* Bottom row: Quick actions (mobile: full width, desktop: compact) */}
           <div className="flex flex-wrap gap-2 sm:gap-2">
+            <button
+              className="btn btn-primary btn-sm flex-1 sm:flex-none"
+              onClick={() => navigate('/kitchen')}
+            >
+              <ChefHat className="w-4 h-4" />
+              Return to Kitchen
+            </button>
+            <button
+              className="btn btn-success btn-sm flex-1 sm:flex-none"
+              onClick={handleFinishShopping}
+              disabled={virtualCart.size === 0}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Finish Shopping ({virtualCart.size})
+            </button>
             <button
               className="btn btn-outline btn-sm flex-1 sm:flex-none"
               onClick={handleClearCompleted}
@@ -527,6 +712,17 @@ export default function ShoppingCartPage() {
                         onClick={() => {
                           // Session-only toggle: mark/unmark as completed in this session
                           setSessionCompleted((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(ingredient)) {
+                              next.delete(ingredient);
+                            } else {
+                              next.add(ingredient);
+                            }
+                            return next;
+                          });
+
+                          // Add/remove from virtual cart
+                          setVirtualCart((prev) => {
                             const next = new Set(prev);
                             if (next.has(ingredient)) {
                               next.delete(ingredient);
@@ -1000,6 +1196,66 @@ export default function ShoppingCartPage() {
           </div>
         );
       })()}
+
+      {/* Checkout Modal */}
+      <Dialog open={showCheckoutModal} onOpenChange={setShowCheckoutModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-success" />
+              Finish Shopping?
+            </DialogTitle>
+            <DialogDescription>
+              You have {virtualCart.size} item
+              {virtualCart.size !== 1 ? 's' : ''} in your virtual cart. What
+              would you like to do with {virtualCart.size === 1 ? 'it' : 'them'}
+              ?
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Cart Items Preview */}
+          <div className="my-4">
+            <h4 className="text-sm font-semibold mb-2 text-gray-700">
+              Items in cart:
+            </h4>
+            <div className="max-h-48 overflow-y-auto space-y-2 bg-gray-50 p-3 rounded-lg">
+              {Array.from(virtualCart).map((item) => (
+                <div key={item} className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-success" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button
+              onClick={handleAddToKitchen}
+              className="w-full bg-success hover:bg-success/90 text-white"
+            >
+              <PackageIcon className="w-4 h-4 mr-2" />
+              Add to Kitchen
+            </Button>
+            <Button
+              onClick={handleDiscardCart}
+              variant="outline"
+              className="w-full"
+            >
+              Return to Shopping List
+            </Button>
+            <Button
+              onClick={() => {
+                setShowCheckoutModal(false);
+                setPendingNavigation(null);
+              }}
+              variant="ghost"
+              className="w-full"
+            >
+              Continue Shopping
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Cuisine Staples Modal */}
       {isModalOpen && selectedCuisine && (

@@ -152,7 +152,7 @@ export function useGlobalIngredients(): UseGlobalIngredientsReturn {
         if (result.success) {
           toast({
             title: 'Success',
-            description: `"${ingredient}" added to global ingredients!`,
+            description: `"${ingredient}" added to my ingredients!`,
           });
 
           // Refresh the global ingredients list

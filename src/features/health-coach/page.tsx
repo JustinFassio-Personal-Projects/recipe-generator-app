@@ -35,7 +35,7 @@ export function HealthCoachesPage() {
             <div className="mt-2">
               <Button asChild variant="outline">
                 <Link to="/evaluation-report">
-                  View My Health Evaluation Reports
+                  View My Nutrition Evaluation Reports
                 </Link>
               </Button>
             </div>

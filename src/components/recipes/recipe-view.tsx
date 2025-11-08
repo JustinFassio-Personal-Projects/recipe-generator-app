@@ -196,7 +196,7 @@ export function RecipeView({
     if (match.matchType === 'global') {
       return (
         <Badge variant="outline" className="text-blue-600 bg-blue-50">
-          Global Ingredient
+          My Ingredient
         </Badge>
       );
     }

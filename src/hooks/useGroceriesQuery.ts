@@ -33,29 +33,51 @@ export function useGroceriesQuery() {
     gcTime: 1000 * 60 * 10, // 10 minutes
   });
 
-  // Mutation for updating groceries
+  // Mutation for updating groceries with optimistic updates
   const updateGroceriesMutation = useMutation({
     mutationFn: async ({
       groceries,
       shoppingList,
+      silent = false,
     }: {
       groceries: Record<string, string[]>;
       shoppingList: Record<string, string>;
+      silent?: boolean;
     }) => {
       if (!user?.id) throw new Error('User not authenticated');
-      return updateUserGroceries(user.id, groceries, shoppingList);
+      return {
+        result: await updateUserGroceries(user.id, groceries, shoppingList),
+        silent,
+      };
     },
-    onSuccess: () => {
-      // Invalidate and refetch groceries data
-      queryClient.invalidateQueries({
+    onMutate: async ({ groceries, shoppingList }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
         queryKey: groceriesKeys.user(user?.id || ''),
       });
-      toast({
-        title: 'Success',
-        description: 'Kitchen inventory saved successfully!',
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(
+        groceriesKeys.user(user?.id || '')
+      );
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(groceriesKeys.user(user?.id || ''), {
+        groceries,
+        shopping_list: shoppingList,
       });
+
+      // Return a context object with the snapshotted value
+      return { previousData };
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      // Rollback to the previous value on error
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          groceriesKeys.user(user?.id || ''),
+          context.previousData
+        );
+      }
       console.error('Error updating groceries:', error);
       toast({
         title: 'Error',
@@ -63,9 +85,24 @@ export function useGroceriesQuery() {
         variant: 'destructive',
       });
     },
+    onSuccess: (data) => {
+      // Only show toast if not silent
+      if (!data.silent) {
+        toast({
+          title: 'Success',
+          description: 'Kitchen inventory saved successfully!',
+        });
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we're in sync
+      queryClient.invalidateQueries({
+        queryKey: groceriesKeys.user(user?.id || ''),
+      });
+    },
   });
 
-  // Toggle ingredient between available and unavailable
+  // Toggle ingredient between available and unavailable (sync version)
   const toggleIngredient = useCallback(
     (category: string, ingredient: string) => {
       if (!groceriesData) return;
@@ -108,13 +145,64 @@ export function useGroceriesQuery() {
         };
       }
 
-      // Update the data
+      // Update the data (fire-and-forget)
       updateGroceriesMutation.mutate({
         groceries: newGroceries,
         shoppingList: newShoppingList,
       });
     },
     [groceriesData, updateGroceriesMutation]
+  );
+
+  // Async version of toggleIngredient that waits for mutation to complete
+  const toggleIngredientAsync = useCallback(
+    async (category: string, ingredient: string) => {
+      if (!groceriesData) return;
+
+      // Read fresh data from cache to avoid stale state
+      const currentData = queryClient.getQueryData<{
+        groceries: Record<string, string[]>;
+        shopping_list: Record<string, string>;
+      }>(groceriesKeys.user(user?.id || ''));
+
+      if (!currentData) return;
+
+      const { groceries, shopping_list } = currentData;
+      const categoryItems = groceries[category] || [];
+      const isSelected = categoryItems.includes(ingredient);
+
+      let newGroceries = { ...groceries };
+      let newShoppingList = { ...shopping_list };
+
+      if (isSelected) {
+        // Available → Unavailable: Move from groceries to shopping_list
+        newGroceries = {
+          ...groceries,
+          [category]: groceries[category].filter((item) => item !== ingredient),
+        };
+        newShoppingList = {
+          ...shopping_list,
+          [ingredient]: 'pending',
+        };
+      } else {
+        // Unavailable → Available: Move from shopping_list to groceries
+        const { [ingredient]: removed, ...rest } = shopping_list;
+        console.log('Removed ingredient from shopping list:', removed);
+        newShoppingList = rest;
+        newGroceries = {
+          ...groceries,
+          [category]: [...(groceries[category] || []), ingredient],
+        };
+      }
+
+      // Wait for mutation to complete (silent mode - no toast)
+      await updateGroceriesMutation.mutateAsync({
+        groceries: newGroceries,
+        shoppingList: newShoppingList,
+        silent: true,
+      });
+    },
+    [groceriesData, updateGroceriesMutation, queryClient, user?.id]
   );
 
   // Check if ingredient is available (in groceries)
@@ -171,6 +259,7 @@ export function useGroceriesQuery() {
 
     // Actions
     toggleIngredient,
+    toggleIngredientAsync,
     refetch,
 
     // Utilities

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useGlobalIngredients } from '@/hooks/useGlobalIngredients';
 // no matcher needed here; use a simple UI normalizer aligned with matcher semantics
-import { useGroceries } from '@/hooks/useGroceries';
+import { useGroceriesQuery } from '@/hooks/useGroceriesQuery';
 import { useUserGroceryCart } from '@/hooks/useUserGroceryCart';
 import { createDaisyUICardClasses } from '@/lib/card-migration';
 import { Button } from '@/components/ui/button';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, Globe, Database, Package } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   getCategoryMetadata,
   getAvailableCategories,
@@ -24,7 +25,7 @@ export default function GlobalIngredientsPage() {
     hideIngredient,
     unhideIngredient,
   } = useGlobalIngredients();
-  const groceries = useGroceries();
+  const groceries = useGroceriesQuery();
   const {
     loading: cartLoading,
     error: cartError,
@@ -80,35 +81,90 @@ export default function GlobalIngredientsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Global Ingredients
-            </h1>
-            <p className="text-gray-600">
-              Browse community-saved ingredients and add them to your groceries.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search ingredients..."
-                className="input input-bordered pl-8 input-sm w-64"
-              />
+        {/* Enhanced Header Section */}
+        <div className="mb-8">
+          {/* Title Row */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+              <Database className="h-6 w-6 text-white" />
             </div>
-            <Button
-              variant="outline"
-              onClick={refreshGlobalIngredients}
-              disabled={loading}
-            >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-              />{' '}
-              Refresh
-            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                My Ingredients
+              </h1>
+              <p className="text-sm text-gray-600">
+                Browse and manage your ingredient library
+              </p>
+            </div>
+          </div>
+
+          {/* Stats and Actions Row */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            {/* Stats Cards */}
+            <div className="flex flex-wrap gap-3">
+              {/* Total Ingredients Card */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                  <Database className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Total Ingredients</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {globalIngredients.length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Added to Kitchen Card */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                  <Package className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Added to Kitchen</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {groceries.getTotalCount()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative flex-1 sm:flex-initial">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search ingredients..."
+                  className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-black"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Link to="/kitchen" className="btn btn-outline btn-sm">
+                  <Globe className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">My Kitchen</span>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshGlobalIngredients}
+                  disabled={loading}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+                  />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Banner */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <span className="font-medium">💡 Tip:</span> Click ingredients to
+              add them to your kitchen inventory
+            </p>
           </div>
         </div>
 
@@ -158,7 +214,7 @@ export default function GlobalIngredientsPage() {
           <div className={createDaisyUICardClasses('bordered')}>
             <div className="card-body">
               <div className="animate-pulse text-gray-500">
-                Loading global ingredients…
+                Loading my ingredients…
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Brain, User, Loader2 } from 'lucide-react';
+import { Send, Brain, User, Loader2, Download } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -14,6 +15,7 @@ interface ShoppingCartChatProps {
   placeholder?: string;
   className?: string;
   onTranscriptChange?: (text: string) => void;
+  onIngredientsExtracted?: (ingredients: string[]) => void;
 }
 
 export function ShoppingCartChat({
@@ -22,6 +24,7 @@ export function ShoppingCartChat({
   placeholder = 'Ask me about ingredients...',
   className = '',
   onTranscriptChange,
+  onIngredientsExtracted,
 }: ShoppingCartChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -58,6 +61,111 @@ export function ShoppingCartChat({
     const transcript = messages.map((m) => m.content).join('\n\n');
     onTranscriptChange(transcript);
   }, [messages, onTranscriptChange]);
+
+  // Helper to detect if message contains ingredient suggestions
+  const containsIngredientSuggestions = (content: string): boolean => {
+    const keywords = [
+      'ingredient',
+      'add',
+      'staple',
+      'need',
+      'essential',
+      'recommend',
+      'suggest',
+    ];
+    const lowerContent = content.toLowerCase();
+    return keywords.some((keyword) => lowerContent.includes(keyword));
+  };
+
+  // Handle extracting ingredients from assistant message
+  const handleExtractIngredients = async (messageContent: string) => {
+    if (!onIngredientsExtracted) return;
+
+    setIsLoading(true);
+    try {
+      // First, try to extract ingredients using pattern matching from the message
+      const extractedFromMessage =
+        extractIngredientsFromMessage(messageContent);
+
+      if (extractedFromMessage.length > 0) {
+        // If we found ingredients via pattern matching, use those
+        onIngredientsExtracted(extractedFromMessage);
+        toast({
+          title: 'Ingredients Extracted',
+          description: `${extractedFromMessage.length} ingredient${extractedFromMessage.length !== 1 ? 's' : ''} ready to add`,
+        });
+      } else {
+        // Fallback to AI extraction if pattern matching fails
+        const extractionPrompt = `Extract ONLY the ingredient names from this specific message (ignore any other messages in the conversation):
+
+"${messageContent}"
+
+Return ONLY a JSON array of ingredient names with no other text. Format: ["ingredient1", "ingredient2", ...]
+
+IMPORTANT: Only extract ingredients that are explicitly listed or mentioned in the message above. Do not include ingredients from previous messages in the conversation.`;
+
+        const response = await onChatResponse(extractionPrompt);
+
+        // Parse JSON
+        const jsonMatch = response.match(/\[.*\]/s);
+        if (jsonMatch) {
+          const ingredients = JSON.parse(jsonMatch[0]) as string[];
+          onIngredientsExtracted(ingredients);
+          toast({
+            title: 'Ingredients Extracted',
+            description: `${ingredients.length} ingredient${ingredients.length !== 1 ? 's' : ''} ready to add`,
+          });
+        } else {
+          throw new Error('No JSON array found in response');
+        }
+      }
+    } catch (error) {
+      console.error('Extraction error:', error);
+      toast({
+        title: 'Extraction Failed',
+        description: 'Could not parse ingredients from response',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to extract ingredients from message using pattern matching
+  const extractIngredientsFromMessage = (message: string): string[] => {
+    const ingredients: string[] = [];
+    const lines = message.split('\n');
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Match numbered lists: "1. Chicken" or "1. **Chicken** - description"
+      const numberedMatch = trimmed.match(/^\d+\.\s+\*?\*?([^-–—(]+)/);
+      if (numberedMatch) {
+        let ingredient = numberedMatch[1].trim();
+        // Remove trailing asterisks from bold markdown
+        ingredient = ingredient.replace(/\*+$/, '').trim();
+        if (ingredient.length > 1 && ingredient.length < 50) {
+          ingredients.push(ingredient);
+        }
+        continue;
+      }
+
+      // Match bullet points: "- Chicken" or "* Chicken" or "• Chicken - description"
+      const bulletMatch = trimmed.match(/^[-*•]\s+\*?\*?([^-–—(]+)/);
+      if (bulletMatch) {
+        let ingredient = bulletMatch[1].trim();
+        // Remove trailing asterisks from bold markdown
+        ingredient = ingredient.replace(/\*+$/, '').trim();
+        if (ingredient.length > 1 && ingredient.length < 50) {
+          ingredients.push(ingredient);
+        }
+        continue;
+      }
+    }
+
+    return ingredients;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,6 +279,20 @@ export function ShoppingCartChat({
                         minute: '2-digit',
                       })}
                     </p>
+                    {message.role === 'assistant' &&
+                      containsIngredientSuggestions(message.content) &&
+                      onIngredientsExtracted && (
+                        <button
+                          onClick={() =>
+                            handleExtractIngredients(message.content)
+                          }
+                          disabled={isLoading}
+                          className="btn btn-xs btn-primary mt-2 gap-1"
+                        >
+                          <Download className="w-3 h-3" />
+                          Export Ingredients
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useShoppingList } from './useShoppingList';
 import { useUserGroceryCart } from './useUserGroceryCart';
+import { useAuth } from '@/contexts/AuthProvider';
 // Live AI calls are routed directly via openaiAPI instead of using the conversation hook.
 // This avoids violating the Rules of Hooks in React, which require hooks to be called
 // unconditionally and in the same order on every render. Using a hook conditionally or
@@ -59,6 +60,7 @@ export interface UseShoppingCartAIReturn {
  * Integrates with existing chat system and shopping list functionality
  */
 export function useShoppingCartAI(): UseShoppingCartAIReturn {
+  const { user } = useAuth();
   const { shoppingList, addToShoppingList } = useShoppingList();
   const { userGroceryCart, addToCart } = useUserGroceryCart();
 
@@ -117,23 +119,50 @@ My groceries: ${groceryIngredients.join(', ') || 'none'}${cuisineContext}
   const getChatResponse = useCallback(
     async (message: string): Promise<string> => {
       try {
-        // Build live context and call OpenAI directly with a default persona
+        // Build live context and call OpenAI directly with a custom shopping assistant prompt
         const context = buildPromptContext();
+
+        // Custom system message for shopping assistant
+        const systemMessage = `You are a Shopping Assistant specializing in helping users identify ingredients they need for different cuisines.
+
+Your ONLY job is to:
+1. Suggest ingredients for specific cuisines the user asks about
+2. List ingredients in a clear, numbered format
+3. Keep responses focused on INGREDIENTS ONLY - do NOT create full recipes
+4. Use the user's profile information (already provided) without asking for it again
+
+Format your response as:
+**Ingredients for [Cuisine]:**
+
+1. **Ingredient Name** - brief description
+2. **Ingredient Name** - brief description
+etc.
+
+Do NOT ask about cooking skill level, time constraints, or preferences - this information is already in the user's profile.
+Do NOT provide cooking instructions or full recipes.
+ONLY suggest ingredients.`;
+
         const userPrompt = `${context}\n\nUser question: ${message}`;
+
         const response = await openaiAPI.chatWithPersona(
           [
             {
               id: Date.now().toString(),
+              role: 'system',
+              content: systemMessage,
+              timestamp: new Date(),
+            },
+            {
+              id: (Date.now() + 1).toString(),
               role: 'user',
               content: userPrompt,
               timestamp: new Date(),
             },
           ],
-          'chef'
+          'chef',
+          user?.id // Pass userId to inject user profile context
         );
-        const cta =
-          '\n\nWould you like me to add the ingredients to your kitchen?';
-        return `${response.message}${cta}`;
+        return `${response.message}`;
       } catch {
         // Fallback to deterministic suggestions if AI fails
         const allMissing = cuisineStaplesManager.getAllMissingStaples(
@@ -163,6 +192,7 @@ My groceries: ${groceryIngredients.join(', ') || 'none'}${cuisineContext}
       cuisineStaplesManager,
       userGroceryCart,
       ingredientMatcher,
+      user?.id,
     ]
   );
 

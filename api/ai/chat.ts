@@ -338,13 +338,53 @@ Use these selections to tailor your recommendations and suggestions.`;
     );
   }
 
-  // TODO: Add user profile data loading from Supabase
-  // This would replace the client-side user data loading
+  // Add user profile data loading from Supabase
   if (userId) {
-    console.log(
-      `[AI Chat] User ID provided: ${userId} - user profile integration pending`
-    );
-    // Future: Load user profile from Supabase and enhance prompt
+    try {
+      // Dynamic import to load user context
+      const { getComprehensiveUserContext } = await import(
+        '../../src/lib/ai/caching'
+      );
+      const contextData = await getComprehensiveUserContext(userId);
+
+      // Build location string
+      const locationParts = [];
+      if (contextData.userData.profile.city)
+        locationParts.push(contextData.userData.profile.city);
+      if (contextData.userData.profile.state_province)
+        locationParts.push(contextData.userData.profile.state_province);
+      if (contextData.userData.profile.country)
+        locationParts.push(contextData.userData.profile.country);
+
+      // Build user context message
+      const userContextMessage = `
+**USER PROFILE CONTEXT:**
+
+**Safety & Dietary:**
+${contextData.userData.safety.allergies.length > 0 ? `- ⚠️ CRITICAL ALLERGIES: ${contextData.userData.safety.allergies.join(', ')} - NEVER suggest these ingredients` : '- No allergies reported'}
+${contextData.userData.safety.dietary_restrictions.length > 0 ? `- Dietary Restrictions: ${contextData.userData.safety.dietary_restrictions.join(', ')}` : ''}
+${contextData.userData.safety.medical_conditions.length > 0 ? `- Medical Conditions: ${contextData.userData.safety.medical_conditions.join(', ')}` : ''}
+
+**Cooking Profile:**
+- Skill Level: ${contextData.userData.profile.skill_level || 'Not specified'}
+- Available Time: ${contextData.userData.profile.time_per_meal ? `${contextData.userData.profile.time_per_meal} minutes per meal` : 'Not specified'}
+- Preferred Cuisines: ${contextData.userData.cooking.preferred_cuisines.length > 0 ? contextData.userData.cooking.preferred_cuisines.join(', ') : 'Open to all cuisines'}
+- Spice Tolerance: ${contextData.userData.cooking.spice_tolerance ? `${contextData.userData.cooking.spice_tolerance}/5` : 'Not specified'}
+- Available Equipment: ${contextData.userData.cooking.available_equipment.length > 0 ? contextData.userData.cooking.available_equipment.join(', ') : 'Standard kitchen equipment'}
+${locationParts.length > 0 ? `- Location: ${locationParts.join(', ')}` : ''}
+- Units: ${contextData.userData.profile.units || 'metric'}
+
+**IMPORTANT:** Use this profile information to personalize ALL responses. Do NOT ask the user for information that is already provided above.`;
+
+      systemPrompt += userContextMessage;
+
+      console.log(
+        `[AI Chat] Enhanced prompt with user profile context for user ${userId}`
+      );
+    } catch (error) {
+      console.error('[AI Chat] Failed to load user profile context:', error);
+      // Continue without user context rather than failing
+    }
   }
 
   return systemPrompt;

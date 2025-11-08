@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useGroceriesQuery } from '@/hooks/useGroceriesQuery';
+import { useGroceriesQuery, groceriesKeys } from '@/hooks/useGroceriesQuery';
 import { useShoppingCartAI } from '@/hooks/useShoppingCartAI';
 import { useUserGroceryCart } from '@/hooks/useUserGroceryCart';
+import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCartChat } from '@/components/shopping-cart/ShoppingCartChat';
 import { IngredientCard } from '@/components/groceries/IngredientCard';
+import { IngredientRecommendationsPanel } from '@/components/shopping-cart/IngredientRecommendationsPanel';
 import {
   Check,
   ShoppingCart,
@@ -16,6 +18,9 @@ import { toast } from '@/hooks/use-toast';
 import { upsertSystemIngredient } from '@/lib/ingredients/upsertSystemIngredient';
 import { extractIngredientsFromTranscript } from '@/lib/ingredients/extractFromTranscript';
 import { useNavigate } from 'react-router-dom';
+import { updateUserGroceries } from '@/lib/user-preferences';
+import { useAuth } from '@/contexts/AuthProvider';
+import { supabase } from '@/lib/supabase';
 import {
   Dialog,
   DialogContent,
@@ -205,6 +210,8 @@ function ShoppingItemCard({
 // Main shopping cart page
 export default function ShoppingCartPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const groceries = useGroceriesQuery();
   const { loading: cartLoading, removeFromCart } = useUserGroceryCart();
 
@@ -462,6 +469,149 @@ export default function ShoppingCartPage() {
     }
   };
 
+  // Handle adding ingredient to shopping list (as unavailable)
+  const handleAddIngredientToShoppingList = async (ingredient: string) => {
+    if (!user?.id) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to add ingredients',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const category = categorizeIngredient(ingredient);
+
+      // First, ensure the ingredient exists in the system
+      await upsertSystemIngredient(ingredient, category);
+
+      // Get current shopping list from database
+      const { data: currentData, error: fetchError } = await supabase
+        .from('user_groceries')
+        .select('shopping_list')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
+
+      const currentShoppingList =
+        (currentData?.shopping_list as Record<string, string>) || {};
+
+      // Check if already in shopping list
+      if (currentShoppingList[ingredient]) {
+        toast({
+          title: 'Already in List',
+          description: `${ingredient} is already in your shopping list`,
+        });
+        setExtractedIngredients((prev) => prev.filter((n) => n !== ingredient));
+        return;
+      }
+
+      // Add to shopping list
+      const updatedShoppingList = {
+        ...currentShoppingList,
+        [ingredient]: 'pending',
+      };
+
+      // Save to database
+      const { error: saveError } = await supabase
+        .from('user_groceries')
+        .upsert({
+          user_id: user.id,
+          shopping_list: updatedShoppingList,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (saveError) throw saveError;
+
+      // Invalidate queries to refresh the shopping list
+      queryClient.invalidateQueries({
+        queryKey: groceriesKeys.user(user.id),
+      });
+
+      toast({
+        title: 'Added to Shopping List',
+        description: `${ingredient} added as unavailable`,
+      });
+
+      // Remove from extracted ingredients panel
+      setExtractedIngredients((prev) => prev.filter((n) => n !== ingredient));
+    } catch (error) {
+      console.error('Error adding to shopping list:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add ingredient to shopping list',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle adding ingredient to kitchen (as available)
+  const handleAddIngredientToKitchen = async (ingredient: string) => {
+    if (!user?.id) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to add ingredients',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const category = categorizeIngredient(ingredient);
+      await upsertSystemIngredient(ingredient, category);
+
+      // Check if already in groceries (available)
+      const isInGroceries = groceries.hasIngredient(category, ingredient);
+
+      if (!isInGroceries) {
+        // Add to groceries directly (available state)
+        const newGroceries = {
+          ...(groceries.groceries as Record<string, string[]>),
+          [category]: [
+            ...((groceries.groceries as Record<string, string[]>)[category] ||
+              []),
+            ingredient,
+          ],
+        };
+
+        // Remove from shopping list if present
+        const currentShoppingList = groceries.shoppingList as Record<
+          string,
+          string
+        >;
+        const { [ingredient]: removed, ...newShoppingList } =
+          currentShoppingList;
+        console.log('Removed from shopping list:', removed);
+
+        await updateUserGroceries(user.id, newGroceries, newShoppingList);
+
+        // Invalidate queries to refresh the data
+        queryClient.invalidateQueries({
+          queryKey: groceriesKeys.user(user.id),
+        });
+      }
+
+      toast({
+        title: 'Added to Kitchen',
+        description: `${ingredient} added as available`,
+      });
+
+      // Remove from extracted ingredients
+      setExtractedIngredients((prev) => prev.filter((n) => n !== ingredient));
+    } catch (error) {
+      console.error('Error adding to kitchen:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add ingredient to kitchen',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Handle adding virtual cart items to kitchen
   const handleAddToKitchen = async () => {
     console.log('🎯 handleAddToKitchen called!');
@@ -598,8 +748,8 @@ export default function ShoppingCartPage() {
         {/* Mobile-optimized header layout */}
         <div className="space-y-3 sm:space-y-0">
           {/* Top row: Title and icon (mobile: stacked, desktop: side by side) */}
-          <div className="flex items-center gap-3 justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
               <ShoppingCart className="w-8 h-8 text-primary" />
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold">
@@ -613,44 +763,57 @@ export default function ShoppingCartPage() {
 
             {/* Virtual Cart Badge */}
             {virtualCart.size > 0 && (
-              <div className="badge badge-success badge-lg gap-2">
+              <div className="badge badge-success badge-lg gap-2 self-start sm:self-auto">
                 <ShoppingBag className="w-4 h-4" />
                 {virtualCart.size} in cart
               </div>
             )}
           </div>
 
-          {/* Bottom row: Quick actions (mobile: full width, desktop: compact) */}
-          <div className="flex flex-wrap gap-2 sm:gap-2">
-            <button
-              className="btn btn-primary btn-sm flex-1 sm:flex-none"
-              onClick={() => navigate('/kitchen')}
-            >
-              <ChefHat className="w-4 h-4" />
-              Return to Kitchen
-            </button>
-            <button
-              className="btn btn-success btn-sm flex-1 sm:flex-none"
-              onClick={handleFinishShopping}
-              disabled={virtualCart.size === 0}
-            >
-              <ShoppingBag className="w-4 h-4" />
-              Finish Shopping ({virtualCart.size})
-            </button>
-            <button
-              className="btn btn-outline btn-sm flex-1 sm:flex-none"
-              onClick={handleClearCompleted}
-              disabled={completedItems.length === 0}
-            >
-              Clear Completed
-            </button>
-            <button
-              className="btn btn-error btn-outline btn-sm flex-1 sm:flex-none"
-              onClick={handleClearAll}
-              disabled={allItems.length === 0}
-            >
-              Clear All
-            </button>
+          {/* Bottom row: Quick actions (mobile: stacked, desktop: inline) */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Primary actions row (mobile: full width side-by-side) */}
+            <div className="flex gap-2 flex-1">
+              <button
+                className="btn btn-primary btn-sm flex-1 sm:flex-none"
+                onClick={() => navigate('/kitchen')}
+              >
+                <ChefHat className="w-4 h-4" />
+                <span className="hidden xs:inline">Return to Kitchen</span>
+                <span className="xs:hidden">Kitchen</span>
+              </button>
+              <button
+                className="btn btn-success btn-sm flex-1 sm:flex-none"
+                onClick={handleFinishShopping}
+                disabled={virtualCart.size === 0}
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span className="hidden xs:inline">
+                  Finish ({virtualCart.size})
+                </span>
+                <span className="xs:hidden">Finish</span>
+              </button>
+            </div>
+
+            {/* Secondary actions row (mobile: full width side-by-side) */}
+            <div className="flex gap-2 flex-1">
+              <button
+                className="btn btn-outline btn-sm flex-1 sm:flex-none"
+                onClick={handleClearCompleted}
+                disabled={completedItems.length === 0}
+              >
+                <span className="hidden xs:inline">Clear Completed</span>
+                <span className="xs:hidden">Completed</span>
+              </button>
+              <button
+                className="btn btn-error btn-outline btn-sm flex-1 sm:flex-none"
+                onClick={handleClearAll}
+                disabled={allItems.length === 0}
+              >
+                <span className="hidden xs:inline">Clear All</span>
+                <span className="xs:hidden">All</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -760,73 +923,15 @@ export default function ShoppingCartPage() {
 
         {/* Right column placeholder container (reserved for future content) */}
         <div className="lg:col-span-1">
-          <div className="card bg-base-100 shadow-sm sticky top-6">
-            <div className="card-body">
-              <h3 className="font-semibold">Reserved Panel</h3>
-              {extractedIngredients.length === 0 ? (
-                <p className="text-sm text-base-content/70">
-                  No extracted ingredients yet.
-                </p>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-base-content/70">
-                      {extractedIngredients.length} found
-                    </span>
-                    <button
-                      className="btn btn-xs btn-outline"
-                      onClick={async () => {
-                        const unique = Array.from(
-                          new Set(extractedIngredients)
-                        );
-                        if (unique.length === 0) return;
-                        await addStaplesToGroceriesAsUnavailable(unique);
-                        toast({
-                          title: 'Added to Kitchen',
-                          description: `${unique.length} ingredients added as unavailable`,
-                        });
-                      }}
-                    >
-                      Add All
-                    </button>
-                  </div>
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {extractedIngredients.map((name) => (
-                      <div
-                        key={name}
-                        className="flex items-center justify-between p-2 rounded bg-base-200"
-                      >
-                        <span className="text-sm">{name}</span>
-                        <div className="flex gap-2">
-                          <button
-                            className="btn btn-xs"
-                            onClick={() =>
-                              handleAddToGroceriesAsUnavailable(
-                                categorizeIngredient(name),
-                                name
-                              )
-                            }
-                          >
-                            Add
-                          </button>
-                          <button
-                            className="btn btn-xs btn-ghost"
-                            onClick={() =>
-                              setExtractedIngredients((prev) =>
-                                prev.filter((n) => n !== name)
-                              )
-                            }
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          <IngredientRecommendationsPanel
+            extractedIngredients={extractedIngredients}
+            onRemoveIngredient={(name) =>
+              setExtractedIngredients((prev) => prev.filter((n) => n !== name))
+            }
+            onAddToShoppingList={handleAddIngredientToShoppingList}
+            onAddToKitchen={handleAddIngredientToKitchen}
+            loading={groceries.loading || cartLoading}
+          />
         </div>
       </div>
 
@@ -863,6 +968,11 @@ export default function ShoppingCartPage() {
                   await addStaplesToGroceriesAsUnavailable(recs);
                 }}
                 onTranscriptChange={(t) => setAssistantTranscript(t)}
+                onIngredientsExtracted={(ingredients) => {
+                  setExtractedIngredients((prev) => [
+                    ...new Set([...prev, ...ingredients]),
+                  ]);
+                }}
                 className="h-full"
               />
             </div>

@@ -38,12 +38,17 @@ export function useGroceriesQuery() {
     mutationFn: async ({
       groceries,
       shoppingList,
+      silent = false,
     }: {
       groceries: Record<string, string[]>;
       shoppingList: Record<string, string>;
+      silent?: boolean;
     }) => {
       if (!user?.id) throw new Error('User not authenticated');
-      return updateUserGroceries(user.id, groceries, shoppingList);
+      return {
+        result: await updateUserGroceries(user.id, groceries, shoppingList),
+        silent,
+      };
     },
     onMutate: async ({ groceries, shoppingList }) => {
       // Cancel any outgoing refetches
@@ -80,11 +85,14 @@ export function useGroceriesQuery() {
         variant: 'destructive',
       });
     },
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Kitchen inventory saved successfully!',
-      });
+    onSuccess: (data) => {
+      // Only show toast if not silent
+      if (!data.silent) {
+        toast({
+          title: 'Success',
+          description: 'Kitchen inventory saved successfully!',
+        });
+      }
     },
     onSettled: () => {
       // Always refetch after error or success to ensure we're in sync
@@ -94,7 +102,7 @@ export function useGroceriesQuery() {
     },
   });
 
-  // Toggle ingredient between available and unavailable
+  // Toggle ingredient between available and unavailable (sync version)
   const toggleIngredient = useCallback(
     (category: string, ingredient: string) => {
       if (!groceriesData) return;
@@ -137,13 +145,64 @@ export function useGroceriesQuery() {
         };
       }
 
-      // Update the data
+      // Update the data (fire-and-forget)
       updateGroceriesMutation.mutate({
         groceries: newGroceries,
         shoppingList: newShoppingList,
       });
     },
     [groceriesData, updateGroceriesMutation]
+  );
+
+  // Async version of toggleIngredient that waits for mutation to complete
+  const toggleIngredientAsync = useCallback(
+    async (category: string, ingredient: string) => {
+      if (!groceriesData) return;
+
+      // Read fresh data from cache to avoid stale state
+      const currentData = queryClient.getQueryData<{
+        groceries: Record<string, string[]>;
+        shopping_list: Record<string, string>;
+      }>(groceriesKeys.user(user?.id || ''));
+
+      if (!currentData) return;
+
+      const { groceries, shopping_list } = currentData;
+      const categoryItems = groceries[category] || [];
+      const isSelected = categoryItems.includes(ingredient);
+
+      let newGroceries = { ...groceries };
+      let newShoppingList = { ...shopping_list };
+
+      if (isSelected) {
+        // Available → Unavailable: Move from groceries to shopping_list
+        newGroceries = {
+          ...groceries,
+          [category]: groceries[category].filter((item) => item !== ingredient),
+        };
+        newShoppingList = {
+          ...shopping_list,
+          [ingredient]: 'pending',
+        };
+      } else {
+        // Unavailable → Available: Move from shopping_list to groceries
+        const { [ingredient]: removed, ...rest } = shopping_list;
+        console.log('Removed ingredient from shopping list:', removed);
+        newShoppingList = rest;
+        newGroceries = {
+          ...groceries,
+          [category]: [...(groceries[category] || []), ingredient],
+        };
+      }
+
+      // Wait for mutation to complete (silent mode - no toast)
+      await updateGroceriesMutation.mutateAsync({
+        groceries: newGroceries,
+        shoppingList: newShoppingList,
+        silent: true,
+      });
+    },
+    [groceriesData, updateGroceriesMutation, queryClient, user?.id]
   );
 
   // Check if ingredient is available (in groceries)
@@ -200,6 +259,7 @@ export function useGroceriesQuery() {
 
     // Actions
     toggleIngredient,
+    toggleIngredientAsync,
     refetch,
 
     // Utilities

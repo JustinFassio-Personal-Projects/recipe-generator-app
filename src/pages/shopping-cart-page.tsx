@@ -463,6 +463,7 @@ export default function ShoppingCartPage() {
       console.log('⚠️ Cart is empty, closing modal');
       setShowCheckoutModal(false);
       if (pendingNavigation) {
+        // Defer navigation to next tick to allow modal state to settle
         setTimeout(() => navigate(pendingNavigation), 0);
         setPendingNavigation(null);
       }
@@ -481,10 +482,7 @@ export default function ShoppingCartPage() {
         await upsertSystemIngredient(ingredient, category);
       }
 
-      // Wait a bit for upserts to complete
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      // Now toggle each ingredient one at a time with proper delays
+      // Now toggle each ingredient sequentially, awaiting each mutation
       for (const ingredient of cartItems) {
         const category = categorizeIngredient(ingredient);
         console.log(`Processing ${ingredient} in category ${category}`);
@@ -498,18 +496,13 @@ export default function ShoppingCartPage() {
           `${ingredient} - In groceries: ${isInGroceries}, In shopping list: ${isInShoppingList}`
         );
 
-        // Toggle ingredient to make it available in kitchen
+        // Toggle ingredient to make it available in kitchen (awaited)
         // Since it's currently in shopping list (unavailable), toggling will make it available
-        groceries.toggleIngredient(category, ingredient);
-
-        // Wait for this toggle to complete before processing next item
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await groceries.toggleIngredientAsync(category, ingredient);
+        console.log(`✅ ${ingredient} toggled successfully`);
       }
 
-      // Wait a bit more for all mutations to fully complete and sync
-      console.log('⏳ Waiting for all mutations to complete...');
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('✅ All mutations should be complete now');
+      console.log('✅ All mutations complete');
 
       toast({
         title: 'Added to Kitchen',
@@ -523,6 +516,7 @@ export default function ShoppingCartPage() {
 
       // Proceed with navigation if pending
       if (pendingNavigation) {
+        // Defer navigation to next tick to allow state updates to settle
         setTimeout(() => navigate(pendingNavigation), 0);
         setPendingNavigation(null);
       }
@@ -552,6 +546,7 @@ export default function ShoppingCartPage() {
 
     // Proceed with navigation if pending
     if (pendingNavigation) {
+      // Defer navigation to next tick to allow state updates to settle
       setTimeout(() => navigate(pendingNavigation), 0);
       setPendingNavigation(null);
     }

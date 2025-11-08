@@ -252,6 +252,15 @@ export default function ShoppingCartPage() {
     []
   );
 
+  /**
+   * Helper to defer navigation to the next tick.
+   * This allows React state updates (modal closing, state clearing) to complete
+   * before triggering navigation, preventing potential race conditions.
+   */
+  const deferNavigation = (path: string) => {
+    setTimeout(() => navigate(path), 0);
+  };
+
   // Prevent navigation away from page when virtual cart has items
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -463,8 +472,7 @@ export default function ShoppingCartPage() {
       console.log('⚠️ Cart is empty, closing modal');
       setShowCheckoutModal(false);
       if (pendingNavigation) {
-        // Defer navigation to next tick to allow modal state to settle
-        setTimeout(() => navigate(pendingNavigation), 0);
+        deferNavigation(pendingNavigation);
         setPendingNavigation(null);
       }
       return;
@@ -516,8 +524,7 @@ export default function ShoppingCartPage() {
 
       // Proceed with navigation if pending
       if (pendingNavigation) {
-        // Defer navigation to next tick to allow state updates to settle
-        setTimeout(() => navigate(pendingNavigation), 0);
+        deferNavigation(pendingNavigation);
         setPendingNavigation(null);
       }
     } catch (error) {
@@ -546,8 +553,7 @@ export default function ShoppingCartPage() {
 
     // Proceed with navigation if pending
     if (pendingNavigation) {
-      // Defer navigation to next tick to allow state updates to settle
-      setTimeout(() => navigate(pendingNavigation), 0);
+      deferNavigation(pendingNavigation);
       setPendingNavigation(null);
     }
   };

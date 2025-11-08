@@ -9,7 +9,14 @@ import {
 import { createDaisyUICardClasses } from '@/lib/card-migration';
 import { IngredientMatchingTest } from '@/components/groceries/ingredient-matching-test';
 import { GroceryCard } from '@/components/groceries/GroceryCard';
-import { RefreshCw, Globe, Search } from 'lucide-react';
+import {
+  RefreshCw,
+  Globe,
+  Search,
+  ChefHat,
+  ShoppingCart,
+  Package,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useGlobalIngredients } from '@/hooks/useGlobalIngredients';
 import { getCategories } from '@/lib/ingredients/repository';
@@ -152,54 +159,96 @@ export function KitchenInventoryPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Kitchen</h1>
-            <p className="text-gray-600">
-              Manage your kitchen inventory. Mark items as available (in stock)
-              or unavailable (need to buy). Unavailable items are added to your
-              shopping list.
-            </p>
-            {groceries.getTotalCount() > 0 && (
-              <p className="text-sm text-green-600 font-medium">
-                {groceries.getTotalCount()} ingredient
-                {groceries.getTotalCount() !== 1 ? 's' : ''} available in your
-                kitchen
+        {/* Enhanced Header Section */}
+        <div className="mb-8">
+          {/* Title Row */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg">
+              <ChefHat className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">My Kitchen</h1>
+              <p className="text-sm text-gray-600">
+                Manage your ingredient inventory
               </p>
-            )}
-            {groceries.getShoppingListCount() > 0 && (
-              <p className="text-sm text-orange-600 font-medium">
-                {groceries.getShoppingListCount()} item
-                {groceries.getShoppingListCount() !== 1 ? 's' : ''} in shopping
-                list
-              </p>
-            )}
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search ingredients..."
-                className="border border-gray-300 rounded-md px-3 py-1.5 pl-8 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-black"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Link to="/global-ingredients" className="btn btn-outline">
-                <Globe className="mr-2 h-4 w-4" /> Global Ingredients
-              </Link>
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-                disabled={groceries.loading}
+
+          {/* Stats and Actions Row */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            {/* Stats Cards */}
+            <div className="flex flex-wrap gap-3">
+              {/* Available Ingredients Card */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                  <Package className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">In Stock</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {groceries.getTotalCount()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Shopping List Card */}
+              <Link
+                to="/cart"
+                className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer"
               >
-                <RefreshCw
-                  className={`mr-2 h-4 w-4 ${groceries.loading ? 'animate-spin' : ''}`}
-                />
-                Refresh
-              </Button>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
+                  <ShoppingCart className="h-4 w-4 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Shopping List</p>
+                  <p className="text-lg font-bold text-orange-600">
+                    {groceries.getShoppingListCount()}
+                  </p>
+                </div>
+              </Link>
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative flex-1 sm:flex-initial">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search ingredients..."
+                  className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-black"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/global-ingredients"
+                  className="btn btn-outline btn-sm"
+                >
+                  <Globe className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">My Ingredients</span>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={groceries.loading}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${groceries.loading ? 'animate-spin' : ''}`}
+                  />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Banner */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <span className="font-medium">💡 Tip:</span> Click ingredients to
+              toggle between <span className="font-semibold">In Stock</span>{' '}
+              (available) and <span className="font-semibold">Need to Buy</span>{' '}
+              (added to shopping list)
+            </p>
           </div>
         </div>
 

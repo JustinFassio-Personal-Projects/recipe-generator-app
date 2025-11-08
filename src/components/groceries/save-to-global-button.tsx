@@ -91,7 +91,7 @@ export function SaveToGlobalButton({
       <div className="flex-1">
         <div className="flex flex-col space-y-2 mb-2">
           <span className="text-sm font-medium text-blue-800">
-            Save to Global Ingredients:
+            Save to My Ingredients:
           </span>
           <input
             type="text"

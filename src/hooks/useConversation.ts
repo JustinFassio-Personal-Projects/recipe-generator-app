@@ -982,7 +982,7 @@ Generate realistic data based on our conversation.`,
       toast({
         title: 'Evaluation Report Generated!',
         description:
-          'Your comprehensive health evaluation report is ready to save.',
+          'Your comprehensive nutrition evaluation report is ready to save.',
       });
     } catch (error) {
       console.error('Failed to generate evaluation report:', error);
@@ -1146,7 +1146,7 @@ Generate realistic data based on our conversation.`,
       toast({
         title: 'Evaluation Report Saved!',
         description:
-          'Your health evaluation report has been saved to your health reports.',
+          'Your nutrition evaluation report has been saved to your nutrition reports.',
       });
 
       // Reset the report state

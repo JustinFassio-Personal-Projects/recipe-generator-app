@@ -103,7 +103,7 @@ export function Header() {
                 className={`w-full justify-start ${location.pathname === '/cart' ? 'active' : ''}`}
               >
                 <ShoppingCart className="h-5 w-5" />
-                Cart
+                Shopping List
               </button>
             </li>
             <li>
@@ -115,7 +115,7 @@ export function Header() {
                 className={`w-full justify-start ${location.pathname === '/evaluation-report' ? 'active' : ''}`}
               >
                 <Heart className="h-5 w-5" />
-                Health Reports
+                Nutrition Reports
               </button>
             </li>
             <li className="divider"></li>
@@ -211,7 +211,7 @@ export function Header() {
               className={location.pathname === '/cart' ? 'active' : ''}
             >
               <ShoppingCart className="h-5 w-5" />
-              Cart
+              Shopping List
             </button>
           </li>
           <li>
@@ -222,7 +222,7 @@ export function Header() {
               }
             >
               <Heart className="h-5 w-5" />
-              Health Reports
+              Nutrition Reports
             </button>
           </li>
         </ul>

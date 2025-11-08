@@ -51,9 +51,9 @@ export const SmartCreateRecipeButton: React.FC<
           setParseStatus('success');
 
           toast({
-            title: 'Health Report Generated!',
+            title: 'Nutrition Report Generated!',
             description:
-              'Your comprehensive health evaluation report is ready to view.',
+              'Your comprehensive nutrition evaluation report is ready to view.',
             duration: 2000,
           });
 
@@ -65,7 +65,8 @@ export const SmartCreateRecipeButton: React.FC<
           setParseStatus('error');
           toast({
             title: 'Report Generation Failed',
-            description: 'Unable to generate health report. Please try again.',
+            description:
+              'Unable to generate nutrition report. Please try again.',
             variant: 'destructive',
           });
         }
@@ -108,7 +109,7 @@ export const SmartCreateRecipeButton: React.FC<
       setParseStatus('error');
       console.error(
         isHealthAssistant
-          ? 'Health report generation error:'
+          ? 'Nutrition report generation error:'
           : 'Recipe parsing error:',
         error
       );
@@ -117,7 +118,7 @@ export const SmartCreateRecipeButton: React.FC<
           ? 'Report Generation Failed'
           : 'Parsing Failed',
         description: isHealthAssistant
-          ? 'An unexpected error occurred while generating your health report. Please try again.'
+          ? 'An unexpected error occurred while generating your nutrition report. Please try again.'
           : 'An unexpected error occurred while parsing the recipe. Please try again.',
         variant: 'destructive',
       });

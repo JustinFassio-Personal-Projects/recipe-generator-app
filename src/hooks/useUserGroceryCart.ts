@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthProvider';
 import { toast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { groceriesKeys } from '@/hooks/useGroceriesQuery';
 import {
   addIngredientToCart,
   removeIngredientFromCart,
@@ -27,6 +29,7 @@ export interface UserGroceryCartReturn {
  */
 export function useUserGroceryCart(): UserGroceryCartReturn {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [userGroceryCart, setUserGroceryCart] = useState<
     Record<string, string[]>
   >({});
@@ -108,6 +111,11 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
         // Update local state
         setUserGroceryCart(updatedCart);
 
+        // Invalidate groceries query to update "Added to Kitchen" count in real-time
+        queryClient.invalidateQueries({
+          queryKey: groceriesKeys.user(user.id),
+        });
+
         toast({
           title: 'Added to Cart',
           description: `"${name}" added to your grocery cart.`,
@@ -162,6 +170,11 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
         // Update local state
         setUserGroceryCart(updatedCart);
 
+        // Invalidate groceries query to update "Added to Kitchen" count in real-time
+        queryClient.invalidateQueries({
+          queryKey: groceriesKeys.user(user.id),
+        });
+
         toast({
           title: 'Removed from Cart',
           description: `"${name}" removed from your grocery cart.`,
@@ -213,6 +226,11 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
 
         // Update local state
         setUserGroceryCart(updatedCart);
+
+        // Invalidate groceries query to update "Added to Kitchen" count in real-time
+        queryClient.invalidateQueries({
+          queryKey: groceriesKeys.user(user.id),
+        });
 
         return true;
       } catch (err) {

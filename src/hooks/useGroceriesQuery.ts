@@ -33,7 +33,7 @@ export function useGroceriesQuery() {
     gcTime: 1000 * 60 * 10, // 10 minutes
   });
 
-  // Mutation for updating groceries
+  // Mutation for updating groceries with optimistic updates
   const updateGroceriesMutation = useMutation({
     mutationFn: async ({
       groceries,
@@ -45,22 +45,51 @@ export function useGroceriesQuery() {
       if (!user?.id) throw new Error('User not authenticated');
       return updateUserGroceries(user.id, groceries, shoppingList);
     },
-    onSuccess: () => {
-      // Invalidate and refetch groceries data
-      queryClient.invalidateQueries({
+    onMutate: async ({ groceries, shoppingList }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
         queryKey: groceriesKeys.user(user?.id || ''),
       });
-      toast({
-        title: 'Success',
-        description: 'Kitchen inventory saved successfully!',
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(
+        groceriesKeys.user(user?.id || '')
+      );
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(groceriesKeys.user(user?.id || ''), {
+        groceries,
+        shopping_list: shoppingList,
       });
+
+      // Return a context object with the snapshotted value
+      return { previousData };
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      // Rollback to the previous value on error
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          groceriesKeys.user(user?.id || ''),
+          context.previousData
+        );
+      }
       console.error('Error updating groceries:', error);
       toast({
         title: 'Error',
         description: 'Failed to save kitchen inventory',
         variant: 'destructive',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Kitchen inventory saved successfully!',
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we're in sync
+      queryClient.invalidateQueries({
+        queryKey: groceriesKeys.user(user?.id || ''),
       });
     },
   });

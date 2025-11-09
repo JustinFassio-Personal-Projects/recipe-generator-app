@@ -410,14 +410,17 @@ export default function ShoppingCartPage() {
 
   // Simple format shopping list items with session overlay
   const rawShoppingListItems = Object.entries(groceries.shoppingList);
-  const effectiveShoppingListItems = rawShoppingListItems.map(
-    ([ingredient, status]) => {
-      // Overlay session-only completion state; fall back to backend status when not overridden
-      const isCompletedSession = sessionCompleted.has(ingredient);
-      const effectiveStatus = isCompletedSession ? 'purchased' : status;
-      return [ingredient, effectiveStatus] as const;
-    }
-  );
+  const effectiveShoppingListItems: readonly (readonly [
+    string,
+    'pending' | 'purchased',
+  ])[] = rawShoppingListItems.map(([ingredient, status]) => {
+    // Overlay session-only completion state; fall back to backend status when not overridden
+    const isCompletedSession = sessionCompleted.has(ingredient);
+    const effectiveStatus: 'pending' | 'purchased' = isCompletedSession
+      ? 'purchased'
+      : (status as 'pending' | 'purchased');
+    return [ingredient, effectiveStatus] as const;
+  });
 
   // Enrich shopping list items with global catalog metadata
   const enrichedShoppingListItems = useMemo(() => {
@@ -435,11 +438,9 @@ export default function ShoppingCartPage() {
   // Create a status map for O(1) lookups instead of O(n) find() calls
   const ingredientStatusMap = useMemo(() => {
     const map = new Map<string, 'pending' | 'purchased'>();
-    effectiveShoppingListItems.forEach(
-      ([name, status]: readonly [string, 'pending' | 'purchased']) => {
-        map.set(name, status);
-      }
-    );
+    effectiveShoppingListItems.forEach(([name, status]) => {
+      map.set(name, status);
+    });
     return map;
   }, [effectiveShoppingListItems]);
 

@@ -424,15 +424,19 @@ export default function ShoppingCartPage() {
 
   // Enrich shopping list items with global catalog metadata
   const enrichedShoppingListItems = useMemo(() => {
-    // Convert shopping list to a format enrichUserIngredients can process
-    // Use a temporary key since we don't know categories yet; enrichment will assign actual categories
-    const itemsAsRecord: Record<string, string[]> = {
-      temporary_category: effectiveShoppingListItems.map(
-        ([ingredient]) => ingredient
-      ),
-    };
+    // Pre-categorize shopping list items using heuristics
+    // This ensures unmatched items get a valid category instead of 'temporary_category'
+    const itemsByCategory: Record<string, string[]> = {};
 
-    return enrichUserIngredients(itemsAsRecord, globalIngredients);
+    for (const [ingredient] of effectiveShoppingListItems) {
+      const category = categorizeIngredient(ingredient);
+      if (!itemsByCategory[category]) {
+        itemsByCategory[category] = [];
+      }
+      itemsByCategory[category].push(ingredient);
+    }
+
+    return enrichUserIngredients(itemsByCategory, globalIngredients);
   }, [effectiveShoppingListItems, globalIngredients]);
 
   // Create a status map for O(1) lookups instead of O(n) find() calls

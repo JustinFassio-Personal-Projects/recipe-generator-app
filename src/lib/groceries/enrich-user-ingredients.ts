@@ -22,8 +22,9 @@ const MAX_LENGTH_DIFF_FOR_PARTIAL_MATCH = 10;
 /**
  * Normalizes an ingredient name for matching
  * Same logic as EnhancedIngredientMatcher
+ * Exported for reuse across the application
  */
-function normalizeIngredientName(name: string): string {
+export function normalizeIngredientName(name: string): string {
   return name
     .toLowerCase()
     .replace(/[^\w\s]/g, ' ')

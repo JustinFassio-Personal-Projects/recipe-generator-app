@@ -27,6 +27,7 @@ import { resolveCategoryForIngredient } from './utils/resolve-category';
 import {
   enrichUserIngredients,
   groupEnrichedIngredients,
+  normalizeIngredientName,
   type EnrichedUserIngredient,
 } from '@/lib/groceries/enrich-user-ingredients';
 
@@ -102,12 +103,8 @@ export function KitchenInventoryPage() {
       const matchesQuery =
         !query.trim() || ing.name.toLowerCase().includes(query.toLowerCase());
 
-      // Filter by hidden
-      const normalized = ing.name
-        .toLowerCase()
-        .replace(/[^\w\s]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      // Filter by hidden using shared normalization function
+      const normalized = normalizeIngredientName(ing.name);
       const isNotHidden = !hiddenNormalizedNames.has(normalized);
 
       // Filter by category
@@ -146,11 +143,8 @@ export function KitchenInventoryPage() {
       .filter((ing) => {
         const matchesQuery =
           !query.trim() || ing.name.toLowerCase().includes(query.toLowerCase());
-        const normalized = ing.name
-          .toLowerCase()
-          .replace(/[^\w\s]/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
+        // Use shared normalization function
+        const normalized = normalizeIngredientName(ing.name);
         const isNotHidden = !hiddenNormalizedNames.has(normalized);
         return matchesQuery && isNotHidden;
       })

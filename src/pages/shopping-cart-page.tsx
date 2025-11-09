@@ -422,9 +422,11 @@ export default function ShoppingCartPage() {
   // Enrich shopping list items with global catalog metadata
   const enrichedShoppingListItems = useMemo(() => {
     // Convert shopping list to a format enrichUserIngredients can process
-    // We don't know the exact category, so we'll match against all global ingredients
+    // Use a temporary key since we don't know categories yet; enrichment will assign actual categories
     const itemsAsRecord: Record<string, string[]> = {
-      unknown: effectiveShoppingListItems.map(([ingredient]) => ingredient),
+      temporary_category: effectiveShoppingListItems.map(
+        ([ingredient]) => ingredient
+      ),
     };
 
     return enrichUserIngredients(itemsAsRecord, globalIngredients);

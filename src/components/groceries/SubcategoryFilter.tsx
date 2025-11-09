@@ -46,7 +46,7 @@ export function SubcategoryFilter({
   return (
     <div className={`w-full ${className}`}>
       {/* Container with horizontal scroll */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2">
         {/* "All" button */}
         <button
           onClick={() => onSubcategoryChange(null)}

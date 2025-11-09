@@ -432,15 +432,21 @@ export default function ShoppingCartPage() {
     return enrichUserIngredients(itemsAsRecord, globalIngredients);
   }, [effectiveShoppingListItems, globalIngredients]);
 
+  // Create a status map for O(1) lookups instead of O(n) find() calls
+  const ingredientStatusMap = useMemo(() => {
+    const map = new Map<string, 'pending' | 'purchased'>();
+    effectiveShoppingListItems.forEach(([name, status]) => {
+      map.set(name, status);
+    });
+    return map;
+  }, [effectiveShoppingListItems]);
+
   // Group enriched shopping list items by category and subcategory with filtering
   const groupedShoppingList = useMemo(() => {
     // Apply filters
     const filtered = enrichedShoppingListItems.filter((ing) => {
-      // Find the status for this ingredient
-      const statusEntry = effectiveShoppingListItems.find(
-        ([name]) => name === ing.name
-      );
-      const status = statusEntry ? statusEntry[1] : 'pending';
+      // Find the status for this ingredient using O(1) Map lookup
+      const status = ingredientStatusMap.get(ing.name) ?? 'pending';
 
       // Filter by completion status tab
       const matchesTab =
@@ -471,7 +477,7 @@ export default function ShoppingCartPage() {
     return groupEnrichedIngredients(filtered);
   }, [
     enrichedShoppingListItems,
-    effectiveShoppingListItems,
+    ingredientStatusMap,
     activeTab,
     searchQuery,
     activeCategory,
@@ -485,11 +491,8 @@ export default function ShoppingCartPage() {
     const counts: Record<string, number> = {};
     enrichedShoppingListItems
       .filter((ing) => {
-        // Find the status for this ingredient
-        const statusEntry = effectiveShoppingListItems.find(
-          ([name]) => name === ing.name
-        );
-        const status = statusEntry ? statusEntry[1] : 'pending';
+        // Find the status for this ingredient using O(1) Map lookup
+        const status = ingredientStatusMap.get(ing.name) ?? 'pending';
 
         // Filter by completion status tab
         const matchesTab =
@@ -512,7 +515,7 @@ export default function ShoppingCartPage() {
     return counts;
   }, [
     enrichedShoppingListItems,
-    effectiveShoppingListItems,
+    ingredientStatusMap,
     activeCategory,
     activeTab,
     searchQuery,
@@ -952,10 +955,9 @@ export default function ShoppingCartPage() {
                   // Count items in this category
                   const categoryCount = enrichedShoppingListItems.filter(
                     (ing) => {
-                      const statusEntry = effectiveShoppingListItems.find(
-                        ([name]) => name === ing.name
-                      );
-                      const status = statusEntry ? statusEntry[1] : 'pending';
+                      // Use O(1) Map lookup instead of find()
+                      const status =
+                        ingredientStatusMap.get(ing.name) ?? 'pending';
                       const matchesTab =
                         activeTab === 'all' ||
                         (activeTab === 'completed' && status === 'purchased') ||
@@ -1114,14 +1116,11 @@ export default function ShoppingCartPage() {
                               <div className="space-y-3">
                                 {items.map(
                                   (enrichedIng: EnrichedUserIngredient) => {
-                                    // Find the status for this ingredient
-                                    const statusEntry =
-                                      effectiveShoppingListItems.find(
-                                        ([name]) => name === enrichedIng.name
-                                      );
-                                    const status = statusEntry
-                                      ? statusEntry[1]
-                                      : 'pending';
+                                    // Use O(1) Map lookup for ingredient status
+                                    const status =
+                                      ingredientStatusMap.get(
+                                        enrichedIng.name
+                                      ) ?? 'pending';
 
                                     return (
                                       <div

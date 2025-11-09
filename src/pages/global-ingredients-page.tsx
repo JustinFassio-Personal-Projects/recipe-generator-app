@@ -303,6 +303,8 @@ export default function GlobalIngredientsPage() {
                 {Object.entries(subcategoryGroups)
                   .sort(([subA], [subB]) => {
                     // Sort by subcategory metadata sortOrder
+                    if (subA === 'uncategorized' && subB === 'uncategorized')
+                      return 0;
                     if (subA === 'uncategorized') return 1;
                     if (subB === 'uncategorized') return -1;
                     const metaA = getSubcategoryMetadata(subA);

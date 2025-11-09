@@ -10,10 +10,13 @@ import { Link } from 'react-router-dom';
 import {
   getCategoryMetadata,
   getAvailableCategories,
+  getSubcategoryMetadata,
+  type ChefIsabellaCategory,
 } from '@/lib/groceries/category-mapping';
 import type { GlobalIngredient } from '@/lib/groceries/enhanced-ingredient-matcher';
 import { IngredientCard } from '@/components/groceries/IngredientCard';
 import { upsertSystemIngredient } from '@/lib/ingredients/upsertSystemIngredient';
+import { SubcategoryFilter } from '@/components/groceries/SubcategoryFilter';
 
 export default function GlobalIngredientsPage() {
   const {
@@ -35,7 +38,11 @@ export default function GlobalIngredientsPage() {
   } = useUserGroceryCart();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(
+    null
+  );
 
+  // Group ingredients by category and optionally by subcategory
   const grouped = useMemo(() => {
     const items = globalIngredients
       .filter(
@@ -44,15 +51,23 @@ export default function GlobalIngredientsPage() {
       )
       .filter((g) =>
         activeCategory === 'all' ? true : g.category === activeCategory
+      )
+      .filter((g) =>
+        activeSubcategory ? g.subcategory === activeSubcategory : true
       );
 
-    const map: Record<string, GlobalIngredient[]> = {};
+    // Group by category, then by subcategory
+    const map: Record<string, Record<string, GlobalIngredient[]>> = {};
+
     items.forEach((g) => {
-      if (!map[g.category]) map[g.category] = [];
-      map[g.category].push(g);
+      if (!map[g.category]) map[g.category] = {};
+      const subcategory = g.subcategory || 'uncategorized';
+      if (!map[g.category][subcategory]) map[g.category][subcategory] = [];
+      map[g.category][subcategory].push(g);
     });
+
     return map;
-  }, [globalIngredients, query, activeCategory]);
+  }, [globalIngredients, query, activeCategory, activeSubcategory]);
 
   // Get available categories from global ingredients data using consistent mapping
   const availableCategories = useMemo(() => {
@@ -77,6 +92,30 @@ export default function GlobalIngredientsPage() {
       await hideIngredient(name);
     }
   };
+
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+    setActiveSubcategory(null); // Reset subcategory when category changes
+  };
+
+  // Calculate subcategory counts for the active category
+  const subcategoryCounts = useMemo(() => {
+    if (activeCategory === 'all') return {};
+
+    const counts: Record<string, number> = {};
+    globalIngredients
+      .filter((g) => g.category === activeCategory)
+      .filter(
+        (g) =>
+          !query.trim() || g.name.toLowerCase().includes(query.toLowerCase())
+      )
+      .forEach((g) => {
+        const subcategory = g.subcategory || 'uncategorized';
+        counts[subcategory] = (counts[subcategory] || 0) + 1;
+      });
+
+    return counts;
+  }, [globalIngredients, activeCategory, query]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
@@ -180,12 +219,13 @@ export default function GlobalIngredientsPage() {
           </div>
         )}
 
-        <div className={createDaisyUICardClasses('bordered mb-6')}>
+        {/* Category Tabs */}
+        <div className={createDaisyUICardClasses('bordered mb-4')}>
           <div className="card-body p-4">
             <div className="tabs tabs-boxed overflow-x-auto">
               <button
                 className={`tab ${activeCategory === 'all' ? 'tab-active' : ''}`}
-                onClick={() => setActiveCategory('all')}
+                onClick={() => handleCategoryChange('all')}
               >
                 All
               </button>
@@ -195,7 +235,7 @@ export default function GlobalIngredientsPage() {
                   <button
                     key={category}
                     className={`tab ${activeCategory === category ? 'tab-active' : ''}`}
-                    onClick={() => setActiveCategory(category)}
+                    onClick={() => handleCategoryChange(category)}
                   >
                     <span className="flex items-center space-x-2">
                       <span>{categoryMeta.icon}</span>
@@ -210,6 +250,20 @@ export default function GlobalIngredientsPage() {
           </div>
         </div>
 
+        {/* Subcategory Filter - Only show when a specific category is selected */}
+        {activeCategory !== 'all' && (
+          <div className={createDaisyUICardClasses('bordered mb-6')}>
+            <div className="card-body p-4">
+              <SubcategoryFilter
+                category={activeCategory as ChefIsabellaCategory}
+                activeSubcategory={activeSubcategory}
+                onSubcategoryChange={setActiveSubcategory}
+                ingredientCounts={subcategoryCounts}
+              />
+            </div>
+          </div>
+        )}
+
         {loading || cartLoading ? (
           <div className={createDaisyUICardClasses('bordered')}>
             <div className="card-body">
@@ -223,50 +277,97 @@ export default function GlobalIngredientsPage() {
             <div className="card-body text-gray-600">No ingredients found.</div>
           </div>
         ) : (
-          Object.entries(grouped).map(([category, items]) => {
+          Object.entries(grouped).map(([category, subcategoryGroups]) => {
             const categoryMeta = getCategoryMetadata(category);
-            return (
-              <div
-                key={category}
-                className={createDaisyUICardClasses('bordered mb-6')}
-              >
-                <div className="card-body">
-                  <h2 className="card-title mb-2">
-                    {categoryMeta.icon} {categoryMeta.name}
-                    <span className="text-sm font-normal text-gray-500">
-                      {' '}
-                      ({items.length})
-                    </span>
-                  </h2>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                    {items.map((ing) => {
-                      // Use the new multi-category-aware cart checking
-                      const isInUserCart = isInCart(ing.name); // Multi-category aware check
-                      const isSystemAvailable = Boolean(
-                        ing.is_system &&
-                          !hiddenNormalizedNames.has(ing.normalized_name)
-                      ); // Available system ingredient
-                      const isHidden = hiddenNormalizedNames.has(
-                        ing.normalized_name
-                      ); // Explicitly hidden
+            const totalInCategory = Object.values(subcategoryGroups).reduce(
+              (sum, items) => sum + items.length,
+              0
+            );
 
-                      return (
-                        <IngredientCard
-                          key={ing.id}
-                          ingredient={ing}
-                          isInUserCart={isInUserCart}
-                          isSystemAvailable={isSystemAvailable}
-                          isHidden={isHidden}
-                          onAddToGroceries={handleAddToGroceries}
-                          onRemoveFromGroceries={handleRemoveFromGroceries}
-                          onToggleHidden={handleToggleHidden}
-                          loading={groceries.loading || false}
-                          cartLoading={cartLoading || false}
-                        />
-                      );
-                    })}
+            return (
+              <div key={category} className="mb-8">
+                {/* Category Header */}
+                <div className={createDaisyUICardClasses('bordered mb-4')}>
+                  <div className="card-body p-4">
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <span>{categoryMeta.icon}</span>
+                      <span>{categoryMeta.name}</span>
+                      <span className="text-sm font-normal text-gray-500">
+                        ({totalInCategory})
+                      </span>
+                    </h2>
                   </div>
                 </div>
+
+                {/* Subcategory Sections */}
+                {Object.entries(subcategoryGroups)
+                  .sort(([subA], [subB]) => {
+                    // Sort by subcategory metadata sortOrder
+                    if (subA === 'uncategorized' && subB === 'uncategorized')
+                      return 0;
+                    if (subA === 'uncategorized') return 1;
+                    if (subB === 'uncategorized') return -1;
+                    const metaA = getSubcategoryMetadata(subA);
+                    const metaB = getSubcategoryMetadata(subB);
+                    return metaA.sortOrder - metaB.sortOrder;
+                  })
+                  .map(([subcategory, items]) => {
+                    const subcategoryMeta = getSubcategoryMetadata(subcategory);
+
+                    return (
+                      <div
+                        key={`${category}-${subcategory}`}
+                        className={createDaisyUICardClasses('bordered mb-4')}
+                      >
+                        <div className="card-body">
+                          {/* Subcategory Header */}
+                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-700">
+                            <span className="text-xl">
+                              {subcategoryMeta.icon}
+                            </span>
+                            <span>{subcategoryMeta.label}</span>
+                            <span className="text-sm font-normal text-gray-500">
+                              ({items.length})
+                            </span>
+                          </h3>
+
+                          {/* Ingredients Grid */}
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                            {items.map((ing) => {
+                              // Use the new multi-category-aware cart checking
+                              const isInUserCart = isInCart(ing.name);
+                              const isSystemAvailable = Boolean(
+                                ing.is_system &&
+                                  !hiddenNormalizedNames.has(
+                                    ing.normalized_name
+                                  )
+                              );
+                              const isHidden = hiddenNormalizedNames.has(
+                                ing.normalized_name
+                              );
+
+                              return (
+                                <IngredientCard
+                                  key={ing.id}
+                                  ingredient={ing}
+                                  isInUserCart={isInUserCart}
+                                  isSystemAvailable={isSystemAvailable}
+                                  isHidden={isHidden}
+                                  onAddToGroceries={handleAddToGroceries}
+                                  onRemoveFromGroceries={
+                                    handleRemoveFromGroceries
+                                  }
+                                  onToggleHidden={handleToggleHidden}
+                                  loading={groceries.loading || false}
+                                  cartLoading={cartLoading || false}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             );
           })

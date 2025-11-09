@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import {
   getCategoryMetadata,
   getAvailableCategories,
+  getSubcategoryMetadata,
+  type ChefIsabellaCategory,
 } from '@/lib/groceries/category-mapping';
 import { createDaisyUICardClasses } from '@/lib/card-migration';
 import { IngredientMatchingTest } from '@/components/groceries/ingredient-matching-test';
 import { GroceryCard } from '@/components/groceries/GroceryCard';
+import { SubcategoryFilter } from '@/components/groceries/SubcategoryFilter';
 import {
   RefreshCw,
   Globe,
@@ -21,12 +24,21 @@ import { Link } from 'react-router-dom';
 import { useGlobalIngredients } from '@/hooks/useGlobalIngredients';
 import { getCategories } from '@/lib/ingredients/repository';
 import { resolveCategoryForIngredient } from './utils/resolve-category';
+import {
+  enrichUserIngredients,
+  groupEnrichedIngredients,
+  normalizeIngredientName,
+  type EnrichedUserIngredient,
+} from '@/lib/groceries/enrich-user-ingredients';
 
 export function KitchenInventoryPage() {
   const { user } = useAuth();
   const groceries = useGroceriesQuery();
   const { hiddenNormalizedNames, globalIngredients } = useGlobalIngredients();
   const [activeCategory, setActiveCategory] = useState<string>('');
+  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(
+    null
+  );
   const [normalizedCategories, setNormalizedCategories] = useState<string[]>(
     []
   );
@@ -71,6 +83,79 @@ export function KitchenInventoryPage() {
     groceries.refetch();
   };
 
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+    setActiveSubcategory(null); // Reset subcategory when category changes
+  };
+
+  // Enrich user ingredients with global catalog metadata
+  const enrichedIngredients = useMemo(() => {
+    return enrichUserIngredients(
+      groceries.groceries as Record<string, string[]>,
+      globalIngredients
+    );
+  }, [groceries.groceries, globalIngredients]);
+
+  // Group ingredients by category and subcategory with filtering
+  const grouped = useMemo(() => {
+    // Filter by query
+    const filtered = enrichedIngredients.filter((ing) => {
+      const matchesQuery =
+        !query.trim() || ing.name.toLowerCase().includes(query.toLowerCase());
+
+      // Filter by hidden using shared normalization function
+      const normalized = normalizeIngredientName(ing.name);
+      const isNotHidden = !hiddenNormalizedNames.has(normalized);
+
+      // Filter by category
+      const matchesCategory =
+        activeCategory === 'all' ||
+        activeCategory === '' ||
+        ing.category === activeCategory;
+
+      // Filter by subcategory
+      const matchesSubcategory = activeSubcategory
+        ? ing.subcategory === activeSubcategory
+        : true;
+
+      return (
+        matchesQuery && isNotHidden && matchesCategory && matchesSubcategory
+      );
+    });
+
+    // Group by category and subcategory
+    return groupEnrichedIngredients(filtered);
+  }, [
+    enrichedIngredients,
+    query,
+    hiddenNormalizedNames,
+    activeCategory,
+    activeSubcategory,
+  ]);
+
+  // Calculate subcategory counts for the active category
+  const subcategoryCounts = useMemo(() => {
+    if (activeCategory === 'all' || !activeCategory) return {};
+
+    const counts: Record<string, number> = {};
+    enrichedIngredients
+      .filter((ing) => ing.category === activeCategory)
+      .filter((ing) => {
+        const matchesQuery =
+          !query.trim() || ing.name.toLowerCase().includes(query.toLowerCase());
+        // Use shared normalization function
+        const normalized = normalizeIngredientName(ing.name);
+        const isNotHidden = !hiddenNormalizedNames.has(normalized);
+        return matchesQuery && isNotHidden;
+      })
+      .forEach((ing) => {
+        const subcategory = ing.subcategory || 'uncategorized';
+        counts[subcategory] = (counts[subcategory] || 0) + 1;
+      });
+
+    return counts;
+  }, [enrichedIngredients, activeCategory, query, hiddenNormalizedNames]);
+
   const ingredientToCategoryMap = useMemo(() => {
     const map = new Map<string, string>();
     Object.entries(groceries.groceries).forEach(([category, ingredients]) => {
@@ -82,57 +167,6 @@ export function KitchenInventoryPage() {
     });
     return map;
   }, [groceries.groceries]);
-
-  const userCategoryItems = useMemo(() => {
-    // Only show available ingredients (in kitchen inventory)
-    // Unavailable ingredients should only appear on shopping list page
-    let allIngredients: string[] = [];
-
-    if (activeCategory === 'all') {
-      // Get only available ingredients from groceries
-      allIngredients = Object.values(groceries.groceries).flat() as string[];
-    } else {
-      // Get only available ingredients from specific category
-      allIngredients =
-        (groceries.groceries as Record<string, string[]>)[activeCategory] || [];
-    }
-
-    // Debug logging
-    if (import.meta.env.DEV) {
-      console.log('KitchenInventoryPage userCategoryItems:', {
-        activeCategory,
-        groceries: groceries.groceries,
-        shoppingList: groceries.shoppingList,
-        availableIngredients: allIngredients,
-        availableCount: allIngredients.length,
-        unavailableCount: Object.keys(groceries.shoppingList).length,
-      });
-    }
-
-    const filterHidden = (name: string) => {
-      const normalized = name
-        .toLowerCase()
-        .replace(/[^\w\s]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      return !hiddenNormalizedNames.has(normalized);
-    };
-
-    const filterByQuery = (name: string) => {
-      return !query.trim() || name.toLowerCase().includes(query.toLowerCase());
-    };
-
-    return allIngredients
-      .filter(filterHidden)
-      .filter(filterByQuery)
-      .sort((a, b) => a.localeCompare(b));
-  }, [
-    activeCategory,
-    groceries.groceries,
-    groceries.shoppingList,
-    hiddenNormalizedNames,
-    query,
-  ]);
 
   if (!user) {
     return (
@@ -150,11 +184,6 @@ export function KitchenInventoryPage() {
       </div>
     );
   }
-
-  const activeCategoryData =
-    activeCategory === 'all'
-      ? { name: 'All Categories', subtitle: 'All Your Ingredients', icon: '📋' }
-      : getCategoryMetadata(activeCategory);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
@@ -258,9 +287,10 @@ export function KitchenInventoryPage() {
           </div>
         )}
 
-        <div className={createDaisyUICardClasses('bordered mb-6')}>
-          <div className="card-body p-0">
-            <div className="tabs tabs-boxed p-4 overflow-x-auto">
+        {/* Category Tabs */}
+        <div className={createDaisyUICardClasses('bordered mb-4')}>
+          <div className="card-body p-4">
+            <div className="tabs tabs-boxed overflow-x-auto">
               {availableCategories.map((categoryKey) => {
                 const category =
                   categoryKey === 'all'
@@ -271,7 +301,7 @@ export function KitchenInventoryPage() {
                   <button
                     key={categoryKey}
                     className={`tab ${activeCategory === categoryKey ? 'tab-active' : ''}`}
-                    onClick={() => setActiveCategory(categoryKey)}
+                    onClick={() => handleCategoryChange(categoryKey)}
                   >
                     <span className="flex items-center space-x-2">
                       <span>{category.icon}</span>
@@ -294,39 +324,127 @@ export function KitchenInventoryPage() {
           </div>
         </div>
 
-        <div className={createDaisyUICardClasses('bordered')}>
-          <div className="card-body">
-            <h2 className="card-title mb-4">
-              {activeCategoryData.icon} {activeCategoryData.name}
-            </h2>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {userCategoryItems.map((ingredient) => {
-                const ingredientCategory = resolveCategoryForIngredient(
-                  ingredient,
-                  activeCategory,
-                  groceries.groceries,
-                  ingredientToCategoryMap
-                );
-                if (!ingredientCategory) return null;
-                const isAvailable = groceries.hasIngredient(
-                  ingredientCategory,
-                  ingredient
-                );
-
-                return (
-                  <GroceryCard
-                    key={ingredient}
-                    ingredient={ingredient}
-                    category={ingredientCategory}
-                    loading={groceries.loading}
-                    isSelected={isAvailable}
-                    onToggle={groceries.toggleIngredient}
-                  />
-                );
-              })}
+        {/* Subcategory Filter - Only show when a specific category is selected */}
+        {activeCategory !== 'all' && activeCategory !== '' && (
+          <div className={createDaisyUICardClasses('bordered mb-6')}>
+            <div className="card-body p-4">
+              <SubcategoryFilter
+                category={activeCategory as ChefIsabellaCategory}
+                activeSubcategory={activeSubcategory}
+                onSubcategoryChange={setActiveSubcategory}
+                ingredientCounts={subcategoryCounts}
+              />
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Ingredients Display - Hierarchical by Category and Subcategory */}
+        {groceries.loading ? (
+          <div className={createDaisyUICardClasses('bordered')}>
+            <div className="card-body">
+              <div className="animate-pulse text-gray-500">
+                Loading ingredients…
+              </div>
+            </div>
+          </div>
+        ) : Object.keys(grouped).length === 0 ? (
+          <div className={createDaisyUICardClasses('bordered')}>
+            <div className="card-body text-gray-600">No ingredients found.</div>
+          </div>
+        ) : (
+          Object.entries(grouped).map(([category, subcategoryGroups]) => {
+            const categoryMeta = getCategoryMetadata(category);
+            const totalInCategory = Object.values(subcategoryGroups).reduce(
+              (sum, items) => sum + items.length,
+              0
+            );
+
+            return (
+              <div key={category} className="mb-8">
+                {/* Category Header */}
+                <div className={createDaisyUICardClasses('bordered mb-4')}>
+                  <div className="card-body p-4">
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <span>{categoryMeta.icon}</span>
+                      <span>{categoryMeta.name}</span>
+                      <span className="text-sm font-normal text-gray-500">
+                        ({totalInCategory})
+                      </span>
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Subcategory Sections */}
+                {Object.entries(subcategoryGroups)
+                  .sort(([subA], [subB]) => {
+                    // Sort by subcategory metadata sortOrder
+                    if (subA === 'uncategorized' && subB === 'uncategorized')
+                      return 0;
+                    if (subA === 'uncategorized') return 1;
+                    if (subB === 'uncategorized') return -1;
+                    const metaA = getSubcategoryMetadata(subA);
+                    const metaB = getSubcategoryMetadata(subB);
+                    return metaA.sortOrder - metaB.sortOrder;
+                  })
+                  .map(([subcategory, items]) => {
+                    const subcategoryMeta = getSubcategoryMetadata(subcategory);
+
+                    return (
+                      <div
+                        key={`${category}-${subcategory}`}
+                        className={createDaisyUICardClasses('bordered mb-4')}
+                      >
+                        <div className="card-body">
+                          {/* Subcategory Header */}
+                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-700">
+                            <span className="text-xl">
+                              {subcategoryMeta.icon}
+                            </span>
+                            <span>{subcategoryMeta.label}</span>
+                            <span className="text-sm font-normal text-gray-500">
+                              ({items.length})
+                            </span>
+                          </h3>
+
+                          {/* Ingredients Grid */}
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                            {items.map(
+                              (enrichedIng: EnrichedUserIngredient) => {
+                                const ingredientCategory =
+                                  resolveCategoryForIngredient(
+                                    enrichedIng.name,
+                                    activeCategory,
+                                    groceries.groceries,
+                                    ingredientToCategoryMap
+                                  );
+                                if (!ingredientCategory) return null;
+
+                                const isAvailable = groceries.hasIngredient(
+                                  ingredientCategory,
+                                  enrichedIng.name
+                                );
+
+                                return (
+                                  <GroceryCard
+                                    key={enrichedIng.name}
+                                    ingredient={enrichedIng.name}
+                                    category={ingredientCategory}
+                                    loading={groceries.loading}
+                                    isSelected={isAvailable}
+                                    onToggle={groceries.toggleIngredient}
+                                  />
+                                );
+                              }
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            );
+          })
+        )}
 
         {groceries.error && (
           <div className="alert alert-warning mb-4">

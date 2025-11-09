@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGroceriesQuery, groceriesKeys } from '@/hooks/useGroceriesQuery';
 import { useShoppingCartAI } from '@/hooks/useShoppingCartAI';
 import { useUserGroceryCart } from '@/hooks/useUserGroceryCart';
@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCartChat } from '@/components/shopping-cart/ShoppingCartChat';
 import { IngredientCard } from '@/components/groceries/IngredientCard';
 import { IngredientRecommendationsPanel } from '@/components/shopping-cart/IngredientRecommendationsPanel';
+import { SubcategoryFilter } from '@/components/groceries/SubcategoryFilter';
 import {
   Check,
   ShoppingCart,
@@ -30,6 +31,19 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useGlobalIngredients } from '@/hooks/useGlobalIngredients';
+import {
+  getCategoryMetadata,
+  getAvailableCategories,
+  getSubcategoryMetadata,
+  type ChefIsabellaCategory,
+} from '@/lib/groceries/category-mapping';
+import {
+  enrichUserIngredients,
+  groupEnrichedIngredients,
+  type EnrichedUserIngredient,
+} from '@/lib/groceries/enrich-user-ingredients';
+import { createDaisyUICardClasses } from '@/lib/card-migration';
 
 // Shopping item component - commented out as unused
 /*
@@ -214,6 +228,7 @@ export default function ShoppingCartPage() {
   const queryClient = useQueryClient();
   const groceries = useGroceriesQuery();
   const { loading: cartLoading, removeFromCart } = useUserGroceryCart();
+  const { globalIngredients } = useGlobalIngredients();
 
   // Helper to check if ingredient is available in kitchen (across all categories)
   const isAvailableInKitchen = (ingredientName: string): boolean => {
@@ -234,6 +249,12 @@ export default function ShoppingCartPage() {
   const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Category and subcategory filtering
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(
+    null
+  );
 
   const [activeTab, setActiveTab] = useState<
     'incomplete' | 'completed' | 'all'
@@ -389,14 +410,129 @@ export default function ShoppingCartPage() {
 
   // Simple format shopping list items with session overlay
   const rawShoppingListItems = Object.entries(groceries.shoppingList);
-  const effectiveShoppingListItems = rawShoppingListItems.map(
-    ([ingredient, status]) => {
-      // Overlay session-only completion state; fall back to backend status when not overridden
-      const isCompletedSession = sessionCompleted.has(ingredient);
-      const effectiveStatus = isCompletedSession ? 'purchased' : status;
-      return [ingredient, effectiveStatus] as const;
-    }
-  );
+  const effectiveShoppingListItems: readonly (readonly [
+    string,
+    'pending' | 'purchased',
+  ])[] = rawShoppingListItems.map(([ingredient, status]) => {
+    // Overlay session-only completion state; fall back to backend status when not overridden
+    const isCompletedSession = sessionCompleted.has(ingredient);
+    const effectiveStatus: 'pending' | 'purchased' = isCompletedSession
+      ? 'purchased'
+      : (status as 'pending' | 'purchased');
+    return [ingredient, effectiveStatus] as const;
+  });
+
+  // Enrich shopping list items with global catalog metadata
+  const enrichedShoppingListItems = useMemo(() => {
+    // Convert shopping list to a format enrichUserIngredients can process
+    // Use a temporary key since we don't know categories yet; enrichment will assign actual categories
+    const itemsAsRecord: Record<string, string[]> = {
+      temporary_category: effectiveShoppingListItems.map(
+        ([ingredient]) => ingredient
+      ),
+    };
+
+    return enrichUserIngredients(itemsAsRecord, globalIngredients);
+  }, [effectiveShoppingListItems, globalIngredients]);
+
+  // Create a status map for O(1) lookups instead of O(n) find() calls
+  const ingredientStatusMap = useMemo(() => {
+    const map = new Map<string, 'pending' | 'purchased'>();
+    effectiveShoppingListItems.forEach(([name, status]) => {
+      map.set(name, status);
+    });
+    return map;
+  }, [effectiveShoppingListItems]);
+
+  // Group enriched shopping list items by category and subcategory with filtering
+  const groupedShoppingList = useMemo(() => {
+    // Apply filters
+    const filtered = enrichedShoppingListItems.filter((ing) => {
+      // Find the status for this ingredient using O(1) Map lookup
+      const status = ingredientStatusMap.get(ing.name) ?? 'pending';
+
+      // Filter by completion status tab
+      const matchesTab =
+        activeTab === 'all' ||
+        (activeTab === 'completed' && status === 'purchased') ||
+        (activeTab === 'incomplete' && status !== 'purchased');
+
+      // Filter by search query
+      const matchesQuery =
+        !searchQuery.trim() ||
+        ing.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Filter by category
+      const matchesCategory =
+        activeCategory === 'all' || ing.category === activeCategory;
+
+      // Filter by subcategory
+      const matchesSubcategory = activeSubcategory
+        ? ing.subcategory === activeSubcategory
+        : true;
+
+      return (
+        matchesTab && matchesQuery && matchesCategory && matchesSubcategory
+      );
+    });
+
+    // Group by category and subcategory
+    return groupEnrichedIngredients(filtered);
+  }, [
+    enrichedShoppingListItems,
+    ingredientStatusMap,
+    activeTab,
+    searchQuery,
+    activeCategory,
+    activeSubcategory,
+  ]);
+
+  // Calculate subcategory counts for the active category
+  const subcategoryCounts = useMemo(() => {
+    if (activeCategory === 'all') return {};
+
+    const counts: Record<string, number> = {};
+    enrichedShoppingListItems
+      .filter((ing) => {
+        // Find the status for this ingredient using O(1) Map lookup
+        const status = ingredientStatusMap.get(ing.name) ?? 'pending';
+
+        // Filter by completion status tab
+        const matchesTab =
+          activeTab === 'all' ||
+          (activeTab === 'completed' && status === 'purchased') ||
+          (activeTab === 'incomplete' && status !== 'purchased');
+
+        // Filter by search query
+        const matchesQuery =
+          !searchQuery.trim() ||
+          ing.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+        return ing.category === activeCategory && matchesTab && matchesQuery;
+      })
+      .forEach((ing) => {
+        const subcategory = ing.subcategory || 'uncategorized';
+        counts[subcategory] = (counts[subcategory] || 0) + 1;
+      });
+
+    return counts;
+  }, [
+    enrichedShoppingListItems,
+    ingredientStatusMap,
+    activeCategory,
+    activeTab,
+    searchQuery,
+  ]);
+
+  // Get available categories
+  const availableCategories = useMemo(() => {
+    return ['all', ...getAvailableCategories(globalIngredients)];
+  }, [globalIngredients]);
+
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+    setActiveSubcategory(null); // Reset subcategory when category changes
+  };
 
   const incompleteItems = effectiveShoppingListItems.filter(
     ([, status]) => status === 'pending'
@@ -417,19 +553,6 @@ export default function ShoppingCartPage() {
       allItems,
     });
   }
-
-  const getDisplayItems = () => {
-    switch (activeTab) {
-      case 'incomplete':
-        return incompleteItems;
-      case 'completed':
-        return completedItems;
-      case 'all':
-        return allItems;
-      default:
-        return incompleteItems;
-    }
-  };
 
   const handleClearCompleted = async () => {
     if (completedItems.length === 0) {
@@ -822,7 +945,78 @@ export default function ShoppingCartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Shopping list - Left column (2/3 width) */}
         <div className="lg:col-span-2">
-          {/* Tabs */}
+          {/* Category Tabs */}
+          <div className={createDaisyUICardClasses('bordered mb-4')}>
+            <div className="card-body p-4">
+              <div className="tabs tabs-boxed overflow-x-auto">
+                {availableCategories.map((categoryKey) => {
+                  const category =
+                    categoryKey === 'all'
+                      ? { name: 'All Categories', icon: '📋' }
+                      : getCategoryMetadata(categoryKey);
+
+                  // Count items in this category
+                  const categoryCount = enrichedShoppingListItems.filter(
+                    (ing) => {
+                      // Use O(1) Map lookup instead of find()
+                      const status =
+                        ingredientStatusMap.get(ing.name) ?? 'pending';
+                      const matchesTab =
+                        activeTab === 'all' ||
+                        (activeTab === 'completed' && status === 'purchased') ||
+                        (activeTab === 'incomplete' && status !== 'purchased');
+                      return (
+                        (categoryKey === 'all' ||
+                          ing.category === categoryKey) &&
+                        matchesTab
+                      );
+                    }
+                  ).length;
+
+                  return (
+                    <button
+                      key={categoryKey}
+                      className={`tab ${activeCategory === categoryKey ? 'tab-active' : ''}`}
+                      onClick={() => handleCategoryChange(categoryKey)}
+                    >
+                      <span className="flex items-center space-x-2">
+                        <span>{category.icon}</span>
+                        <span className="hidden sm:inline">
+                          {category.name}
+                        </span>
+                        <span className="sm:hidden">
+                          {categoryKey === 'all'
+                            ? 'All'
+                            : category.name.split(' ')[0]}
+                        </span>
+                        {categoryCount > 0 && (
+                          <span className="badge badge-sm badge-primary">
+                            {categoryCount}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Subcategory Filter - Only show when a specific category is selected */}
+          {activeCategory !== 'all' && (
+            <div className={createDaisyUICardClasses('bordered mb-4')}>
+              <div className="card-body p-4">
+                <SubcategoryFilter
+                  category={activeCategory as ChefIsabellaCategory}
+                  activeSubcategory={activeSubcategory}
+                  onSubcategoryChange={setActiveSubcategory}
+                  ingredientCounts={subcategoryCounts}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Status Tabs (To Buy / Completed / All) */}
           <div className="tabs tabs-boxed mb-4">
             <button
               className={`tab ${activeTab === 'incomplete' ? 'tab-active' : ''}`}
@@ -844,81 +1038,174 @@ export default function ShoppingCartPage() {
             </button>
           </div>
 
-          {/* Shopping items */}
-          <div className="space-y-3">
-            {getDisplayItems().length === 0 ? (
-              <div className="card bg-base-100 shadow-sm">
-                <div className="card-body text-center py-12">
-                  <ShoppingCart className="w-16 h-16 mx-auto text-base-content/30 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    {activeTab === 'completed'
-                      ? 'No completed items'
-                      : 'Your shopping list is empty'}
-                  </h3>
-                  <p className="text-base-content/70 mb-4">
-                    {activeTab === 'completed'
-                      ? 'Complete some items to see them here.'
-                      : 'Mark ingredients as unavailable in your kitchen to add them to your shopping list.'}
-                  </p>
-                </div>
+          {/* Shopping Items - Hierarchical Display */}
+          {Object.keys(groupedShoppingList).length === 0 ? (
+            <div className="card bg-base-100 shadow-sm">
+              <div className="card-body text-center py-12">
+                <ShoppingCart className="w-16 h-16 mx-auto text-base-content/30 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  {activeTab === 'completed'
+                    ? 'No completed items'
+                    : 'Your shopping list is empty'}
+                </h3>
+                <p className="text-base-content/70 mb-4">
+                  {activeTab === 'completed'
+                    ? 'Complete some items to see them here.'
+                    : 'Mark ingredients as unavailable in your kitchen to add them to your shopping list.'}
+                </p>
               </div>
-            ) : (
-              getDisplayItems().map(([ingredient, status]) => (
-                <div
-                  key={ingredient}
-                  className="card bg-base-100 shadow-sm border"
-                >
-                  <div className="card-body p-4">
-                    <div className="flex items-start gap-3">
-                      <button
-                        className={`btn btn-circle btn-sm ${status === 'purchased' ? 'btn-success' : 'btn-outline'}`}
-                        onClick={() => {
-                          // Session-only toggle: mark/unmark as completed in this session
-                          setSessionCompleted((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(ingredient)) {
-                              next.delete(ingredient);
-                            } else {
-                              next.add(ingredient);
-                            }
-                            return next;
-                          });
+            </div>
+          ) : (
+            Object.entries(groupedShoppingList).map(
+              ([category, subcategoryGroups]) => {
+                const categoryMeta = getCategoryMetadata(category);
+                const totalInCategory = Object.values(subcategoryGroups).reduce(
+                  (sum, items) => sum + items.length,
+                  0
+                );
 
-                          // Add/remove from virtual cart
-                          setVirtualCart((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(ingredient)) {
-                              next.delete(ingredient);
-                            } else {
-                              next.add(ingredient);
-                            }
-                            return next;
-                          });
-                        }}
-                      >
-                        {status === 'purchased' ? (
-                          <Check className="w-4 h-4" />
-                        ) : (
-                          <div className="w-4 h-4" />
-                        )}
-                      </button>
-                      <div className="flex-1">
-                        <h3
-                          className={`font-semibold ${status === 'purchased' ? 'line-through' : ''}`}
-                        >
-                          {ingredient}
-                        </h3>
-                        <div className="badge badge-primary badge-sm">
-                          <ShoppingCart className="w-4 h-4" />
-                          <span>Kitchen Restock</span>
-                        </div>
+                return (
+                  <div key={category} className="mb-6">
+                    {/* Category Header */}
+                    <div className={createDaisyUICardClasses('bordered mb-3')}>
+                      <div className="card-body p-3">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                          <span>{categoryMeta.icon}</span>
+                          <span>{categoryMeta.name}</span>
+                          <span className="text-sm font-normal text-gray-500">
+                            ({totalInCategory})
+                          </span>
+                        </h2>
                       </div>
                     </div>
+
+                    {/* Subcategory Sections */}
+                    {Object.entries(subcategoryGroups)
+                      .sort(([subA], [subB]) => {
+                        // Sort by subcategory metadata sortOrder
+                        if (
+                          subA === 'uncategorized' &&
+                          subB === 'uncategorized'
+                        )
+                          return 0;
+                        if (subA === 'uncategorized') return 1;
+                        if (subB === 'uncategorized') return -1;
+                        const metaA = getSubcategoryMetadata(subA);
+                        const metaB = getSubcategoryMetadata(subB);
+                        return metaA.sortOrder - metaB.sortOrder;
+                      })
+                      .map(([subcategory, items]) => {
+                        const subcategoryMeta =
+                          getSubcategoryMetadata(subcategory);
+
+                        return (
+                          <div
+                            key={`${category}-${subcategory}`}
+                            className="card bg-base-100 shadow-md border border-base-300 mb-4"
+                          >
+                            <div className="card-body p-4">
+                              {/* Subcategory Header */}
+                              <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-gray-700">
+                                <span className="text-lg">
+                                  {subcategoryMeta.icon}
+                                </span>
+                                <span>{subcategoryMeta.label}</span>
+                                <span className="text-sm font-normal text-gray-500">
+                                  ({items.length})
+                                </span>
+                              </h3>
+
+                              {/* Ingredients List */}
+                              <div className="space-y-3">
+                                {items.map(
+                                  (enrichedIng: EnrichedUserIngredient) => {
+                                    // Use O(1) Map lookup for ingredient status
+                                    const status =
+                                      ingredientStatusMap.get(
+                                        enrichedIng.name
+                                      ) ?? 'pending';
+
+                                    return (
+                                      <div
+                                        key={enrichedIng.name}
+                                        className="card bg-base-100 shadow-sm border"
+                                      >
+                                        <div className="card-body p-4">
+                                          <div className="flex items-start gap-3">
+                                            <button
+                                              className={`btn btn-circle btn-sm ${status === 'purchased' ? 'btn-success' : 'btn-outline'}`}
+                                              onClick={() => {
+                                                // Session-only toggle: mark/unmark as completed in this session
+                                                setSessionCompleted((prev) => {
+                                                  const next = new Set(prev);
+                                                  if (
+                                                    next.has(enrichedIng.name)
+                                                  ) {
+                                                    next.delete(
+                                                      enrichedIng.name
+                                                    );
+                                                  } else {
+                                                    next.add(enrichedIng.name);
+                                                  }
+                                                  return next;
+                                                });
+
+                                                // Add/remove from virtual cart
+                                                setVirtualCart((prev) => {
+                                                  const next = new Set(prev);
+                                                  if (
+                                                    next.has(enrichedIng.name)
+                                                  ) {
+                                                    next.delete(
+                                                      enrichedIng.name
+                                                    );
+                                                  } else {
+                                                    next.add(enrichedIng.name);
+                                                  }
+                                                  return next;
+                                                });
+                                              }}
+                                            >
+                                              {status === 'purchased' ? (
+                                                <Check className="w-4 h-4" />
+                                              ) : (
+                                                <div className="w-4 h-4" />
+                                              )}
+                                            </button>
+                                            <div className="flex-1">
+                                              <h3
+                                                className={`font-semibold ${status === 'purchased' ? 'line-through' : ''}`}
+                                              >
+                                                {enrichedIng.name}
+                                              </h3>
+                                              <div className="flex items-center gap-2 mt-1">
+                                                <div className="badge badge-primary badge-sm">
+                                                  <ShoppingCart className="w-3 h-3 mr-1" />
+                                                  <span>Kitchen Restock</span>
+                                                </div>
+                                                {!enrichedIng.isMatched && (
+                                                  <span className="badge badge-warning badge-xs">
+                                                    Not in catalog
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                );
+              }
+            )
+          )}
         </div>
 
         {/* Right column placeholder container (reserved for future content) */}

@@ -140,6 +140,7 @@ export const FRESH_PRODUCE_SUBCATEGORIES = [
   'tropical_fruits',
   'apples_pears',
   'melons',
+  'other_vegetables',
 ] as const;
 
 // Dairy & Cold subcategories
@@ -396,6 +397,13 @@ export const SUBCATEGORY_CONFIG: Record<
     icon: '🍉',
     sortOrder: 13,
     description: 'Watermelon, cantaloupe, honeydew',
+  },
+  other_vegetables: {
+    label: 'Other Vegetables',
+    icon: '🥬',
+    sortOrder: 14,
+    description:
+      'Asparagus, celery, green beans, mushrooms, and other vegetables',
   },
 
   // Dairy & Cold

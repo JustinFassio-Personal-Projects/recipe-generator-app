@@ -7,6 +7,7 @@ export interface GlobalIngredient {
   name: string;
   normalized_name: string;
   category: string;
+  subcategory?: string | null;
   synonyms: string[];
   usage_count: number;
   first_seen_at: string;

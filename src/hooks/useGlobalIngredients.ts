@@ -35,6 +35,10 @@ export interface UseGlobalIngredientsReturn {
 
   // Utilities
   getGlobalIngredient: (normalizedName: string) => GlobalIngredient | null;
+  getIngredientsBySubcategory: (
+    category: string,
+    subcategory: string
+  ) => GlobalIngredient[];
   refreshGlobalIngredients: () => Promise<void>;
 
   // Actions for user hidden list
@@ -221,6 +225,15 @@ export function useGlobalIngredients(): UseGlobalIngredientsReturn {
     [globalIngredients]
   );
 
+  const getIngredientsBySubcategory = useCallback(
+    (category: string, subcategory: string): GlobalIngredient[] => {
+      return globalIngredients.filter(
+        (ing) => ing.category === category && ing.subcategory === subcategory
+      );
+    },
+    [globalIngredients]
+  );
+
   const hideIngredient = useCallback(
     async (name: string): Promise<boolean> => {
       if (!matcher || !user) return false;
@@ -284,6 +297,7 @@ export function useGlobalIngredients(): UseGlobalIngredientsReturn {
     extractIngredientsFromRecipe,
     searchGlobalIngredients,
     getGlobalIngredient,
+    getIngredientsBySubcategory,
     refreshGlobalIngredients,
     hideIngredient,
     unhideIngredient,

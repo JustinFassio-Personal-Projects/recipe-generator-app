@@ -435,9 +435,11 @@ export default function ShoppingCartPage() {
   // Create a status map for O(1) lookups instead of O(n) find() calls
   const ingredientStatusMap = useMemo(() => {
     const map = new Map<string, 'pending' | 'purchased'>();
-    effectiveShoppingListItems.forEach(([name, status]) => {
-      map.set(name, status);
-    });
+    effectiveShoppingListItems.forEach(
+      ([name, status]: readonly [string, 'pending' | 'purchased']) => {
+        map.set(name, status);
+      }
+    );
     return map;
   }, [effectiveShoppingListItems]);
 

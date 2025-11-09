@@ -24,9 +24,10 @@ interface ValidationResult {
 
 interface IngredientAssignment {
   name: string;
+  normalizedName: string;
   category: string;
   subcategory: string;
-  normalizedName: string;
+  action: 'keep' | 'delete' | 'move';
 }
 
 // Read assignment data from the generated JSON

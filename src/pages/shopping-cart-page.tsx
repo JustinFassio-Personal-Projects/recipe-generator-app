@@ -1094,11 +1094,9 @@ export default function ShoppingCartPage() {
                         return (
                           <div
                             key={`${category}-${subcategory}`}
-                            className={createDaisyUICardClasses(
-                              'bordered mb-3'
-                            )}
+                            className="card bg-base-100 shadow-md border border-base-300 mb-4"
                           >
-                            <div className="card-body p-3">
+                            <div className="card-body p-4">
                               {/* Subcategory Header */}
                               <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-gray-700">
                                 <span className="text-lg">
@@ -1111,7 +1109,7 @@ export default function ShoppingCartPage() {
                               </h3>
 
                               {/* Ingredients List */}
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 {items.map(
                                   (enrichedIng: EnrichedUserIngredient) => {
                                     // Find the status for this ingredient
@@ -1126,51 +1124,69 @@ export default function ShoppingCartPage() {
                                     return (
                                       <div
                                         key={enrichedIng.name}
-                                        className="flex items-center gap-3 p-2 rounded hover:bg-base-200 transition-colors"
+                                        className="card bg-base-100 shadow-sm border"
                                       >
-                                        <button
-                                          className={`btn btn-circle btn-sm ${status === 'purchased' ? 'btn-success' : 'btn-outline'}`}
-                                          onClick={() => {
-                                            // Session-only toggle: mark/unmark as completed in this session
-                                            setSessionCompleted((prev) => {
-                                              const next = new Set(prev);
-                                              if (next.has(enrichedIng.name)) {
-                                                next.delete(enrichedIng.name);
-                                              } else {
-                                                next.add(enrichedIng.name);
-                                              }
-                                              return next;
-                                            });
+                                        <div className="card-body p-4">
+                                          <div className="flex items-start gap-3">
+                                            <button
+                                              className={`btn btn-circle btn-sm ${status === 'purchased' ? 'btn-success' : 'btn-outline'}`}
+                                              onClick={() => {
+                                                // Session-only toggle: mark/unmark as completed in this session
+                                                setSessionCompleted((prev) => {
+                                                  const next = new Set(prev);
+                                                  if (
+                                                    next.has(enrichedIng.name)
+                                                  ) {
+                                                    next.delete(
+                                                      enrichedIng.name
+                                                    );
+                                                  } else {
+                                                    next.add(enrichedIng.name);
+                                                  }
+                                                  return next;
+                                                });
 
-                                            // Add/remove from virtual cart
-                                            setVirtualCart((prev) => {
-                                              const next = new Set(prev);
-                                              if (next.has(enrichedIng.name)) {
-                                                next.delete(enrichedIng.name);
-                                              } else {
-                                                next.add(enrichedIng.name);
-                                              }
-                                              return next;
-                                            });
-                                          }}
-                                        >
-                                          {status === 'purchased' ? (
-                                            <Check className="w-4 h-4" />
-                                          ) : (
-                                            <div className="w-4 h-4" />
-                                          )}
-                                        </button>
-                                        <div className="flex-1">
-                                          <h3
-                                            className={`font-semibold ${status === 'purchased' ? 'line-through' : ''}`}
-                                          >
-                                            {enrichedIng.name}
-                                          </h3>
-                                          {!enrichedIng.isMatched && (
-                                            <span className="badge badge-warning badge-xs">
-                                              Not in catalog
-                                            </span>
-                                          )}
+                                                // Add/remove from virtual cart
+                                                setVirtualCart((prev) => {
+                                                  const next = new Set(prev);
+                                                  if (
+                                                    next.has(enrichedIng.name)
+                                                  ) {
+                                                    next.delete(
+                                                      enrichedIng.name
+                                                    );
+                                                  } else {
+                                                    next.add(enrichedIng.name);
+                                                  }
+                                                  return next;
+                                                });
+                                              }}
+                                            >
+                                              {status === 'purchased' ? (
+                                                <Check className="w-4 h-4" />
+                                              ) : (
+                                                <div className="w-4 h-4" />
+                                              )}
+                                            </button>
+                                            <div className="flex-1">
+                                              <h3
+                                                className={`font-semibold ${status === 'purchased' ? 'line-through' : ''}`}
+                                              >
+                                                {enrichedIng.name}
+                                              </h3>
+                                              <div className="flex items-center gap-2 mt-1">
+                                                <div className="badge badge-primary badge-sm">
+                                                  <ShoppingCart className="w-3 h-3 mr-1" />
+                                                  <span>Kitchen Restock</span>
+                                                </div>
+                                                {!enrichedIng.isMatched && (
+                                                  <span className="badge badge-warning badge-xs">
+                                                    Not in catalog
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
                                         </div>
                                       </div>
                                     );

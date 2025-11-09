@@ -12,6 +12,14 @@ export interface EnrichedUserIngredient {
 }
 
 /**
+ * Maximum allowed character length difference between user ingredient name and
+ * global ingredient name for partial matching. Set to 10 to allow reasonable
+ * variations (e.g., "tomatoes" vs "cherry tomatoes") while avoiding false
+ * positives from completely different ingredients.
+ */
+const MAX_LENGTH_DIFF_FOR_PARTIAL_MATCH = 10;
+
+/**
  * Normalizes an ingredient name for matching
  * Same logic as EnhancedIngredientMatcher
  */
@@ -61,7 +69,7 @@ function findMatchingGlobalIngredient(
       const lengthDiff = Math.abs(
         normalizedUserName.length - globalNorm.length
       );
-      if (lengthDiff <= 10) {
+      if (lengthDiff <= MAX_LENGTH_DIFF_FOR_PARTIAL_MATCH) {
         return globalIng;
       }
     }

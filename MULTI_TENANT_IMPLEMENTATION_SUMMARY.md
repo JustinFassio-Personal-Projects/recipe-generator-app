@@ -56,7 +56,7 @@ Successfully implemented multi-tenant architecture for Recipe Generator using Vi
 
 - ID: `00000000-0000-0000-0000-000000000001`
 - Subdomain: `app`
-- Name: `Recipe Generator (Main)`
+- Name: `Recipe Generator`
 
 ---
 

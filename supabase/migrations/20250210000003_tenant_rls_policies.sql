@@ -13,7 +13,7 @@ DROP POLICY IF EXISTS "recipes_delete_own" ON recipes;
 CREATE POLICY "profiles_select_same_tenant" ON profiles
   FOR SELECT
   USING (
-    tenant_id = (SELECT tenant_id FROM profiles WHERE user_id = auth.uid())
+    tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid())
   );
 
 CREATE POLICY "profiles_update_own" ON profiles
@@ -29,7 +29,7 @@ CREATE POLICY "recipes_select_same_tenant_public" ON recipes
   FOR SELECT
   USING (
     is_public = true 
-    AND tenant_id = (SELECT tenant_id FROM profiles WHERE user_id = auth.uid())
+    AND tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid())
   );
 
 CREATE POLICY "recipes_select_own" ON recipes
@@ -40,7 +40,7 @@ CREATE POLICY "recipes_insert_own_tenant" ON recipes
   FOR INSERT
   WITH CHECK (
     auth.uid() = user_id
-    AND tenant_id = (SELECT tenant_id FROM profiles WHERE user_id = auth.uid())
+    AND tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid())
   );
 
 CREATE POLICY "recipes_update_own" ON recipes
@@ -55,7 +55,7 @@ CREATE POLICY "recipes_delete_own" ON recipes
 CREATE POLICY "user_groceries_tenant_scoped" ON user_groceries
   FOR ALL
   USING (
-    tenant_id = (SELECT tenant_id FROM profiles WHERE user_id = auth.uid())
+    tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid())
   );
 
 -- Note: evaluation_reports table doesn't exist at this point in migration timeline

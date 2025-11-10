@@ -597,10 +597,18 @@ export const recipeApi = {
     const user = authData.user;
 
     try {
-      // Create the recipe first
+      // Create the recipe first with tenant_id
+      // Using default tenant for now (multi-tenant infrastructure in place)
+      const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
       const { data, error } = await supabase
         .from('recipes')
-        .insert({ ...recipe, user_id: user.id, is_public: false })
+        .insert({
+          ...recipe,
+          user_id: user.id,
+          tenant_id: DEFAULT_TENANT_ID,
+          is_public: false,
+        })
         .select()
         .single();
 

@@ -241,10 +241,13 @@ export async function seedUserGroceries() {
     }
 
     // Insert/update user groceries
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
     const { error } = await admin.from('user_groceries').upsert(
       {
         user_id: user.id,
         groceries: userGrocery.groceries,
+        tenant_id: DEFAULT_TENANT_ID, // Multi-tenant support
       },
       { onConflict: 'user_id' }
     );

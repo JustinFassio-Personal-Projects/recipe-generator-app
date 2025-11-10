@@ -140,6 +140,9 @@ export type Profile = {
   visit_count: number;
   last_visit_at: string | null;
   show_welcome_popup: boolean;
+  // Admin role and tenant
+  is_admin?: boolean;
+  tenant_id?: string;
   created_at: string;
   updated_at: string;
 };
@@ -235,4 +238,44 @@ export type ParsedRecipe = {
   instructions: string;
   notes: string | null;
   categories: string[];
+};
+
+// Multi-Tenant types
+export type TenantBranding = {
+  logo_url?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  favicon_url?: string;
+};
+
+export type TenantSettings = {
+  specialty?: string; // e.g., "Pediatric Nutrition", "Sports Medicine"
+  restricted_ingredients?: string[]; // e.g., ["peanuts", "shellfish"]
+  instruction_style?: string; // e.g., "detailed", "concise"
+  default_units?: 'metric' | 'imperial';
+};
+
+export type TenantAIConfig = {
+  system_prompt_override?: string;
+  persona_overrides?: Record<
+    string,
+    {
+      name?: string;
+      systemPrompt?: string;
+    }
+  >;
+};
+
+export type Tenant = {
+  id: string;
+  subdomain: string;
+  name: string;
+  owner_id: string | null;
+  branding?: TenantBranding;
+  settings?: TenantSettings;
+  ai_config?: TenantAIConfig;
+  subscription_tier: 'starter' | 'pro' | 'enterprise';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 };

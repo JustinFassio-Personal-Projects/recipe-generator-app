@@ -74,11 +74,13 @@ export async function createUserAndProfile(
         id: string;
         username?: string;
         full_name: string;
+        tenant_id: string;
         created_at: string;
         updated_at: string;
       } = {
         id: userId,
         full_name: 'Test User',
+        tenant_id: '00000000-0000-0000-0000-000000000001', // Default tenant
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

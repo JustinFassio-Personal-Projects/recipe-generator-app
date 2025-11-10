@@ -116,10 +116,13 @@ async function seedAvatarAnalytics() {
     }
 
     // Insert avatar analytics events using the correct JSONB structure
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
     const { error } = await admin.from('avatar_analytics').insert({
       event_type: 'upload',
       event_data: analytics.analytics,
       user_id: user.id,
+      tenant_id: DEFAULT_TENANT_ID, // Multi-tenant support
     });
 
     if (error) {

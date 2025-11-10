@@ -2,7 +2,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthProvider';
+import { TenantProvider } from '@/contexts/TenantContext';
+import { TenantGuard } from '@/components/tenant/TenantGuard';
 import { ProtectedRoute, PublicRoute } from '@/components/auth/ProtectedRoute';
+import { AdminRoute } from '@/components/auth/AdminRoute';
 import { Header } from '@/components/layout/header';
 import { AuthErrorBoundary } from '@/components/auth/AuthErrorBoundary';
 import { RecipesPage } from '@/pages/recipes-page';
@@ -25,6 +28,7 @@ import ShoppingCartPage from '@/pages/shopping-cart-page';
 import { SelectionProvider } from '@/contexts/SelectionContext';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import SubscriptionSuccessPage from '@/pages/SubscriptionSuccessPage';
+import { TenantsAdminPage } from '@/pages/admin/tenants-admin-page';
 import { usePageTracking } from '@/hooks/usePageTracking';
 
 import { Toaster } from '@/components/ui/toaster';
@@ -277,6 +281,21 @@ function AppContent() {
         }
       />
 
+      {/* Admin routes */}
+      <Route
+        path="/admin/tenants"
+        element={
+          <AdminRoute>
+            <div className="bg-base-100 min-h-screen">
+              <Header />
+              <main>
+                <TenantsAdminPage />
+              </main>
+            </div>
+          </AdminRoute>
+        }
+      />
+
       {/* Default redirects */}
       <Route path="/" element={<Navigate to="/recipes" replace />} />
       <Route path="*" element={<Navigate to="/recipes" replace />} />
@@ -288,15 +307,19 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <SelectionProvider>
-              <AppContent />
-            </SelectionProvider>
-          </AuthProvider>
-          <Toaster />
-        </BrowserRouter>
-        <ReactQueryDevtools initialIsOpen={false} />
+        <TenantProvider>
+          <TenantGuard>
+            <BrowserRouter>
+              <AuthProvider>
+                <SelectionProvider>
+                  <AppContent />
+                </SelectionProvider>
+              </AuthProvider>
+              <Toaster />
+            </BrowserRouter>
+          </TenantGuard>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </TenantProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -149,9 +149,16 @@ export const seedUsers: SeedUser[] = [
 ];
 
 async function ensureUsername(userId: string, username: string) {
-  const { error } = await admin
-    .from('usernames')
-    .upsert({ user_id: userId, username }, { onConflict: 'user_id' });
+  const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+  const { error } = await admin.from('usernames').upsert(
+    {
+      user_id: userId,
+      username,
+      tenant_id: DEFAULT_TENANT_ID, // Multi-tenant support
+    },
+    { onConflict: 'user_id' }
+  );
 
   if (error) {
     if (
@@ -177,10 +184,13 @@ async function createProfile(
   fullName: string,
   profile: SeedUser['profile'] = {}
 ) {
+  const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
   const { error } = await admin.from('profiles').upsert(
     {
       id: userId,
       full_name: fullName,
+      tenant_id: DEFAULT_TENANT_ID, // Multi-tenant support
       ...profile,
     },
     { onConflict: 'id' }
@@ -198,9 +208,16 @@ async function createProfile(
 async function upsertSafety(userId: string, safety: SeedUser['safety']) {
   if (!safety) return;
 
-  const { error } = await admin
-    .from('user_safety')
-    .upsert({ user_id: userId, ...safety }, { onConflict: 'user_id' });
+  const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+  const { error } = await admin.from('user_safety').upsert(
+    {
+      user_id: userId,
+      tenant_id: DEFAULT_TENANT_ID, // Multi-tenant support
+      ...safety,
+    },
+    { onConflict: 'user_id' }
+  );
 
   if (error) {
     logError(`Failed to create safety data for user ${userId}:`, error);
@@ -210,9 +227,16 @@ async function upsertSafety(userId: string, safety: SeedUser['safety']) {
 async function upsertCooking(userId: string, cooking: SeedUser['cooking']) {
   if (!cooking) return;
 
-  const { error } = await admin
-    .from('cooking_preferences')
-    .upsert({ user_id: userId, ...cooking }, { onConflict: 'user_id' });
+  const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+  const { error } = await admin.from('cooking_preferences').upsert(
+    {
+      user_id: userId,
+      tenant_id: DEFAULT_TENANT_ID, // Multi-tenant support
+      ...cooking,
+    },
+    { onConflict: 'user_id' }
+  );
 
   if (error) {
     logError(`Failed to create cooking preferences for user ${userId}:`, error);

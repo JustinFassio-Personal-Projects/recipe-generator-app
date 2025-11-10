@@ -135,6 +135,40 @@ When generating a complete recipe, structure it as a JSON object with:
   },
 };
 
+// Helper function to fetch tenant configuration
+async function getTenantConfig(userId: string) {
+  if (!userId) return null;
+
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Get user's tenant
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (!profile?.tenant_id) return null;
+
+    // Get tenant config
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('settings, ai_config')
+      .eq('id', profile.tenant_id)
+      .single();
+
+    return tenant;
+  } catch (error) {
+    console.error('Failed to load tenant config:', error);
+    return null;
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -258,6 +292,32 @@ async function buildSystemPrompt(
     RECIPE_BOT_PERSONAS[persona as keyof typeof RECIPE_BOT_PERSONAS] ||
     RECIPE_BOT_PERSONAS.homeCook;
   let systemPrompt = personaConfig.systemPrompt;
+
+  // Apply tenant AI config overrides
+  if (userId) {
+    const tenantConfig = await getTenantConfig(userId);
+
+    if (tenantConfig) {
+      // Apply system prompt override
+      if (tenantConfig.ai_config?.system_prompt_override) {
+        systemPrompt =
+          tenantConfig.ai_config.system_prompt_override + '\n\n' + systemPrompt;
+      }
+
+      // Apply persona overrides
+      if (tenantConfig.ai_config?.persona_overrides?.[persona]) {
+        const override = tenantConfig.ai_config.persona_overrides[persona];
+        if (override.systemPrompt) {
+          systemPrompt = override.systemPrompt;
+        }
+      }
+
+      // Add restricted ingredients
+      if (tenantConfig.settings?.restricted_ingredients?.length > 0) {
+        systemPrompt += `\n\nCRITICAL RESTRICTION: This tenant has restricted the following ingredients. NEVER include them in recipes:\n${tenantConfig.settings.restricted_ingredients.join(', ')}\n\nIf a user requests a recipe with these ingredients, politely explain they are restricted and suggest alternatives.`;
+      }
+    }
+  }
 
   // Add context usage directive
   systemPrompt += `\n\nCRITICAL: You will receive comprehensive user profile data including allergies, dietary restrictions, cooking skills, time constraints, equipment, and preferences. ALWAYS use this information to:

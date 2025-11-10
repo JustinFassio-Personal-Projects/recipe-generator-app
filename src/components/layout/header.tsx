@@ -12,16 +12,22 @@ import {
   Heart,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthProvider';
+import { useTenant } from '@/contexts/TenantContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useHasPremiumAccess } from '@/hooks/useSubscription';
 
 export function Header() {
   const { user, profile, signOut } = useAuth();
+  const { tenant } = useTenant();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { hasAccess, isInTrial } = useHasPremiumAccess();
+
+  // Use tenant branding if available
+  const logoUrl = tenant?.branding?.logo_url || '/recipe-generator-logo.png';
+  const appName = tenant?.name || 'Recipe Generator';
 
   const handleSignOut = async () => {
     try {
@@ -165,13 +171,14 @@ export function Header() {
         {/* Logo and Title */}
         <div className="flex items-center space-x-2">
           <img
-            src="/recipe-generator-logo.png"
-            alt="Recipe Generator Logo"
+            src={logoUrl}
+            alt={`${appName} Logo`}
             className="h-10 w-10 lg:h-12 lg:w-12 rounded-lg object-contain"
+            onError={(e) => {
+              e.currentTarget.src = '/recipe-generator-logo.png';
+            }}
           />
-          <span className="text-xl font-bold hidden sm:inline">
-            Recipe Generator
-          </span>
+          <span className="text-xl font-bold hidden sm:inline">{appName}</span>
         </div>
       </div>
 

@@ -117,6 +117,5 @@
       ]
     }
   ],
-  "trailingSlash": false,
-  "domains": ["recipegenerator.app", "*.recipegenerator.app"]
+  "trailingSlash": false
 }

@@ -246,6 +246,7 @@ export type TenantBranding = {
   primary_color?: string;
   secondary_color?: string;
   favicon_url?: string;
+  theme_name?: string; // DaisyUI theme name (e.g., 'caramellatte', 'silk')
 };
 
 export type TenantSettings = {

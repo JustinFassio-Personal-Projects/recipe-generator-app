@@ -3,9 +3,36 @@
  *
  * This module provides a single source of truth for theme initialization
  * and management across the application.
+ *
+ * Supports multiple DaisyUI themes for multi-tenant customization.
  */
 
-export const THEME_NAME = 'caramellatte' as const;
+// Default theme for main application
+export const DEFAULT_THEME_NAME = 'caramellatte' as const;
+
+// Legacy export for backward compatibility
+export const THEME_NAME = DEFAULT_THEME_NAME;
+
+/**
+ * Available DaisyUI themes in the application
+ * Add new themes here as they are configured
+ */
+export const AVAILABLE_THEMES = {
+  caramellatte: 'caramellatte',
+  silk: 'silk',
+} as const;
+
+export type ThemeName = keyof typeof AVAILABLE_THEMES;
+
+/**
+ * Tenant theme registry
+ * Maps tenant subdomains to their preferred themes
+ */
+export const TENANT_THEMES: Record<string, ThemeName> = {
+  app: 'caramellatte', // Default/main app
+  'sanctuary-health': 'silk', // Sanctuary Health tenant
+  // Add more tenant themes as needed
+};
 
 /**
  * Initialize the DaisyUI theme by setting the data-theme attribute
@@ -15,23 +42,52 @@ export const THEME_NAME = 'caramellatte' as const;
  * @param debug - Whether to log debug information
  */
 export function initializeTheme(
-  themeName: string = THEME_NAME,
+  themeName: string = DEFAULT_THEME_NAME,
   debug: boolean = false
 ): void {
+  // Validate theme name
+  const validTheme = isValidTheme(themeName) ? themeName : DEFAULT_THEME_NAME;
+
   // Set the theme on the document element
-  document.documentElement.setAttribute('data-theme', themeName);
+  document.documentElement.setAttribute('data-theme', validTheme);
 
   // Store theme preference in localStorage for persistence
-  localStorage.setItem('theme', themeName);
+  localStorage.setItem('theme', validTheme);
 
   if (debug) {
-    console.log(`Theme initialized: ${themeName}`);
+    console.log(`Theme initialized: ${validTheme}`);
+    if (validTheme !== themeName) {
+      console.warn(
+        `Invalid theme "${themeName}" provided, using default: ${validTheme}`
+      );
+    }
     console.log(
       'Current theme attribute:',
       document.documentElement.getAttribute('data-theme')
     );
     console.log('Stored theme preference:', localStorage.getItem('theme'));
   }
+}
+
+/**
+ * Check if a theme name is valid
+ *
+ * @param themeName - The theme name to validate
+ * @returns True if the theme is registered in AVAILABLE_THEMES
+ */
+export function isValidTheme(themeName: string): boolean {
+  return Object.keys(AVAILABLE_THEMES).includes(themeName);
+}
+
+/**
+ * Get theme for a specific tenant subdomain
+ *
+ * @param subdomain - The tenant subdomain
+ * @returns The theme name for the tenant, or default theme
+ */
+export function getThemeForTenant(subdomain: string | null): string {
+  if (!subdomain) return DEFAULT_THEME_NAME;
+  return TENANT_THEMES[subdomain] || DEFAULT_THEME_NAME;
 }
 
 /**

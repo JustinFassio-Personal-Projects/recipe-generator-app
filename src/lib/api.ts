@@ -596,11 +596,29 @@ export const recipeApi = {
     if (!authData || !authData.user) throw new Error('User not authenticated');
     const user = authData.user;
 
+    // Get user's tenant_id from their profile
+    // The profiles_select_own RLS policy (in migration 20250210000004) allows this
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile?.tenant_id) {
+      console.error('Failed to get user tenant_id:', profileError);
+      throw new Error('User tenant information not found');
+    }
+
     try {
-      // Create the recipe first
+      // Create the recipe first with tenant_id
       const { data, error } = await supabase
         .from('recipes')
-        .insert({ ...recipe, user_id: user.id, is_public: false })
+        .insert({
+          ...recipe,
+          user_id: user.id,
+          tenant_id: profile.tenant_id,
+          is_public: false,
+        })
         .select()
         .single();
 

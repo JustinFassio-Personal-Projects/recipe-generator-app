@@ -39,6 +39,7 @@ GRANT EXECUTE ON FUNCTION public.is_super_admin() TO authenticated;
 
 -- Drop policies on profiles
 DROP POLICY IF EXISTS "profiles_select_all" ON profiles;
+DROP POLICY IF EXISTS "profiles_select_own" ON profiles;
 DROP POLICY IF EXISTS "profiles_select_same_tenant" ON profiles;
 DROP POLICY IF EXISTS "profiles_update_own" ON profiles;
 DROP POLICY IF EXISTS "profiles_insert_own" ON profiles;
@@ -103,6 +104,12 @@ DROP POLICY IF EXISTS "tenants_insert_admin" ON tenants;
 CREATE POLICY "profiles_super_admin_all" ON profiles
   FOR ALL
   USING (public.is_super_admin());
+
+-- CRITICAL: Users must be able to select their own profile by ID
+-- This policy is required for tenant_id lookups to work
+CREATE POLICY "profiles_select_own" ON profiles
+  FOR SELECT
+  USING (auth.uid() = id);
 
 -- Users can see profiles in their tenant
 CREATE POLICY "profiles_select_same_tenant" ON profiles

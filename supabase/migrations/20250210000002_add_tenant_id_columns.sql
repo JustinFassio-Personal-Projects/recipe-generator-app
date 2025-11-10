@@ -4,6 +4,9 @@ ALTER TABLE recipes ADD COLUMN tenant_id UUID REFERENCES tenants(id);
 ALTER TABLE user_groceries ADD COLUMN tenant_id UUID REFERENCES tenants(id);
 ALTER TABLE global_ingredients ADD COLUMN tenant_id UUID REFERENCES tenants(id);
 
+-- Add is_admin column to profiles for admin/super admin access control
+ALTER TABLE profiles ADD COLUMN is_admin BOOLEAN DEFAULT false NOT NULL;
+
 -- Create indexes for performance
 CREATE INDEX idx_profiles_tenant ON profiles(tenant_id);
 CREATE INDEX idx_recipes_tenant ON recipes(tenant_id);

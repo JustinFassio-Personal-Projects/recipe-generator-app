@@ -16,7 +16,9 @@ interface TenantContextType {
   refreshTenant: () => Promise<void>;
 }
 
-const TenantContext = createContext<TenantContextType | undefined>(undefined);
+export const TenantContext = createContext<TenantContextType | undefined>(
+  undefined
+);
 
 export function useTenant() {
   const context = useContext(TenantContext);
@@ -55,6 +57,11 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const isMainApp = !subdomain;
 
   const fetchTenant = useCallback(async () => {
+    console.log(
+      '🏢 [TenantProvider] Fetching tenant for subdomain:',
+      subdomain || 'app'
+    );
+
     if (!subdomain) {
       // Main app - load default tenant
       try {
@@ -65,6 +72,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (fetchError) throw fetchError;
+        console.log('🏢 [TenantProvider] Loaded main app tenant:', data);
         setTenant(data);
       } catch (err) {
         console.error('Failed to load default tenant:', err);
@@ -88,10 +96,14 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         console.error('Tenant fetch error:', fetchError);
         setError(`Failed to load tenant configuration: ${fetchError.message}`);
       } else if (!data) {
+        console.error(
+          `🏢 [TenantProvider] Tenant "${subdomain}" not found in database`
+        );
         setError(
           `Tenant "${subdomain}" not found. Please create this tenant in the admin panel first.`
         );
       } else {
+        console.log('🏢 [TenantProvider] Loaded tenant:', data);
         setTenant(data);
       }
     } catch (err) {
@@ -112,28 +124,56 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
     const { branding } = tenant;
 
+    console.log('🎨 [TenantProvider] Applying tenant branding:', {
+      subdomain: tenant.subdomain,
+      theme_name: branding?.theme_name,
+      hasTheme: !!branding?.theme_name,
+    });
+
     // Apply theme if specified in branding
     if (branding?.theme_name) {
+      console.log(
+        `🎨 [TenantProvider] Setting theme to: ${branding.theme_name}`
+      );
       document.documentElement.setAttribute('data-theme', branding.theme_name);
       localStorage.setItem('theme', branding.theme_name);
+
+      // Force style recalculation
+      document.body.style.display = 'none';
+      void document.body.offsetHeight; // Trigger reflow
+      document.body.style.display = '';
+
+      console.log(
+        '🎨 [TenantProvider] Theme applied:',
+        document.documentElement.getAttribute('data-theme')
+      );
     } else {
       // Fallback to default caramellatte theme
+      console.log('🎨 [TenantProvider] No theme specified, using caramellatte');
       document.documentElement.setAttribute('data-theme', 'caramellatte');
       localStorage.setItem('theme', 'caramellatte');
     }
 
     // Apply primary color override (if provided)
     if (branding?.primary_color) {
+      console.log(
+        '🎨 [TenantProvider] Applying primary color:',
+        branding.primary_color
+      );
       document.documentElement.style.setProperty(
-        '--primary',
+        '--color-primary',
         branding.primary_color
       );
     }
 
     // Apply secondary color override (if provided)
     if (branding?.secondary_color) {
+      console.log(
+        '🎨 [TenantProvider] Applying secondary color:',
+        branding.secondary_color
+      );
       document.documentElement.style.setProperty(
-        '--secondary',
+        '--color-secondary',
         branding.secondary_color
       );
     }

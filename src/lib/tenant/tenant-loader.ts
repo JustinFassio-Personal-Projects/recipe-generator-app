@@ -13,7 +13,7 @@ import sanctuaryHealthConfig from '@/tenants/sanctuary-health/config';
  * Add new tenants here as they are created
  */
 const TENANT_CONFIGS: Record<string, Partial<Tenant>> = {
-  'sanctuary-health': sanctuaryHealthConfig,
+  sanctuaryhealth: sanctuaryHealthConfig,
   // Add more tenants here as needed
   // 'another-tenant': anotherTenantConfig,
 };

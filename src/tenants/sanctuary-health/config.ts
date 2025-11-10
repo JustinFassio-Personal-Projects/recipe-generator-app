@@ -18,7 +18,7 @@ import { SILK_THEME_NAME } from './theme/silk-theme';
  * 3. Template for database configuration
  */
 export const sanctuaryHealthConfig: Partial<Tenant> = {
-  subdomain: 'sanctuary-health',
+  subdomain: 'sanctuaryhealth',
   name: 'Sanctuary Health',
 
   // Theme and branding

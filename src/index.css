@@ -1,9 +1,55 @@
 @import 'tailwindcss';
-@plugin "daisyui" {
-  themes: caramellatte silk; /* caramellatte: default, silk: Sanctuary Health */
+@plugin 'daisyui';
+
+/* Caramellatte Theme */
+[data-theme='caramellatte'] {
+  color-scheme: light;
+  --color-primary: #3d2817;
+  --color-secondary: #6b4423;
+  --color-accent: #8b5a2b;
+  --color-neutral: #5d4037;
+  --color-base-100: #fef7ed;
+  --color-base-200: #f5e6d3;
+  --color-base-300: #e7d5c4;
+  --color-base-content: #3d2817;
+  --color-primary-content: #ffffff;
+  --color-secondary-content: #e7d5c4;
+  --color-accent-content: #e7d5c4;
+  --color-neutral-content: #fef7ed;
+  --color-info: #3abff8;
+  --color-info-content: #e7d5c4;
+  --color-success: #36d399;
+  --color-success-content: #e7d5c4;
+  --color-warning: #fbbd23;
+  --color-warning-content: #3d2817;
+  --color-error: #f87272;
+  --color-error-content: #3d2817;
 }
 
-/* DaisyUI will automatically apply the configured theme when data-theme attribute is set */
+/* Silk Theme - Custom Dark Theme */
+[data-theme='silk'] {
+  color-scheme: dark;
+  --color-base-100: oklch(14% 0.005 285.823);
+  --color-base-200: oklch(21% 0.006 285.885);
+  --color-base-300: oklch(27% 0.006 286.033);
+  --color-base-content: oklch(96% 0.001 286.375);
+  --color-primary: oklch(87% 0.006 286.286);
+  --color-primary-content: oklch(14% 0.005 285.823);
+  --color-secondary: oklch(87% 0 0);
+  --color-secondary-content: oklch(14% 0 0);
+  --color-accent: oklch(78% 0.115 274.713);
+  --color-accent-content: oklch(25% 0.09 281.288);
+  --color-neutral: oklch(44% 0.017 285.786);
+  --color-neutral-content: oklch(98% 0 0);
+  --color-info: oklch(54% 0.245 262.881);
+  --color-info-content: oklch(97% 0.014 254.604);
+  --color-success: oklch(79% 0.184 86.047);
+  --color-success-content: oklch(14% 0.005 285.823);
+  --color-warning: oklch(64% 0.222 41.116);
+  --color-warning-content: oklch(98% 0.016 73.684);
+  --color-error: oklch(57% 0.245 27.325);
+  --color-error-content: oklch(97% 0.013 17.38);
+}
 
 /* Custom component variants */
 @layer components {

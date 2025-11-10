@@ -84,7 +84,7 @@ export function RecipesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+    <div className="min-h-screen bg-base-200">
       {/* Welcome Dialog - shows based on user visit patterns */}
       <WelcomeDialog />
 
@@ -92,10 +92,10 @@ export function RecipesPage() {
         <div className="mb-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="mb-2 inline-block rounded-lg px-4 py-2 text-xl font-bold text-neutral-600">
+              <h1 className="mb-2 inline-block rounded-lg px-4 py-2 text-xl font-bold text-base-content">
                 My Recipes
               </h1>
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-base-content/70">
                 {isLoading
                   ? 'Loading...'
                   : `${recipes.length} recipe${recipes.length !== 1 ? 's' : ''} found`}
@@ -105,7 +105,7 @@ export function RecipesPage() {
             <div className="flex flex-col gap-2 self-start sm:flex-row sm:self-auto">
               <Button
                 onClick={() => navigate('/chat-recipe')}
-                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 border border-orange-600"
+                className="btn-primary"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 AI Recipe Creator
@@ -113,7 +113,7 @@ export function RecipesPage() {
               <Button
                 variant="outline"
                 onClick={() => navigate('/add')}
-                className="border-success text-success hover:bg-success/10"
+                className="btn-outline btn-success"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Recipe

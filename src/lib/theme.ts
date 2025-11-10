@@ -25,18 +25,31 @@ export const AVAILABLE_THEMES = {
 export type ThemeName = keyof typeof AVAILABLE_THEMES;
 
 /**
- * Tenant theme registry
- * Maps tenant subdomains to their preferred themes
+ * Tenant theme registry (Reference Only)
+ *
+ * This mapping serves as documentation of available themes per tenant.
+ * The actual theme values are stored in the tenants.branding.theme_name database field
+ * and applied by TenantProvider at runtime.
+ *
+ * To add a new tenant theme:
+ * 1. Define the theme CSS in src/index.css using [data-theme='theme-name']
+ * 2. Add the theme to AVAILABLE_THEMES constant
+ * 3. Set the theme_name in the tenant's branding column in the database
+ * 4. Update this documentation registry for reference
  */
 export const TENANT_THEMES: Record<string, ThemeName> = {
   app: 'caramellatte', // Default/main app
-  'sanctuary-health': 'silk', // Sanctuary Health tenant
+  sanctuaryhealth: 'silk', // Sanctuary Health tenant
   // Add more tenant themes as needed
 };
 
 /**
  * Initialize the DaisyUI theme by setting the data-theme attribute
  * and storing the theme preference in localStorage
+ *
+ * NOTE: This function is for manual theme management only.
+ * In the multi-tenant app, theme initialization is handled automatically
+ * by TenantProvider based on the tenant's database configuration.
  *
  * @param themeName - The theme to initialize (defaults to caramellatte)
  * @param debug - Whether to log debug information

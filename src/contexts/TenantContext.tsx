@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Tenant } from '@/lib/types';
 
@@ -48,7 +54,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const subdomain = getSubdomainFromClient();
   const isMainApp = !subdomain;
 
-  const fetchTenant = async () => {
+  const fetchTenant = useCallback(async () => {
     if (!subdomain) {
       // Main app - load default tenant
       try {
@@ -94,11 +100,11 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [subdomain]);
 
   useEffect(() => {
     fetchTenant();
-  }, [subdomain]);
+  }, [fetchTenant]);
 
   // Apply tenant branding
   useEffect(() => {

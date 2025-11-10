@@ -65,8 +65,8 @@ DROP POLICY IF EXISTS "Users can delete their own recipes" ON recipes;
 DROP POLICY IF EXISTS "user_groceries_own_data" ON user_groceries;
 DROP POLICY IF EXISTS "user_groceries_tenant_scoped" ON user_groceries;
 
--- Drop policies on evaluation_reports
-DROP POLICY IF EXISTS "evaluation_reports_tenant_scoped" ON evaluation_reports;
+-- Note: evaluation_reports table doesn't exist at this point (created later in migration 20250904212232)
+-- DROP POLICY IF EXISTS "evaluation_reports_tenant_scoped" ON evaluation_reports;
 
 -- Drop policies on tenants (admin panel access)
 DROP POLICY IF EXISTS "admins_can_manage_tenants" ON tenants;
@@ -348,20 +348,22 @@ CREATE POLICY "user_groceries_own_data" ON user_groceries
 -- =====================================================
 -- STEP 8: Create RLS Policies for EVALUATION_REPORTS
 -- =====================================================
+-- Note: evaluation_reports table doesn't exist at this point (created later in migration 20250904212232)
+-- Tenant policies for evaluation_reports should be added in a later migration after the table is created
 
 -- Super admin can see/manage all evaluation reports
-CREATE POLICY "evaluation_reports_super_admin_all" ON evaluation_reports
-  FOR ALL
-  USING (auth.is_super_admin());
+-- CREATE POLICY "evaluation_reports_super_admin_all" ON evaluation_reports
+--   FOR ALL
+--   USING (auth.is_super_admin());
 
 -- Users can manage their own evaluation reports in their tenant
-CREATE POLICY "evaluation_reports_own_data" ON evaluation_reports
-  FOR ALL
-  TO authenticated
-  USING (
-    auth.uid() = user_id 
-    AND tenant_id = auth.user_tenant_id()
-  );
+-- CREATE POLICY "evaluation_reports_own_data" ON evaluation_reports
+--   FOR ALL
+--   TO authenticated
+--   USING (
+--     auth.uid() = user_id 
+--     AND tenant_id = auth.user_tenant_id()
+--   );
 
 -- =====================================================
 -- STEP 9: Create RLS Policies for Other User Tables
@@ -569,7 +571,8 @@ CREATE POLICY "tenants_anon_read_active" ON tenants
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_groceries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE evaluation_reports ENABLE ROW LEVEL SECURITY;
+-- Note: evaluation_reports table doesn't exist yet
+-- ALTER TABLE evaluation_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE avatar_analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recipe_views ENABLE ROW LEVEL SECURITY;

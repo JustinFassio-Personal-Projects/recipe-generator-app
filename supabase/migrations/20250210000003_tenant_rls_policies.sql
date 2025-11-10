@@ -58,10 +58,7 @@ CREATE POLICY "user_groceries_tenant_scoped" ON user_groceries
     tenant_id = (SELECT tenant_id FROM profiles WHERE user_id = auth.uid())
   );
 
--- Evaluation Reports: Tenant-scoped
-CREATE POLICY "evaluation_reports_tenant_scoped" ON evaluation_reports
-  FOR ALL
-  USING (
-    tenant_id = (SELECT tenant_id FROM profiles WHERE user_id = auth.uid())
-  );
+-- Note: evaluation_reports table doesn't exist at this point in migration timeline
+-- It will be created later by 20250904212232_create_evaluation_reports_table.sql
+-- Tenant policies for evaluation_reports should be added in a later migration
 

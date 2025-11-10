@@ -112,7 +112,17 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
     const { branding } = tenant;
 
-    // Apply primary color
+    // Apply theme if specified in branding
+    if (branding?.theme_name) {
+      document.documentElement.setAttribute('data-theme', branding.theme_name);
+      localStorage.setItem('theme', branding.theme_name);
+    } else {
+      // Fallback to default caramellatte theme
+      document.documentElement.setAttribute('data-theme', 'caramellatte');
+      localStorage.setItem('theme', 'caramellatte');
+    }
+
+    // Apply primary color override (if provided)
     if (branding?.primary_color) {
       document.documentElement.style.setProperty(
         '--primary',
@@ -120,7 +130,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
-    // Apply secondary color
+    // Apply secondary color override (if provided)
     if (branding?.secondary_color) {
       document.documentElement.style.setProperty(
         '--secondary',

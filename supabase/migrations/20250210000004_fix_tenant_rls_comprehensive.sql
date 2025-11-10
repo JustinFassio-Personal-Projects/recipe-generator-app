@@ -15,17 +15,18 @@
 
 -- This function safely retrieves the authenticated user's tenant_id
 -- It's marked as SECURITY DEFINER to bypass RLS when looking up the tenant
-CREATE OR REPLACE FUNCTION auth.user_tenant_id()
+-- NOTE: Must be in public schema, not auth schema (permission denied)
+CREATE OR REPLACE FUNCTION public.user_tenant_id()
 RETURNS UUID AS $$
   SELECT tenant_id FROM public.profiles WHERE id = auth.uid()
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION auth.user_tenant_id() TO authenticated;
-GRANT EXECUTE ON FUNCTION auth.user_tenant_id() TO anon;
+GRANT EXECUTE ON FUNCTION public.user_tenant_id() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_tenant_id() TO anon;
 
 -- Helper function to check if user is super admin
-CREATE OR REPLACE FUNCTION auth.is_super_admin()
+CREATE OR REPLACE FUNCTION public.is_super_admin()
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.profiles 
@@ -35,7 +36,7 @@ RETURNS BOOLEAN AS $$
   )
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION auth.is_super_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_super_admin() TO authenticated;
 
 -- =====================================================
 -- STEP 2: Drop All Existing Conflicting Policies
@@ -262,12 +263,12 @@ END $$;
 -- Super admin can see all profiles
 CREATE POLICY "profiles_super_admin_all" ON profiles
   FOR ALL
-  USING (auth.is_super_admin());
+  USING (public.is_super_admin());
 
 -- Users can see profiles in their tenant
 CREATE POLICY "profiles_select_same_tenant" ON profiles
   FOR SELECT
-  USING (tenant_id = auth.user_tenant_id());
+  USING (tenant_id = public.user_tenant_id());
 
 -- Users can update their own profile
 CREATE POLICY "profiles_update_own" ON profiles
@@ -286,7 +287,7 @@ CREATE POLICY "profiles_insert_own" ON profiles
 -- Super admin can see/manage all recipes
 CREATE POLICY "recipes_super_admin_all" ON recipes
   FOR ALL
-  USING (auth.is_super_admin());
+  USING (public.is_super_admin());
 
 -- Anonymous users can view public recipes
 CREATE POLICY "recipes_anon_select_public" ON recipes
@@ -298,7 +299,7 @@ CREATE POLICY "recipes_anon_select_public" ON recipes
 CREATE POLICY "recipes_select_public_same_tenant" ON recipes
   FOR SELECT
   TO authenticated
-  USING (is_public = true AND tenant_id = auth.user_tenant_id());
+  USING (is_public = true AND tenant_id = public.user_tenant_id());
 
 -- Users can view their own recipes (public or private)
 CREATE POLICY "recipes_select_own" ON recipes
@@ -312,7 +313,7 @@ CREATE POLICY "recipes_insert_own_tenant" ON recipes
   TO authenticated
   WITH CHECK (
     auth.uid() = user_id 
-    AND tenant_id = auth.user_tenant_id()
+    AND tenant_id = public.user_tenant_id()
   );
 
 -- Users can update their own recipes
@@ -334,7 +335,7 @@ CREATE POLICY "recipes_delete_own" ON recipes
 -- Super admin can see/manage all groceries
 CREATE POLICY "user_groceries_super_admin_all" ON user_groceries
   FOR ALL
-  USING (auth.is_super_admin());
+  USING (public.is_super_admin());
 
 -- Users can manage their own groceries in their tenant
 CREATE POLICY "user_groceries_own_data" ON user_groceries
@@ -342,7 +343,7 @@ CREATE POLICY "user_groceries_own_data" ON user_groceries
   TO authenticated
   USING (
     auth.uid() = user_id 
-    AND tenant_id = auth.user_tenant_id()
+    AND tenant_id = public.user_tenant_id()
   );
 
 -- =====================================================
@@ -354,7 +355,7 @@ CREATE POLICY "user_groceries_own_data" ON user_groceries
 -- Super admin can see/manage all evaluation reports
 -- CREATE POLICY "evaluation_reports_super_admin_all" ON evaluation_reports
 --   FOR ALL
---   USING (auth.is_super_admin());
+--   USING (public.is_super_admin());
 
 -- Users can manage their own evaluation reports in their tenant
 -- CREATE POLICY "evaluation_reports_own_data" ON evaluation_reports
@@ -362,7 +363,7 @@ CREATE POLICY "user_groceries_own_data" ON user_groceries
 --   TO authenticated
 --   USING (
 --     auth.uid() = user_id 
---     AND tenant_id = auth.user_tenant_id()
+--     AND tenant_id = public.user_tenant_id()
 --   );
 
 -- =====================================================
@@ -375,147 +376,147 @@ CREATE POLICY "user_groceries_own_data" ON user_groceries
 
 -- AVATAR_ANALYTICS
 CREATE POLICY "avatar_analytics_super_admin_all" ON avatar_analytics
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "avatar_analytics_own_data" ON avatar_analytics
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- RECIPE_VIEWS
 CREATE POLICY "recipe_views_super_admin_all" ON recipe_views
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "recipe_views_own_data" ON recipe_views
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- USER_BUDGETS
 CREATE POLICY "user_budgets_super_admin_all" ON user_budgets
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "user_budgets_own_data" ON user_budgets
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- IMAGE_GENERATION_COSTS
 CREATE POLICY "image_generation_costs_super_admin_all" ON image_generation_costs
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "image_generation_costs_own_data" ON image_generation_costs
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- RECIPE_COMMENTS
 CREATE POLICY "recipe_comments_super_admin_all" ON recipe_comments
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "recipe_comments_own_data" ON recipe_comments
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- USER_SUBSCRIPTIONS
 CREATE POLICY "user_subscriptions_super_admin_all" ON user_subscriptions
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "user_subscriptions_own_data" ON user_subscriptions
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- USERNAMES
 CREATE POLICY "usernames_super_admin_all" ON usernames
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "usernames_own_data" ON usernames
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- USER_SAFETY
 CREATE POLICY "user_safety_super_admin_all" ON user_safety
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "user_safety_own_data" ON user_safety
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- COOKING_PREFERENCES
 CREATE POLICY "cooking_preferences_super_admin_all" ON cooking_preferences
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "cooking_preferences_own_data" ON cooking_preferences
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- RECIPE_RATINGS
 CREATE POLICY "recipe_ratings_super_admin_all" ON recipe_ratings
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "recipe_ratings_own_data" ON recipe_ratings
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- USER_SUBSCRIPTION_STATUS
 CREATE POLICY "user_subscription_status_super_admin_all" ON user_subscription_status
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "user_subscription_status_own_data" ON user_subscription_status
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- USER_HIDDEN_INGREDIENTS
 CREATE POLICY "user_hidden_ingredients_super_admin_all" ON user_hidden_ingredients
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "user_hidden_ingredients_own_data" ON user_hidden_ingredients
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- CONVERSATION_THREADS
 CREATE POLICY "conversation_threads_super_admin_all" ON conversation_threads
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "conversation_threads_own_data" ON conversation_threads
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- EVALUATION_PROGRESS_TRACKING
 CREATE POLICY "evaluation_progress_tracking_super_admin_all" ON evaluation_progress_tracking
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "evaluation_progress_tracking_own_data" ON evaluation_progress_tracking
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- USER_PROGRESS_CONFIG
 CREATE POLICY "user_progress_config_super_admin_all" ON user_progress_config
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "user_progress_config_own_data" ON user_progress_config
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- HEALTH_MILESTONES
 CREATE POLICY "health_milestones_super_admin_all" ON health_milestones
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "health_milestones_own_data" ON health_milestones
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- PROGRESS_ANALYTICS
 CREATE POLICY "progress_analytics_super_admin_all" ON progress_analytics
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "progress_analytics_own_data" ON progress_analytics
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- USER_PROGRESS_SUMMARY
 CREATE POLICY "user_progress_summary_super_admin_all" ON user_progress_summary
-  FOR ALL USING (auth.is_super_admin());
+  FOR ALL USING (public.is_super_admin());
 
 CREATE POLICY "user_progress_summary_own_data" ON user_progress_summary
   FOR ALL TO authenticated
-  USING (auth.uid() = user_id AND tenant_id = auth.user_tenant_id());
+  USING (auth.uid() = user_id AND tenant_id = public.user_tenant_id());
 
 -- =====================================================
 -- STEP 10: Create RLS Policies for TENANTS Table
@@ -524,7 +525,7 @@ CREATE POLICY "user_progress_summary_own_data" ON user_progress_summary
 -- Super admins can manage all tenants
 CREATE POLICY "tenants_super_admin_all" ON tenants
   FOR ALL
-  USING (auth.is_super_admin());
+  USING (public.is_super_admin());
 
 -- Tenant admins can view and update their own tenant
 CREATE POLICY "tenants_admin_own_tenant" ON tenants
@@ -555,7 +556,7 @@ CREATE POLICY "tenants_admin_update_own" ON tenants
 CREATE POLICY "tenants_user_view_own" ON tenants
   FOR SELECT
   TO authenticated
-  USING (id = auth.user_tenant_id());
+  USING (id = public.user_tenant_id());
 
 -- Anonymous users need to be able to read tenant info for subdomains
 CREATE POLICY "tenants_anon_read_active" ON tenants

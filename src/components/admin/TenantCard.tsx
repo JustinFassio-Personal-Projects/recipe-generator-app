@@ -61,9 +61,25 @@ export function TenantCard({ tenant, onEdit }: TenantCardProps) {
           Edit
         </Button>
         <Button
-          onClick={() =>
-            window.open(`http://${tenant.subdomain}.localhost:5174`, '_blank')
-          }
+          onClick={() => {
+            // Dynamically construct the URL using the current hostname and port
+            const { hostname, port, protocol } = window.location;
+
+            // Handle localhost development vs production domains
+            let baseHost: string;
+            if (hostname.includes('localhost')) {
+              // Development: tenant.localhost:5174
+              baseHost = `${tenant.subdomain}.localhost`;
+            } else {
+              // Production: tenant.recipegenerator.app
+              // Remove any existing subdomain from the base domain
+              const baseDomain = hostname.split('.').slice(-2).join('.');
+              baseHost = `${tenant.subdomain}.${baseDomain}`;
+            }
+
+            const url = `${protocol}//${baseHost}${port ? `:${port}` : ''}`;
+            window.open(url, '_blank');
+          }}
           className="flex-1"
           variant="secondary"
         >

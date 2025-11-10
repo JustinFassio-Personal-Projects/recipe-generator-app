@@ -12,7 +12,7 @@ export function TenantCard({ tenant, onEdit }: TenantCardProps) {
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          {tenant.branding.logo_url ? (
+          {tenant.branding?.logo_url ? (
             <img
               src={tenant.branding.logo_url}
               alt={tenant.name}
@@ -44,7 +44,7 @@ export function TenantCard({ tenant, onEdit }: TenantCardProps) {
             {tenant.subscription_tier}
           </span>
         </div>
-        {tenant.settings.restricted_ingredients &&
+        {tenant.settings?.restricted_ingredients &&
           tenant.settings.restricted_ingredients.length > 0 && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Restrictions:</span>

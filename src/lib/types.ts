@@ -271,9 +271,9 @@ export type Tenant = {
   subdomain: string;
   name: string;
   owner_id: string | null;
-  branding: TenantBranding;
-  settings: TenantSettings;
-  ai_config: TenantAIConfig;
+  branding?: TenantBranding;
+  settings?: TenantSettings;
+  ai_config?: TenantAIConfig;
   subscription_tier: 'starter' | 'pro' | 'enterprise';
   is_active: boolean;
   created_at: string;

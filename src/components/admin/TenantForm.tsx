@@ -32,11 +32,11 @@ export function TenantForm({ tenant, onClose }: TenantFormProps) {
       setFormData({
         subdomain: tenant.subdomain,
         name: tenant.name,
-        logo_url: tenant.branding.logo_url || '',
-        primary_color: tenant.branding.primary_color || '',
+        logo_url: tenant.branding?.logo_url || '',
+        primary_color: tenant.branding?.primary_color || '',
         restricted_ingredients:
-          tenant.settings.restricted_ingredients?.join(', ') || '',
-        system_prompt_override: tenant.ai_config.system_prompt_override || '',
+          tenant.settings?.restricted_ingredients?.join(', ') || '',
+        system_prompt_override: tenant.ai_config?.system_prompt_override || '',
         subscription_tier: tenant.subscription_tier,
         is_active: tenant.is_active,
       });

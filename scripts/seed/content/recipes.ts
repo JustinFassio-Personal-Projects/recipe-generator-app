@@ -485,6 +485,8 @@ export async function seedAllRecipes() {
     }
 
     // Insert recipe
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
     const { error } = await admin.from('recipes').upsert(
       {
         id: recipe.id,
@@ -496,6 +498,7 @@ export async function seedAllRecipes() {
         image_url: recipe.image_url,
         user_id: userMatch.id,
         is_public: recipe.is_public,
+        tenant_id: DEFAULT_TENANT_ID, // Multi-tenant support
         categories: moodAugmented,
       },
       { onConflict: 'id' }

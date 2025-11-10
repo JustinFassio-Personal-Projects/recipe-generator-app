@@ -1,11 +1,28 @@
 # Multi-Tenant SPA Implementation - Complete ✅
 
+## ⚠️ Critical Fix Applied (Nov 10, 2025)
+
+**Problem:** The original multi-tenant migrations attempted to add `tenant_id` columns to tables that didn't exist yet (e.g., `recipe_views` created Sept 16, `evaluation_reports` created Sept 4), causing integration test failures:
+
+```
+ERROR: relation "recipe_views" does not exist (SQLSTATE 42P01)
+```
+
+**Solution:** Split multi-tenant implementation into **4 phased migrations** that respect the actual table creation timeline:
+
+1. **Phase 1 (Migration 20250210)** - Core tables (profiles, recipes, usernames, user_safety, cooking_preferences, avatar_analytics, user_subscriptions, user_groceries, global_ingredients, user_hidden_ingredients)
+2. **Phase 2 (Migration 20250905)** - evaluation_reports (created Sept 4)
+3. **Phase 3 (Migration 20250917)** - recipe_ratings, recipe_views, recipe_versions (created Sept 16)
+4. **Phase 4 (Migration 20251108)** - conversation_threads, evaluation_progress_tracking (created Nov 7)
+
+**Result:** ✅ All migrations now execute successfully. Database reset completes without errors.
+
 ## Overview
 
 Successfully implemented multi-tenant architecture for Recipe Generator using Vite + React SPA with Vercel Edge Middleware and Supabase RLS. This enables subdomain-based tenant isolation while maintaining a single codebase.
 
-**Status:** All 8 phases completed
-**Estimated Effort:** 40-60 hours
+**Status:** All 8 phases completed + Migration fixes applied
+**Estimated Effort:** 40-60 hours  
 **Tech Stack:** Vite + React, Vercel Edge Middleware, Supabase RLS
 
 ---

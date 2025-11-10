@@ -113,7 +113,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     const { branding } = tenant;
 
     // Apply primary color
-    if (branding.primary_color) {
+    if (branding?.primary_color) {
       document.documentElement.style.setProperty(
         '--primary',
         branding.primary_color
@@ -121,7 +121,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Apply secondary color
-    if (branding.secondary_color) {
+    if (branding?.secondary_color) {
       document.documentElement.style.setProperty(
         '--secondary',
         branding.secondary_color
@@ -129,7 +129,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Apply favicon
-    if (branding.favicon_url) {
+    if (branding?.favicon_url) {
       const link = document.querySelector(
         "link[rel*='icon']"
       ) as HTMLLinkElement;

@@ -150,7 +150,7 @@ async function getTenantConfig(userId: string) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('tenant_id')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .single();
 
     if (!profile?.tenant_id) return null;

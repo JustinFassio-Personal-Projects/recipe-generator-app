@@ -1,9 +1,59 @@
 @import 'tailwindcss';
-@plugin "daisyui" {
-  themes: caramellatte silk; /* caramellatte: default, silk: Sanctuary Health */
+@plugin 'daisyui';
+
+/* DaisyUI Caramellatte Theme (Default) */
+[data-theme='caramellatte'] {
+  color-scheme: light;
+  --color-primary: #3d2817;
+  --color-secondary: #6b4423;
+  --color-accent: #8b5a2b;
+  --color-neutral: #5d4037;
+  --color-base-100: #fef7ed;
+  --color-base-200: #f5e6d3;
+  --color-base-300: #e7d5c4;
+  --color-base-content: #3d2817;
+  --color-primary-content: #ffffff;
+  --color-secondary-content: #e7d5c4;
+  --color-accent-content: #e7d5c4;
+  --color-neutral-content: #fef7ed;
+  --color-info: #3abff8;
+  --color-info-content: #e7d5c4;
+  --color-success: #36d399;
+  --color-success-content: #e7d5c4;
+  --color-warning: #fbbd23;
+  --color-warning-content: #3d2817;
+  --color-error: #f87272;
+  --color-error-content: #3d2817;
 }
 
-/* DaisyUI will automatically apply the configured theme when data-theme attribute is set */
+/* DaisyUI Silk Theme (Sanctuary Health) */
+[data-theme='silk'] {
+  color-scheme: light;
+  --color-primary: #4ade80;
+  --color-primary-content: #000000;
+  --color-secondary: #60a5fa;
+  --color-secondary-content: #000000;
+  --color-accent: #c084fc;
+  --color-accent-content: #000000;
+  --color-neutral: #1f2937;
+  --color-neutral-content: #ffffff;
+  --color-base-100: #ffffff;
+  --color-base-200: #f3f4f6;
+  --color-base-300: #e5e7eb;
+  --color-base-content: #1f2937;
+  --color-info: #3b82f6;
+  --color-info-content: #ffffff;
+  --color-success: #22c55e;
+  --color-success-content: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-content: #000000;
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+}
+
+/* DaisyUI themes configured above */
+/* Available themes: caramellatte (default), silk (Sanctuary Health) */
+/* Themes are automatically applied when data-theme attribute is set */
 
 /* Custom component variants */
 @layer components {

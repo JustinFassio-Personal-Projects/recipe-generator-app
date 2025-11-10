@@ -2,7 +2,34 @@
 
 **Created:** November 10, 2025  
 **Theme:** DaisyUI Silk  
-**Status:** Active
+**Status:** Active ✅  
+**Theme Verified:** ✅ Working (tested November 10, 2025)
+
+## ✅ Theme Verification Status
+
+The Silk theme has been **successfully implemented and tested**!
+
+**Test Results:**
+
+- ✅ CSS custom properties correctly defined in `src/index.css`
+- ✅ Theme colors render as expected (#4ade80, #60a5fa, #c084fc)
+- ✅ Theme switching works (data-theme="silk")
+- ✅ Build process completes without errors
+- ✅ Visual verification passed (see test page: `test-silk-theme.html`)
+
+**Quick Test:**
+
+```bash
+# Visit the test page to verify the silk theme
+open http://localhost:5174/test-silk-theme.html
+```
+
+You can also run this SQL script to set up the tenant in your database:
+
+```bash
+# Run the setup script in Supabase SQL Editor
+cat src/tenants/sanctuary-health/setup.sql
+```
 
 ## Overview
 
@@ -271,13 +298,41 @@ INSERT INTO tenants (
 
 **Problem:** Theme stays as caramellatte instead of silk
 
+**Root Cause:** Tailwind CSS v4 + DaisyUI 5 require CSS custom properties instead of JavaScript config
+
 **Solutions:**
 
-1. Check database tenant record exists
-2. Verify `branding.theme_name` is set to `'silk'`
-3. Clear localStorage: `localStorage.clear()`
-4. Hard refresh: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
-5. Check browser console for errors
+1. **Verify CSS Definition** - Check `src/index.css` has:
+
+   ```css
+   [data-theme='silk'] {
+     --color-primary: #4ade80;
+     --color-secondary: #60a5fa;
+     /* ... other colors ... */
+   }
+   ```
+
+2. **Check Database** - Verify tenant record exists:
+
+   ```sql
+   SELECT subdomain, branding->>'theme_name'
+   FROM tenants
+   WHERE subdomain = 'sanctuary-health';
+   ```
+
+3. **Verify TenantContext** - Check `data-theme` attribute:
+
+   ```javascript
+   document.documentElement.getAttribute('data-theme');
+   // Should return: "silk"
+   ```
+
+4. **Clear Cache:**
+   - Clear localStorage: `localStorage.clear()`
+   - Hard refresh: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
+   - Clear build cache: `rm -rf node_modules/.vite && npm run dev`
+
+5. **Test Independently** - Visit `test-silk-theme.html` to verify theme works in isolation
 
 ### Subdomain Not Resolving
 

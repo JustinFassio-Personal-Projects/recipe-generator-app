@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="silk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Silk Theme Test</title>
+    <link rel="stylesheet" href="/src/index.css" />
+    <style>
+      body {
+        padding: 2rem;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .test-card {
+        padding: 2rem;
+        margin: 1rem 0;
+        border-radius: 0.5rem;
+      }
+      .color-box {
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+        margin: 0.5rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Silk Theme Test</h1>
+    <p>Current theme: <code id="current-theme"></code></p>
+
+    <div
+      class="test-card"
+      style="
+        background-color: var(--color-base-100);
+        color: var(--color-base-content);
+      "
+    >
+      <h2>Base Colors</h2>
+      <p>
+        This card uses --color-base-100 background and --color-base-content text
+      </p>
+    </div>
+
+    <div
+      class="test-card"
+      style="
+        background-color: var(--color-primary);
+        color: var(--color-primary-content);
+      "
+    >
+      <h2>Primary Color</h2>
+      <p>Should be soft green (#4ade80) with black text</p>
+    </div>
+
+    <div
+      class="test-card"
+      style="
+        background-color: var(--color-secondary);
+        color: var(--color-secondary-content);
+      "
+    >
+      <h2>Secondary Color</h2>
+      <p>Should be calm blue (#60a5fa) with black text</p>
+    </div>
+
+    <div
+      class="test-card"
+      style="
+        background-color: var(--color-accent);
+        color: var(--color-accent-content);
+      "
+    >
+      <h2>Accent Color</h2>
+      <p>Should be soft purple (#c084fc) with black text</p>
+    </div>
+
+    <div>
+      <h2>Color Palette</h2>
+      <div class="color-box" style="background-color: var(--color-primary)">
+        Primary
+      </div>
+      <div class="color-box" style="background-color: var(--color-secondary)">
+        Secondary
+      </div>
+      <div class="color-box" style="background-color: var(--color-accent)">
+        Accent
+      </div>
+      <div class="color-box" style="background-color: var(--color-success)">
+        Success
+      </div>
+      <div class="color-box" style="background-color: var(--color-warning)">
+        Warning
+      </div>
+      <div class="color-box" style="background-color: var(--color-error)">
+        Error
+      </div>
+    </div>
+
+    <div style="margin-top: 2rem">
+      <button
+        onclick="switchTheme('caramellatte')"
+        style="padding: 0.5rem 1rem; margin: 0.5rem"
+      >
+        Caramellatte Theme
+      </button>
+      <button
+        onclick="switchTheme('silk')"
+        style="padding: 0.5rem 1rem; margin: 0.5rem"
+      >
+        Silk Theme
+      </button>
+    </div>
+
+    <script>
+      // Display current theme
+      document.getElementById('current-theme').textContent =
+        document.documentElement.getAttribute('data-theme');
+
+      // Theme switcher function
+      function switchTheme(themeName) {
+        document.documentElement.setAttribute('data-theme', themeName);
+        document.getElementById('current-theme').textContent = themeName;
+        console.log('Theme switched to:', themeName);
+        console.log(
+          'Primary color:',
+          getComputedStyle(document.documentElement).getPropertyValue(
+            '--color-primary'
+          )
+        );
+      }
+
+      // Log computed CSS variables on load
+      console.log('=== Silk Theme CSS Variables ===');
+      const styles = getComputedStyle(document.documentElement);
+      console.log(
+        '--color-primary:',
+        styles.getPropertyValue('--color-primary')
+      );
+      console.log(
+        '--color-secondary:',
+        styles.getPropertyValue('--color-secondary')
+      );
+      console.log('--color-accent:', styles.getPropertyValue('--color-accent'));
+      console.log(
+        '--color-base-100:',
+        styles.getPropertyValue('--color-base-100')
+      );
+    </script>
+  </body>
+</html>

@@ -140,6 +140,11 @@ export type Profile = {
   visit_count: number;
   last_visit_at: string | null;
   show_welcome_popup: boolean;
+  // Terms and Privacy acceptance tracking
+  terms_accepted_at: string | null;
+  terms_version_accepted: string | null;
+  privacy_accepted_at: string | null;
+  privacy_version_accepted: string | null;
   // Admin role and tenant
   is_admin?: boolean;
   tenant_id?: string;

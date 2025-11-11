@@ -6,6 +6,7 @@ import { TenantProvider } from '@/contexts/TenantContext';
 import { TenantGuard } from '@/components/tenant/TenantGuard';
 import { ProtectedRoute, PublicRoute } from '@/components/auth/ProtectedRoute';
 import { AdminRoute } from '@/components/auth/AdminRoute';
+import { TermsGuard } from '@/components/auth/TermsGuard';
 import { Header } from '@/components/layout/header';
 import { AuthErrorBoundary } from '@/components/auth/AuthErrorBoundary';
 import { RecipesPage } from '@/pages/recipes-page';
@@ -47,259 +48,261 @@ function AppContent() {
   usePageTracking();
 
   return (
-    <Routes>
-      {/* Public routes - redirect to /recipes if authenticated */}
-      <Route
-        path="/auth/signin"
-        element={
-          <PublicRoute>
-            <AuthForm />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/auth/signup"
-        element={
-          <PublicRoute>
-            <AuthForm />
-          </PublicRoute>
-        }
-      />
-      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+    <TermsGuard>
+      <Routes>
+        {/* Public routes - redirect to /recipes if authenticated */}
+        <Route
+          path="/auth/signin"
+          element={
+            <PublicRoute>
+              <AuthForm />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/auth/signup"
+          element={
+            <PublicRoute>
+              <AuthForm />
+            </PublicRoute>
+          }
+        />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-      {/* Protected routes - require authentication */}
-      <Route
-        path="/recipes"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <AuthErrorBoundary>
-                <Header />
-              </AuthErrorBoundary>
-              <main>
-                <RecipesPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/explore"
-        element={
-          <div className="bg-base-100 min-h-screen">
-            <Header />
-            <main>
-              <ExplorePage />
-            </main>
-          </div>
-        }
-      />
-      <Route
-        path="/add"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <AddRecipePage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/chat-recipe"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <ChatRecipePage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/coach-chat"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <CoachChatPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/recipe/:id"
-        element={
-          <div className="bg-base-100 min-h-screen">
-            <Header />
-            <main>
-              <RecipeViewPage />
-            </main>
-          </div>
-        }
-      />
-      <Route
-        path="/view-recipe/:id"
-        element={
-          <div className="bg-base-100 min-h-screen">
-            <Header />
-            <main>
-              <ViewRecipePage />
-            </main>
-          </div>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <AuthErrorBoundary>
-                <Header />
-              </AuthErrorBoundary>
-              <main>
+        {/* Protected routes - require authentication */}
+        <Route
+          path="/recipes"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
                 <AuthErrorBoundary>
-                  <ProfilePage />
+                  <Header />
                 </AuthErrorBoundary>
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/phase4-demo"
-        element={
-          <ProtectedRoute>
+                <main>
+                  <RecipesPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/explore"
+          element={
             <div className="bg-base-100 min-h-screen">
               <Header />
               <main>
-                <Phase4Demo />
+                <ExplorePage />
               </main>
             </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/evaluation-report"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="/add"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <AddRecipePage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat-recipe"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <ChatRecipePage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach-chat"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <CoachChatPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipe/:id"
+          element={
             <div className="bg-base-100 min-h-screen">
               <Header />
               <main>
-                <EvaluationReportPage />
+                <RecipeViewPage />
               </main>
             </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/health-coaches"
-        element={
-          <ProtectedRoute>
+          }
+        />
+        <Route
+          path="/view-recipe/:id"
+          element={
             <div className="bg-base-100 min-h-screen">
               <Header />
               <main>
-                <HealthCoachesPage />
+                <ViewRecipePage />
               </main>
             </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/kitchen"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <KitchenInventoryPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <AuthErrorBoundary>
+                  <Header />
+                </AuthErrorBoundary>
+                <main>
+                  <AuthErrorBoundary>
+                    <ProfilePage />
+                  </AuthErrorBoundary>
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/phase4-demo"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <Phase4Demo />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/evaluation-report"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <EvaluationReportPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/health-coaches"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <HealthCoachesPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kitchen"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <KitchenInventoryPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/cart"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <ShoppingCartPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/cart"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <ShoppingCartPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/global-ingredients"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <GlobalIngredientsPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/global-ingredients"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <GlobalIngredientsPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Subscription routes */}
-      <Route
-        path="/subscription"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <SubscriptionPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/subscription/success"
-        element={
-          <ProtectedRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <SubscriptionSuccessPage />
-              </main>
-            </div>
-          </ProtectedRoute>
-        }
-      />
+        {/* Subscription routes */}
+        <Route
+          path="/subscription"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <SubscriptionPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/subscription/success"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <SubscriptionSuccessPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Admin routes */}
-      <Route
-        path="/admin/tenants"
-        element={
-          <AdminRoute>
-            <div className="bg-base-100 min-h-screen">
-              <Header />
-              <main>
-                <TenantsAdminPage />
-              </main>
-            </div>
-          </AdminRoute>
-        }
-      />
+        {/* Admin routes */}
+        <Route
+          path="/admin/tenants"
+          element={
+            <AdminRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <TenantsAdminPage />
+                </main>
+              </div>
+            </AdminRoute>
+          }
+        />
 
-      {/* Default redirects */}
-      <Route path="/" element={<Navigate to="/recipes" replace />} />
-      <Route path="*" element={<Navigate to="/recipes" replace />} />
-    </Routes>
+        {/* Default redirects */}
+        <Route path="/" element={<Navigate to="/recipes" replace />} />
+        <Route path="*" element={<Navigate to="/recipes" replace />} />
+      </Routes>
+    </TermsGuard>
   );
 }
 

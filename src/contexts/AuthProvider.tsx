@@ -38,6 +38,10 @@ function createMinimalProfile(userId: string): Profile {
     visit_count: 0,
     last_visit_at: null,
     show_welcome_popup: true,
+    terms_accepted_at: null,
+    terms_version_accepted: null,
+    privacy_accepted_at: null,
+    privacy_version_accepted: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -65,6 +69,10 @@ function createImmediateProfile(user: User): Profile {
     visit_count: 0,
     last_visit_at: null,
     show_welcome_popup: true,
+    terms_accepted_at: null,
+    terms_version_accepted: null,
+    privacy_accepted_at: null,
+    privacy_version_accepted: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };

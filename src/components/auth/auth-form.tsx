@@ -424,7 +424,7 @@ export function AuthForm() {
                       }
                     />
                     <span className="label-text text-base-content">
-                      Subscribe to spam emails
+                      Subscribe to newsletters, recipe updates, and cooking tips
                     </span>
                   </label>
                 </div>

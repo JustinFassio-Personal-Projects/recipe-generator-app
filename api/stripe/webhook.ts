@@ -26,6 +26,26 @@ async function buffer(readable: NodeJS.ReadableStream) {
   return Buffer.concat(chunks);
 }
 
+// Helper function to trigger subscription update emails
+async function sendSubscriptionEmail(
+  userId: string,
+  updateType: string,
+  subscriptionDetails?: Record<string, string | number>
+) {
+  try {
+    await supabase.functions.invoke('send-subscription-update', {
+      body: {
+        userId,
+        updateType,
+        subscriptionDetails,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to send subscription email:', error);
+    // Don't fail webhook if email fails
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -95,6 +115,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           cancel_at_period_end: subscription.cancel_at_period_end,
         });
 
+        // Send welcome to premium email
+        await sendSubscriptionEmail(userId, 'subscription_created', {
+          plan: subscription.items.data[0]?.price?.nickname || 'Premium',
+          nextBillingDate: new Date(
+            subscription.current_period_end * 1000
+          ).toLocaleDateString(),
+        });
+
         console.log(`✅ Subscription created for user ${userId}`);
         break;
       }
@@ -128,6 +156,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           })
           .eq('stripe_subscription_id', subscription.id);
 
+        // Get user ID from subscription to send email
+        const { data: subData } = await supabase
+          .from('user_subscriptions')
+          .select('user_id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
+
+        if (subData?.user_id) {
+          await sendSubscriptionEmail(subData.user_id, 'subscription_updated', {
+            nextBillingDate: new Date(
+              subscription.current_period_end * 1000
+            ).toLocaleDateString(),
+          });
+        }
+
         console.log(`✅ Subscription updated: ${subscription.id}`);
         break;
       }
@@ -143,12 +186,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           })
           .eq('stripe_subscription_id', subscription.id);
 
+        // Get user ID to send cancellation email
+        const { data: cancelData } = await supabase
+          .from('user_subscriptions')
+          .select('user_id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
+
+        if (cancelData?.user_id) {
+          await sendSubscriptionEmail(
+            cancelData.user_id,
+            'subscription_cancelled'
+          );
+        }
+
         console.log(`✅ Subscription canceled: ${subscription.id}`);
         break;
       }
 
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as Stripe.Invoice & {
+          subscription?: string;
+        };
+
+        // Send payment confirmation email
+        if (invoice.subscription) {
+          const { data: paymentData } = await supabase
+            .from('user_subscriptions')
+            .select('user_id')
+            .eq('stripe_subscription_id', invoice.subscription)
+            .single();
+
+          if (paymentData?.user_id) {
+            await sendSubscriptionEmail(
+              paymentData.user_id,
+              'payment_succeeded',
+              {
+                amount: ((invoice.amount_paid || 0) / 100).toFixed(2),
+                currency: (invoice.currency || 'usd').toUpperCase(),
+              }
+            );
+          }
+        }
+
         console.log(`✅ Payment succeeded for customer: ${invoice.customer}`);
         break;
       }
@@ -166,8 +246,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .eq('stripe_subscription_id', invoice.subscription);
         }
 
+        // Send payment failure notification
+        if (invoice.subscription) {
+          const { data: failureData } = await supabase
+            .from('user_subscriptions')
+            .select('user_id')
+            .eq('stripe_subscription_id', invoice.subscription)
+            .single();
+
+          if (failureData?.user_id) {
+            await sendSubscriptionEmail(failureData.user_id, 'payment_failed');
+          }
+        }
+
         console.log(`❌ Payment failed for customer: ${invoice.customer}`);
-        // TODO: Send email notification to user
         break;
       }
 

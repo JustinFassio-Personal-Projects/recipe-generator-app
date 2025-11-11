@@ -213,7 +213,6 @@ export function AuthForm() {
                       target.style.display = 'none';
                       const fallback = target.nextElementSibling as HTMLElement;
                       if (fallback) fallback.style.display = 'flex';
-                      target.src = '/recipe-generator-logo.png';
                     }}
                   />
                   <span className="hidden text-3xl font-bold text-base-content sm:text-4xl md:text-5xl">

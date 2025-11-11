@@ -8,7 +8,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 
 export function useTermsAcceptance() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [needsAcceptance, setNeedsAcceptance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -58,8 +58,8 @@ export function useTermsAcceptance() {
           description: 'Terms and Privacy Policy accepted',
           variant: 'success',
         });
-        // Trigger a profile refresh by reloading the page or updating context
-        window.location.reload();
+        // Refresh profile to get updated terms acceptance data
+        await refreshProfile();
         return { success: true };
       } else {
         toast({

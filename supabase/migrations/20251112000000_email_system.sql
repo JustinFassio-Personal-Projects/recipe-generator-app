@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS email_queue (
   
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   
   -- Indexes for efficient queue processing
   CONSTRAINT email_queue_attempts_check CHECK (attempts >= 0 AND attempts <= 5)

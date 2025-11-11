@@ -17,6 +17,8 @@ export function AuthForm() {
   const { user } = useAuth();
   const tenantContext = useContext(TenantContext);
   const tenantName = tenantContext?.tenant?.name || 'Recipe Generator';
+  const logoUrl =
+    tenantContext?.tenant?.branding?.logo_url || '/recipe-generator-logo.png';
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -197,8 +199,8 @@ export function AuthForm() {
               <div className="mb-4 flex items-center justify-center">
                 <div className="flex h-44 w-44 items-center justify-center sm:h-52 sm:w-52 md:h-60 md:w-60">
                   <img
-                    src="/recipe-generator-logo.png"
-                    alt="Recipe Generator Logo"
+                    src={logoUrl}
+                    alt={`${tenantName} Logo`}
                     className="h-40 w-40 object-contain sm:h-48 sm:w-48 md:h-56 md:w-56"
                     onError={(e) => {
                       // Fallback to text if image fails to load
@@ -206,6 +208,7 @@ export function AuthForm() {
                       target.style.display = 'none';
                       const fallback = target.nextElementSibling as HTMLElement;
                       if (fallback) fallback.style.display = 'flex';
+                      target.src = '/recipe-generator-logo.png';
                     }}
                   />
                   <span className="hidden text-3xl font-bold text-base-content sm:text-4xl md:text-5xl">
@@ -293,7 +296,7 @@ export function AuthForm() {
                 <div className="form-control mt-6">
                   <button
                     type="submit"
-                    className="btn btn-primary w-full border-none btn-success"
+                    className="btn btn-success w-full"
                     disabled={loading}
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
@@ -402,11 +405,7 @@ export function AuthForm() {
                 <div className="form-control mt-6">
                   <button
                     type="submit"
-                    className={`btn btn-primary w-full border-none ${
-                      loading || !acceptTerms
-                        ? 'cursor-not-allowed bg-base-300 text-base-content/60'
-                        : 'btn-success'
-                    }`}
+                    className="btn btn-success w-full"
                     disabled={loading || !acceptTerms}
                   >
                     {loading
@@ -448,7 +447,7 @@ export function AuthForm() {
                 <div className="form-control mt-6">
                   <button
                     type="submit"
-                    className="btn btn-primary w-full border-none btn-success"
+                    className="btn btn-success w-full"
                     disabled={loading}
                   >
                     {loading ? 'Sending...' : 'Send Magic Link'}
@@ -481,7 +480,7 @@ export function AuthForm() {
                 <div className="form-control mt-6">
                   <button
                     type="submit"
-                    className="btn btn-primary w-full border-none btn-success"
+                    className="btn btn-success w-full"
                     disabled={loading}
                   >
                     {loading ? 'Sending...' : 'Send Reset Link'}
@@ -551,7 +550,7 @@ export function AuthForm() {
         </div>
 
         {/* Right Side - Featured Recipes Showcase */}
-        <div className="card rounded-box flex min-h-[400px] flex-1 flex-col border border-gray-200 bg-white shadow-xl lg:min-h-[600px]">
+        <div className="card rounded-box flex min-h-[400px] flex-1 flex-col border border-base-300 bg-base-100 shadow-xl lg:min-h-[600px]">
           <div className="flex flex-1 flex-col justify-center">
             <StackedImages maxImages={6} />
           </div>

@@ -24,10 +24,10 @@ export const sanctuaryHealthConfig: Partial<Tenant> = {
   // Theme and branding
   branding: {
     theme_name: SILK_THEME_NAME,
-    primary_color: '#4ade80', // Soft green for health/wellness
-    secondary_color: '#60a5fa', // Calm blue
-    // logo_url: '/tenants/sanctuary-health/assets/logo.png', // Add when available
-    // favicon_url: '/tenants/sanctuary-health/assets/favicon.ico', // Add when available
+    primary_color: '#d4af37', // Luxury gold accent
+    secondary_color: '#f7f1d3', // Warm parchment backdrop
+    logo_url: '/tenants/sanctuaryhealth/logo.svg',
+    favicon_url: '/tenants/sanctuaryhealth/logo.svg',
   },
 
   // Tenant-specific settings

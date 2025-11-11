@@ -1,0 +1,56 @@
+<svg width="720" height="280" viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Sanctuary Health &amp; Aesthetics Logo</title>
+  <desc id="desc">Golden Sanctuary logotype with an ankh icon and Health &amp; Aesthetics tagline.</desc>
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8e6a2"/>
+      <stop offset="55%" stop-color="#e5be62"/>
+      <stop offset="100%" stop-color="#c38b2f"/>
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#e8c97b" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="720" height="280" rx="32" ry="32" fill="#050505"/>
+
+  <!-- Ankh icon -->
+  <g transform="translate(360 116)" filter="url(#glow)">
+    <path
+      d="M0-58c-28 0-50 22-50 50 0 18 10 34 25 41h-20v28h28v98h34v-98h28v-28h-20c15-7 25-23 25-41 0-28-22-50-50-50zm0 24c15 0 26 12 26 26s-11 26-26 26-26-12-26-26 11-26 26-26z"
+      fill="url(#goldGradient)"/>
+    <path
+      d="M0-20c12 0 20 8 20 18 0 10-8 18-20 18s-20-8-20-18c0-10 8-18 20-18z"
+      fill="url(#accentGradient)" opacity="0.65"/>
+    <g stroke="url(#accentGradient)" stroke-linecap="round" stroke-width="6" opacity="0.85">
+      <line x1="0" y1="-95" x2="0" y2="-74"/>
+      <line x1="-34" y1="-88" x2="-20" y2="-71"/>
+      <line x1="34" y1="-88" x2="20" y2="-71"/>
+      <line x1="-54" y1="-60" x2="-30" y2="-52"/>
+      <line x1="54" y1="-60" x2="30" y2="-52"/>
+    </g>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(360 170)">
+    <text text-anchor="middle" fill="url(#goldGradient)" font-family="'Great Vibes','Pacifico','Brush Script MT',cursive" font-size="150">
+      Sanctuary
+    </text>
+  </g>
+
+  <!-- Tagline -->
+  <g transform="translate(360 220)">
+    <text text-anchor="middle" fill="url(#accentGradient)" font-family="'Cinzel','Playfair Display','Times New Roman',serif" font-size="34" letter-spacing="6">
+      HEALTH &amp; AESTHETICS
+    </text>
+  </g>
+</svg>
+

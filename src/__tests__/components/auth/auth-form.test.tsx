@@ -16,6 +16,18 @@ vi.mock('@/contexts/AuthProvider', () => ({
   })),
 }));
 
+// Mock TenantContext
+vi.mock('@/contexts/TenantContext', () => ({
+  TenantContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+    Consumer: ({
+      children,
+    }: {
+      children: (value: { tenant: null }) => React.ReactNode;
+    }) => children({ tenant: null }),
+  },
+}));
+
 // Test wrapper to provide auth context
 const renderWithAuth = (component: React.ReactElement) => {
   return render(<AuthProvider>{component}</AuthProvider>);

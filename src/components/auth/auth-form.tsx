@@ -12,6 +12,7 @@ import { Divider } from '@/components/ui/divider';
 import { AppTitle } from '@/components/ui/app-title';
 import { StackedImages } from '@/components/auth/StackedImages';
 import { authEvents } from '@/lib/vercel-analytics';
+import { TermsDialog } from '@/components/legal/TermsDialog';
 
 export function AuthForm() {
   const { user } = useAuth();
@@ -27,6 +28,10 @@ export function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [subscribeEmails, setSubscribeEmails] = useState(false);
+  const [termsDialogOpen, setTermsDialogOpen] = useState(false);
+  const [termsDialogTab, setTermsDialogTab] = useState<'terms' | 'privacy'>(
+    'terms'
+  );
 
   // Determine initial tab based on URL path
   const getInitialTab = (): 'signin' | 'signup' | 'magic-link' | 'reset' => {
@@ -197,11 +202,11 @@ export function AuthForm() {
             <div className="mb-6 text-center">
               {/* Logo */}
               <div className="mb-4 flex items-center justify-center">
-                <div className="flex h-64 w-64 items-center justify-center sm:h-72 sm:w-72 md:h-80 md:w-80">
+                <div className="flex h-96 w-96 items-center justify-center sm:h-[27rem] sm:w-[27rem] md:h-[30rem] md:w-[30rem]">
                   <img
                     src={logoUrl}
                     alt={`${tenantName} Logo`}
-                    className="h-60 w-60 object-contain sm:h-72 sm:w-72 md:h-80 md:w-80"
+                    className="h-80 w-80 object-contain sm:h-[26rem] sm:w-[26rem] md:h-[29rem] md:w-[29rem]"
                     onError={(e) => {
                       // Fallback to text if image fails to load
                       const target = e.target as HTMLImageElement;
@@ -382,7 +387,30 @@ export function AuthForm() {
                       onCheckedChange={(checked) => setAcceptTerms(!!checked)}
                     />
                     <span className="label-text text-base-content">
-                      Accept terms without reading
+                      I agree to the{' '}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setTermsDialogTab('terms');
+                          setTermsDialogOpen(true);
+                        }}
+                        className="link link-hover text-success hover:text-success/80"
+                      >
+                        Terms & Conditions
+                      </button>{' '}
+                      and{' '}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setTermsDialogTab('privacy');
+                          setTermsDialogOpen(true);
+                        }}
+                        className="link link-hover text-success hover:text-success/80"
+                      >
+                        Privacy Policy
+                      </button>
                     </span>
                   </label>
                 </div>
@@ -556,6 +584,13 @@ export function AuthForm() {
           </div>
         </div>
       </div>
+
+      {/* Terms & Privacy Dialog */}
+      <TermsDialog
+        open={termsDialogOpen}
+        onOpenChange={setTermsDialogOpen}
+        initialTab={termsDialogTab}
+      />
     </div>
   );
 }

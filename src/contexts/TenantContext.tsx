@@ -16,7 +16,9 @@ interface TenantContextType {
   refreshTenant: () => Promise<void>;
 }
 
-const TenantContext = createContext<TenantContextType | undefined>(undefined);
+export const TenantContext = createContext<TenantContextType | undefined>(
+  undefined
+);
 
 export function useTenant() {
   const context = useContext(TenantContext);

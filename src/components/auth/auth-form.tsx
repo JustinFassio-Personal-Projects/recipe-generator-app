@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import { signUp, signIn, signInWithMagicLink, resetPassword } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthProvider';
+import { TenantContext } from '@/contexts/TenantContext';
 
 import { User, Lock, Plus, Mail, UserPlus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -11,9 +12,14 @@ import { Divider } from '@/components/ui/divider';
 import { AppTitle } from '@/components/ui/app-title';
 import { StackedImages } from '@/components/auth/StackedImages';
 import { authEvents } from '@/lib/vercel-analytics';
+import { TermsDialog } from '@/components/legal/TermsDialog';
 
 export function AuthForm() {
   const { user } = useAuth();
+  const tenantContext = useContext(TenantContext);
+  const tenantName = tenantContext?.tenant?.name || 'Recipe Generator';
+  const logoUrl =
+    tenantContext?.tenant?.branding?.logo_url || '/recipe-generator-logo.png';
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -22,6 +28,10 @@ export function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [subscribeEmails, setSubscribeEmails] = useState(false);
+  const [termsDialogOpen, setTermsDialogOpen] = useState(false);
+  const [termsDialogTab, setTermsDialogTab] = useState<'terms' | 'privacy'>(
+    'terms'
+  );
 
   // Determine initial tab based on URL path
   const getInitialTab = (): 'signin' | 'signup' | 'magic-link' | 'reset' => {
@@ -183,20 +193,20 @@ export function AuthForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 to-teal-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-base-200 p-4">
       <div className="flex w-full max-w-6xl flex-col gap-4 lg:flex-row">
         {/* Left Side - Authentication Form */}
-        <div className="card rounded-box flex min-h-[600px] flex-1 flex-col border border-gray-200 bg-white p-8 shadow-xl lg:min-h-[600px]">
+        <div className="card rounded-box flex min-h-[600px] flex-1 flex-col border border-base-300 bg-base-100 p-8 shadow-xl lg:min-h-[600px]">
           <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
             {/* Header Section */}
             <div className="mb-6 text-center">
               {/* Logo */}
               <div className="mb-4 flex items-center justify-center">
-                <div className="flex h-44 w-44 items-center justify-center sm:h-52 sm:w-52 md:h-60 md:w-60">
+                <div className="flex h-96 w-96 items-center justify-center sm:h-[27rem] sm:w-[27rem] md:h-[30rem] md:w-[30rem]">
                   <img
-                    src="/recipe-generator-logo.png"
-                    alt="Recipe Generator Logo"
-                    className="h-40 w-40 object-contain sm:h-48 sm:w-48 md:h-56 md:w-56"
+                    src={logoUrl}
+                    alt={`${tenantName} Logo`}
+                    className="h-80 w-80 object-contain sm:h-[26rem] sm:w-[26rem] md:h-[29rem] md:w-[29rem]"
                     onError={(e) => {
                       // Fallback to text if image fails to load
                       const target = e.target as HTMLImageElement;
@@ -205,7 +215,7 @@ export function AuthForm() {
                       if (fallback) fallback.style.display = 'flex';
                     }}
                   />
-                  <span className="hidden text-3xl font-bold text-gray-600 sm:text-4xl md:text-5xl">
+                  <span className="hidden text-3xl font-bold text-base-content sm:text-4xl md:text-5xl">
                     R
                   </span>
                 </div>
@@ -214,23 +224,23 @@ export function AuthForm() {
               {/* Main Title */}
               <div className="mb-4 text-center">
                 <AppTitle />
-                <span className="sr-only">Recipe Generator</span>
+                <span className="sr-only">{tenantName}</span>
               </div>
 
               <div className="mb-2 flex items-center justify-center">
-                <User className="mr-2 h-6 w-6 text-green-600" />
-                <Plus className="h-4 w-4 text-green-600" />
+                <User className="mr-2 h-6 w-6 text-success" />
+                <Plus className="h-4 w-4 text-success" />
               </div>
               <div data-testid="chef-hat-icon" className="sr-only">
                 Chef Hat Icon
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-2xl font-bold text-base-content">
                 {activeTab === 'signin' && 'Sign In'}
                 {activeTab === 'signup' && 'Create new account'}
                 {activeTab === 'magic-link' && 'Magic Link Sign In'}
                 {activeTab === 'reset' && 'Reset Password'}
               </h3>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-base-content/70">
                 {activeTab === 'signin' &&
                   'Welcome back to your family cookbook'}
                 {activeTab === 'signup' &&
@@ -250,17 +260,17 @@ export function AuthForm() {
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="form-control">
                   <label className="label" htmlFor="email">
-                    <span className="label-text text-gray-700">Email</span>
+                    <span className="label-text text-base-content">Email</span>
                   </label>
                   <div className="relative">
-                    <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-base-content/50" />
                     <input
                       id="email"
                       type="email"
                       placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="input-bordered input w-full border-gray-300 bg-white pl-10 text-gray-900 focus:border-green-500"
+                      className="input-bordered input w-full border-base-300 bg-base-100 pl-10 text-base-content focus:border-success"
                       required
                     />
                   </div>
@@ -268,17 +278,19 @@ export function AuthForm() {
 
                 <div className="form-control">
                   <label className="label" htmlFor="password">
-                    <span className="label-text text-gray-700">Password</span>
+                    <span className="label-text text-base-content">
+                      Password
+                    </span>
                   </label>
                   <div className="relative">
-                    <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-base-content/50" />
                     <input
                       id="password"
                       type="password"
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="input-bordered input w-full border-gray-300 bg-white pl-10 text-gray-900 focus:border-green-500"
+                      className="input-bordered input w-full border-base-300 bg-base-100 pl-10 text-base-content focus:border-success"
                       autoComplete="current-password"
                       required
                     />
@@ -288,7 +300,7 @@ export function AuthForm() {
                 <div className="form-control mt-6">
                   <button
                     type="submit"
-                    className="btn btn-primary w-full border-none bg-green-600 text-white hover:bg-green-700"
+                    className="btn btn-success w-full"
                     disabled={loading}
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
@@ -302,17 +314,19 @@ export function AuthForm() {
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="form-control">
                   <label className="label" htmlFor="signup-fullname">
-                    <span className="label-text text-gray-700">Full Name</span>
+                    <span className="label-text text-base-content">
+                      Full Name
+                    </span>
                   </label>
                   <div className="relative">
-                    <UserPlus className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <UserPlus className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-base-content/50" />
                     <input
                       id="signup-fullname"
                       type="text"
                       placeholder="Your full name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="input-bordered input w-full border-gray-300 bg-white pl-10 text-gray-900 focus:border-green-500"
+                      className="input-bordered input w-full border-base-300 bg-base-100 pl-10 text-base-content focus:border-success"
                       required
                     />
                   </div>
@@ -320,17 +334,17 @@ export function AuthForm() {
 
                 <div className="form-control">
                   <label className="label" htmlFor="signup-email">
-                    <span className="label-text text-gray-700">Email</span>
+                    <span className="label-text text-base-content">Email</span>
                   </label>
                   <div className="relative">
-                    <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-base-content/50" />
                     <input
                       id="signup-email"
                       type="email"
                       placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="input-bordered input w-full border-gray-300 bg-white pl-10 text-gray-900 focus:border-green-500"
+                      className="input-bordered input w-full border-base-300 bg-base-100 pl-10 text-base-content focus:border-success"
                       required
                     />
                   </div>
@@ -338,17 +352,19 @@ export function AuthForm() {
 
                 <div className="form-control">
                   <label className="label" htmlFor="signup-password">
-                    <span className="label-text text-gray-700">Password</span>
+                    <span className="label-text text-base-content">
+                      Password
+                    </span>
                   </label>
                   <div className="relative">
-                    <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-base-content/50" />
                     <input
                       id="signup-password"
                       type="password"
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="input-bordered input w-full border-gray-300 bg-white pl-10 text-gray-900 focus:border-green-500"
+                      className="input-bordered input w-full border-base-300 bg-base-100 pl-10 text-base-content focus:border-success"
                       autoComplete="new-password"
                       required
                       minLength={6}
@@ -369,8 +385,31 @@ export function AuthForm() {
                       checked={acceptTerms}
                       onCheckedChange={(checked) => setAcceptTerms(!!checked)}
                     />
-                    <span className="label-text text-gray-700">
-                      Accept terms without reading
+                    <span className="label-text text-base-content">
+                      I agree to the{' '}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setTermsDialogTab('terms');
+                          setTermsDialogOpen(true);
+                        }}
+                        className="link link-hover text-success hover:text-success/80"
+                      >
+                        Terms & Conditions
+                      </button>{' '}
+                      and{' '}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setTermsDialogTab('privacy');
+                          setTermsDialogOpen(true);
+                        }}
+                        className="link link-hover text-success hover:text-success/80"
+                      >
+                        Privacy Policy
+                      </button>
                     </span>
                   </label>
                 </div>
@@ -384,7 +423,7 @@ export function AuthForm() {
                         setSubscribeEmails(!!checked)
                       }
                     />
-                    <span className="label-text text-gray-700">
+                    <span className="label-text text-base-content">
                       Subscribe to spam emails
                     </span>
                   </label>
@@ -393,11 +432,7 @@ export function AuthForm() {
                 <div className="form-control mt-6">
                   <button
                     type="submit"
-                    className={`btn w-full border-none ${
-                      loading || !acceptTerms
-                        ? 'cursor-not-allowed bg-gray-400 text-gray-600'
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
+                    className="btn btn-success w-full"
                     disabled={loading || !acceptTerms}
                   >
                     {loading
@@ -420,17 +455,17 @@ export function AuthForm() {
               <form onSubmit={handleMagicLink} className="space-y-4">
                 <div className="form-control">
                   <label className="label" htmlFor="magic-email">
-                    <span className="label-text text-gray-700">Email</span>
+                    <span className="label-text text-base-content">Email</span>
                   </label>
                   <div className="relative">
-                    <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-base-content/50" />
                     <input
                       id="magic-email"
                       type="email"
                       placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="input-bordered input w-full border-gray-300 bg-white pl-10 text-gray-900 focus:border-green-500"
+                      className="input-bordered input w-full border-base-300 bg-base-100 pl-10 text-base-content focus:border-success"
                       required
                     />
                   </div>
@@ -439,7 +474,7 @@ export function AuthForm() {
                 <div className="form-control mt-6">
                   <button
                     type="submit"
-                    className="btn btn-primary w-full border-none bg-green-600 text-white hover:bg-green-700"
+                    className="btn btn-success w-full"
                     disabled={loading}
                   >
                     {loading ? 'Sending...' : 'Send Magic Link'}
@@ -453,17 +488,17 @@ export function AuthForm() {
               <form onSubmit={handlePasswordReset} className="space-y-4">
                 <div className="form-control">
                   <label className="label" htmlFor="reset-email">
-                    <span className="label-text text-gray-700">Email</span>
+                    <span className="label-text text-base-content">Email</span>
                   </label>
                   <div className="relative">
-                    <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-base-content/50" />
                     <input
                       id="reset-email"
                       type="email"
                       placeholder="Email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="input-bordered input w-full border-gray-300 bg-white pl-10 text-gray-900 focus:border-green-500"
+                      className="input-bordered input w-full border-base-300 bg-base-100 pl-10 text-base-content focus:border-success"
                       required
                     />
                   </div>
@@ -472,7 +507,7 @@ export function AuthForm() {
                 <div className="form-control mt-6">
                   <button
                     type="submit"
-                    className="btn btn-primary w-full border-none bg-green-600 text-white hover:bg-green-700"
+                    className="btn btn-success w-full"
                     disabled={loading}
                   >
                     {loading ? 'Sending...' : 'Send Reset Link'}
@@ -488,23 +523,23 @@ export function AuthForm() {
                   <div className="flex justify-center gap-2 text-sm">
                     <button
                       type="button"
-                      className="link link-hover text-green-600 hover:text-green-700"
+                      className="link link-hover text-success hover:text-success/80"
                       onClick={() => setActiveTab('signup')}
                     >
                       Create account
                     </button>
-                    <span className="text-gray-400">•</span>
+                    <span className="text-base-content/50">•</span>
                     <button
                       type="button"
-                      className="link link-hover text-green-600 hover:text-green-700"
+                      className="link link-hover text-success hover:text-success/80"
                       onClick={() => setActiveTab('magic-link')}
                     >
                       Magic link
                     </button>
-                    <span className="text-gray-400">•</span>
+                    <span className="text-base-content/50">•</span>
                     <button
                       type="button"
-                      className="link link-hover text-green-600 hover:text-green-700"
+                      className="link link-hover text-success hover:text-success/80"
                       onClick={() => setActiveTab('reset')}
                     >
                       Reset password
@@ -515,7 +550,7 @@ export function AuthForm() {
               {activeTab === 'signup' && (
                 <button
                   type="button"
-                  className="link link-hover text-sm text-green-600 hover:text-green-700"
+                  className="link link-hover text-sm text-success hover:text-success/80"
                   onClick={() => setActiveTab('signin')}
                 >
                   Already have an account? Sign in
@@ -524,7 +559,7 @@ export function AuthForm() {
               {(activeTab === 'magic-link' || activeTab === 'reset') && (
                 <button
                   type="button"
-                  className="link link-hover text-sm text-green-600 hover:text-green-700"
+                  className="link link-hover text-sm text-success hover:text-success/80"
                   onClick={() => setActiveTab('signin')}
                 >
                   Back to sign in
@@ -536,16 +571,25 @@ export function AuthForm() {
 
         {/* Divider - Only show on large screens */}
         <div className="hidden lg:flex lg:items-center lg:justify-center">
-          <Divider className="divider-horizontal text-gray-500">AND</Divider>
+          <Divider className="divider-horizontal text-base-content/60">
+            AND
+          </Divider>
         </div>
 
         {/* Right Side - Featured Recipes Showcase */}
-        <div className="card rounded-box flex min-h-[400px] flex-1 flex-col border border-gray-200 bg-white shadow-xl lg:min-h-[600px]">
+        <div className="card rounded-box flex min-h-[400px] flex-1 flex-col border border-base-300 bg-base-100 shadow-xl lg:min-h-[600px]">
           <div className="flex flex-1 flex-col justify-center">
             <StackedImages maxImages={6} />
           </div>
         </div>
       </div>
+
+      {/* Terms & Privacy Dialog */}
+      <TermsDialog
+        open={termsDialogOpen}
+        onOpenChange={setTermsDialogOpen}
+        initialTab={termsDialogTab}
+      />
     </div>
   );
 }

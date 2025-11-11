@@ -14,6 +14,16 @@ import {
 } from '../_shared/tenant-context.ts';
 import { getRateLimiter } from '../_shared/rate-limiter.ts';
 
+// Map email types to email preference column names
+const EMAIL_TYPE_TO_PREFERENCE: Record<string, string> = {
+  welcome: 'welcome_emails',
+  newsletter: 'newsletters',
+  recipe_notification: 'recipe_notifications',
+  cooking_reminder: 'cooking_reminders',
+  subscription_update: 'subscription_updates',
+  admin_notification: 'admin_notifications',
+};
+
 Deno.serve(async () => {
   try {
     console.log('Starting email queue processing...');
@@ -86,8 +96,11 @@ Deno.serve(async () => {
 
         // Check if user has opted out of this email type
         if (prefs) {
-          const preference = prefs[`${item.type}s` as keyof typeof prefs]; // e.g., newsletters, recipe_notifications
-          if (preference === false) {
+          const preferenceKey = EMAIL_TYPE_TO_PREFERENCE[item.type];
+          if (
+            preferenceKey &&
+            prefs[preferenceKey as keyof typeof prefs] === false
+          ) {
             console.log(
               `User ${item.recipient_user_id} has opted out of ${item.type}`
             );

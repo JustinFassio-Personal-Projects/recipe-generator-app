@@ -19,9 +19,6 @@
       </feMerge>
     </filter>
   </defs>
-
-  <rect width="720" height="280" rx="32" ry="32" fill="#050505"/>
-
   <!-- Ankh icon -->
   <g transform="translate(360 116)" filter="url(#glow)">
     <path

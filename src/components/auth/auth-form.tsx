@@ -197,11 +197,11 @@ export function AuthForm() {
             <div className="mb-6 text-center">
               {/* Logo */}
               <div className="mb-4 flex items-center justify-center">
-                <div className="flex h-44 w-44 items-center justify-center sm:h-52 sm:w-52 md:h-60 md:w-60">
+                <div className="flex h-64 w-64 items-center justify-center sm:h-72 sm:w-72 md:h-80 md:w-80">
                   <img
                     src={logoUrl}
                     alt={`${tenantName} Logo`}
-                    className="h-40 w-40 object-contain sm:h-48 sm:w-48 md:h-56 md:w-56"
+                    className="h-60 w-60 object-contain sm:h-72 sm:w-72 md:h-80 md:w-80"
                     onError={(e) => {
                       // Fallback to text if image fails to load
                       const target = e.target as HTMLImageElement;

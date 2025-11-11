@@ -48,6 +48,22 @@ export async function signUp(
       };
     }
 
+    // Trigger welcome email (non-blocking)
+    if (data.user?.id && data.user?.email) {
+      supabase.functions
+        .invoke('send-welcome-email', {
+          body: {
+            userId: data.user.id,
+            email: data.user.email,
+            fullName,
+          },
+        })
+        .catch((error) => {
+          console.error('Failed to send welcome email:', error);
+          // Don't fail signup if email fails
+        });
+    }
+
     return { success: true, userId: data.user?.id };
   } catch (error) {
     return {

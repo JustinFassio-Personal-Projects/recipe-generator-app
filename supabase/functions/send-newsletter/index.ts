@@ -88,19 +88,18 @@ Deno.serve(async (req) => {
         // Wait if rate limit is reached
         await rateLimiter.waitIfNeeded();
 
-        // Get user's email preferences
-        const { data: user } = await supabase
-          .from('auth.users')
-          .select('email')
-          .eq('id', item.recipient_user_id)
-          .single();
+        // Get user's email using Admin API
+        const { data: userData, error: userError } =
+          await supabase.auth.admin.getUserById(item.recipient_user_id);
 
-        if (!user || !user.email) {
+        if (userError || !userData?.user || !userData.user.email) {
           console.warn(
             `User ${item.recipient_user_id} not found or has no email`
           );
           continue;
         }
+
+        const user = userData.user;
 
         // Get unsubscribe token
         const { data: prefs } = await supabase

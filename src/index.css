@@ -1,9 +1,94 @@
 @import 'tailwindcss';
-@plugin "daisyui" {
-  themes: caramellatte; /* Theme name defined in src/lib/theme.ts */
+@plugin 'daisyui';
+
+/* Caramellatte Theme */
+[data-theme='caramellatte'] {
+  color-scheme: light;
+  --color-primary: #3d2817;
+  --color-secondary: #6b4423;
+  --color-accent: #8b5a2b;
+  --color-neutral: #5d4037;
+  --color-base-100: #fef7ed;
+  --color-base-200: #f5e6d3;
+  --color-base-300: #e7d5c4;
+  --color-base-content: #3d2817;
+  --color-primary-content: #ffffff;
+  --color-secondary-content: #e7d5c4;
+  --color-accent-content: #e7d5c4;
+  --color-neutral-content: #fef7ed;
+  --color-info: #3abff8;
+  --color-info-content: #e7d5c4;
+  --color-success: #36d399;
+  --color-success-content: #e7d5c4;
+  --color-warning: #fbbd23;
+  --color-warning-content: #3d2817;
+  --color-error: #f87272;
+  --color-error-content: #3d2817;
 }
 
-/* DaisyUI will automatically apply the configured theme when data-theme attribute is set */
+/* Silk Theme - Custom Dark Theme */
+[data-theme='silk'] {
+  color-scheme: dark;
+  --color-base-100: oklch(14% 0.004 49.25);
+  --color-base-200: oklch(21% 0.006 56.043);
+  --color-base-300: oklch(26% 0.007 34.298);
+  --color-base-content: oklch(97% 0.001 106.424);
+  --color-primary: oklch(68% 0.162 75.834);
+  --color-primary-content: oklch(98% 0.026 102.212);
+  --color-secondary: oklch(44% 0.011 73.639);
+  --color-secondary-content: oklch(98% 0.001 106.423);
+  --color-accent: oklch(54% 0.245 262.881);
+  --color-accent-content: oklch(97% 0.014 254.604);
+  --color-neutral: oklch(26% 0.007 34.298);
+  --color-neutral-content: oklch(98% 0.001 106.423);
+  --color-info: oklch(68% 0.169 237.323);
+  --color-info-content: oklch(97% 0.013 236.62);
+  --color-success: oklch(76% 0.233 130.85);
+  --color-success-content: oklch(98% 0.031 120.757);
+  --color-warning: oklch(79% 0.184 86.047);
+  --color-warning-content: oklch(98% 0.026 102.212);
+  --color-error: oklch(63% 0.237 25.331);
+  --color-error-content: oklch(97% 0.013 17.38);
+  --radius-selector: 2rem;
+  --radius-field: 0rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Sanctuary Health Theme - Luxury Gold & Parchment */
+[data-theme='sanctuary-health'] {
+  color-scheme: light;
+  /* Primary: Luxury Gold (#d4af37) */
+  --color-primary: #d4af37;
+  --color-primary-content: #1a1400;
+  /* Secondary: Warm Parchment (#f7f1d3) */
+  --color-secondary: #f7f1d3;
+  --color-secondary-content: #3d2817;
+  /* Accent: Rich Gold (darker shade for contrast) */
+  --color-accent: #b8941f;
+  --color-accent-content: #1a1400;
+  /* Neutral: Warm Gray-Brown */
+  --color-neutral: #5d4e37;
+  --color-neutral-content: #fef7ed;
+  /* Base: Light Parchment Background */
+  --color-base-100: #fef7ed;
+  --color-base-200: #f7f1d3;
+  --color-base-300: #e8dfc4;
+  --color-base-content: #3d2817;
+  /* Semantic Colors */
+  --color-info: #3b82f6;
+  --color-info-content: #ffffff;
+  --color-success: #22c55e;
+  --color-success-content: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-content: #1a1400;
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+}
 
 /* Custom component variants */
 @layer components {

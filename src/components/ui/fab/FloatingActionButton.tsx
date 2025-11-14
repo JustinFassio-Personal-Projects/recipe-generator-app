@@ -32,20 +32,20 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     setIsOpen(!isOpen);
   };
 
-  // Get button style based on item ID
+  // Get button style based on item ID using DaisyUI classes
   const getMenuItemStyle = (itemId: string) => {
     if (itemId === 'ai-create') {
-      // AI Recipe Creator - orange gradient
-      return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border border-orange-600 hover:from-orange-600 hover:to-orange-700';
+      // AI Recipe Creator - primary theme color
+      return 'btn-primary';
     } else if (itemId === 'update-profile') {
-      // Update Profile - purple gradient
-      return 'bg-gradient-to-r from-purple-500 to-purple-600 text-white border border-purple-600 hover:from-purple-600 hover:to-purple-700';
+      // Update Profile - secondary theme color
+      return 'btn-secondary';
     } else if (itemId === 'add-recipe') {
-      // Add Recipe - cream background with green border
-      return 'bg-stone-50 border border-success text-success hover:bg-stone-100';
+      // Add Recipe - success color with outline
+      return 'btn-outline btn-success';
     }
     // Default style
-    return 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50';
+    return 'btn-outline';
   };
 
   return (
@@ -55,8 +55,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         onClick={handleButtonClick}
         className={cn(
           'h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-all',
-          'bg-gradient-to-r from-orange-500 to-orange-600 text-white border border-orange-600',
-          'hover:from-orange-600 hover:to-orange-700',
+          'btn-primary',
           isOpen && 'scale-105'
         )}
         aria-label="Open menu"

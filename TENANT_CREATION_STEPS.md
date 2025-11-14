@@ -158,10 +158,10 @@ Once your tenant is created:
 
 Current tenants in your database:
 
-| Subdomain     | Name                    | Status    |
-| ------------- | ----------------------- | --------- |
-| `app`         | Recipe Generator (Main) | Active ✅ |
-| `test-clinic` | _(Create this next)_    | ⏳        |
+| Subdomain     | Name                 | Status    |
+| ------------- | -------------------- | --------- |
+| `app`         | Recipe Generator     | Active ✅ |
+| `test-clinic` | _(Create this next)_ | ⏳        |
 
 ---
 

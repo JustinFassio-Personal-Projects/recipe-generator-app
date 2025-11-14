@@ -7,6 +7,9 @@ import React, {
 } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Tenant } from '@/lib/types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('TenantProvider');
 
 interface TenantContextType {
   tenant: Tenant | null;
@@ -16,7 +19,9 @@ interface TenantContextType {
   refreshTenant: () => Promise<void>;
 }
 
-const TenantContext = createContext<TenantContextType | undefined>(undefined);
+export const TenantContext = createContext<TenantContextType | undefined>(
+  undefined
+);
 
 export function useTenant() {
   const context = useContext(TenantContext);
@@ -55,6 +60,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const isMainApp = !subdomain;
 
   const fetchTenant = useCallback(async () => {
+    logger.debug('🏢 Fetching tenant for subdomain:', subdomain || 'app');
+
     if (!subdomain) {
       // Main app - load default tenant
       try {
@@ -65,9 +72,10 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (fetchError) throw fetchError;
+        logger.debug('🏢 Loaded main app tenant:', data);
         setTenant(data);
       } catch (err) {
-        console.error('Failed to load default tenant:', err);
+        logger.error('Failed to load default tenant:', err);
         setError('Failed to load tenant configuration');
       } finally {
         setLoading(false);
@@ -85,17 +93,19 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle(); // Use maybeSingle instead of single to avoid 406 errors
 
       if (fetchError) {
-        console.error('Tenant fetch error:', fetchError);
+        logger.error('Tenant fetch error:', fetchError);
         setError(`Failed to load tenant configuration: ${fetchError.message}`);
       } else if (!data) {
+        logger.error(`🏢 Tenant "${subdomain}" not found in database`);
         setError(
           `Tenant "${subdomain}" not found. Please create this tenant in the admin panel first.`
         );
       } else {
+        logger.debug('🏢 Loaded tenant:', data);
         setTenant(data);
       }
     } catch (err) {
-      console.error('Failed to load tenant:', err);
+      logger.error('Failed to load tenant:', err);
       setError('Failed to load tenant configuration');
     } finally {
       setLoading(false);
@@ -112,18 +122,56 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
     const { branding } = tenant;
 
-    // Apply primary color
+    logger.debug('🎨 Applying tenant branding:', {
+      subdomain: tenant.subdomain,
+      theme_name: branding?.theme_name,
+      hasTheme: !!branding?.theme_name,
+    });
+
+    // Apply theme if specified in branding
+    if (branding?.theme_name) {
+      logger.debug(`🎨 Setting theme to: ${branding.theme_name}`);
+      document.documentElement.setAttribute('data-theme', branding.theme_name);
+      localStorage.setItem('theme', branding.theme_name);
+
+      // Trigger style recalculation without hiding content
+      // Modern browsers handle CSS custom property changes automatically,
+      // but this ensures immediate application if needed
+      void getComputedStyle(document.documentElement).getPropertyValue(
+        '--color-primary'
+      );
+
+      logger.debug(
+        '🎨 Theme applied:',
+        document.documentElement.getAttribute('data-theme')
+      );
+    } else {
+      // Fallback to default caramellatte theme
+      logger.debug('🎨 No theme specified, using caramellatte');
+      document.documentElement.setAttribute('data-theme', 'caramellatte');
+      localStorage.setItem('theme', 'caramellatte');
+    }
+
+    // DEPRECATED: Color overrides via primary_color/secondary_color
+    // These are kept for backward compatibility but should NOT be used with custom themes.
+    // Instead, create a custom theme in src/index.css and set theme_name in the database.
+    // Custom themes follow DaisyUI best practices and are easier for admins to manage.
     if (branding?.primary_color) {
+      logger.warn(
+        '⚠️ Using deprecated primary_color override. Consider creating a custom theme instead.'
+      );
       document.documentElement.style.setProperty(
-        '--primary',
+        '--color-primary',
         branding.primary_color
       );
     }
 
-    // Apply secondary color
     if (branding?.secondary_color) {
+      logger.warn(
+        '⚠️ Using deprecated secondary_color override. Consider creating a custom theme instead.'
+      );
       document.documentElement.style.setProperty(
-        '--secondary',
+        '--color-secondary',
         branding.secondary_color
       );
     }

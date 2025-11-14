@@ -7,7 +7,7 @@
  */
 
 import type { Tenant } from '@/lib/types';
-import { SILK_THEME_NAME } from './theme/silk-theme';
+import { SANCTUARY_HEALTH_THEME_NAME } from './theme/sanctuary-health-theme';
 
 /**
  * Sanctuary Health tenant configuration
@@ -23,9 +23,9 @@ export const sanctuaryHealthConfig: Partial<Tenant> = {
 
   // Theme and branding
   branding: {
-    theme_name: SILK_THEME_NAME,
-    primary_color: '#d4af37', // Luxury gold accent
-    secondary_color: '#f7f1d3', // Warm parchment backdrop
+    // Custom Sanctuary Health theme with gold/parchment colors
+    // Theme is defined in src/index.css - no color overrides needed
+    theme_name: SANCTUARY_HEALTH_THEME_NAME,
     logo_url: '/tenants/sanctuaryhealth/logo.svg',
     favicon_url: '/tenants/sanctuaryhealth/logo.svg',
   },
@@ -55,7 +55,11 @@ export const sanctuaryHealthMetadata = {
   displayName: 'Sanctuary Health',
   description: 'Health and wellness focused recipe platform',
   targetAudience: 'Health-conscious individuals and families',
-  features: ['Silk theme', 'Health-focused recipes', 'Detailed instructions'],
+  features: [
+    'Sanctuary Health theme (gold/parchment)',
+    'Health-focused recipes',
+    'Detailed instructions',
+  ],
   setupDate: '2025-11-10',
 } as const;
 

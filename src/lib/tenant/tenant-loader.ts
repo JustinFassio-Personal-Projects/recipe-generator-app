@@ -97,16 +97,6 @@ export function getTenantTheme(tenant: Tenant | null): string {
 }
 
 /**
- * Development helper: Enable local config override
- *
- * Set this to true in development to always use local configs
- * over database configs when available.
- */
-export const USE_LOCAL_CONFIG_IN_DEV =
-  import.meta.env.MODE === 'development' &&
-  import.meta.env.VITE_USE_LOCAL_TENANT_CONFIG === 'true';
-
-/**
  * Tenant configuration metadata
  */
 export const tenantMetadata = {
@@ -115,12 +105,34 @@ export const tenantMetadata = {
   lastUpdated: new Date().toISOString(),
 } as const;
 
+/**
+ * TODO: Future Enhancement - Local Config Override in Development
+ *
+ * The mergeTenantConfig function exists but is not currently integrated into TenantContext.
+ * To enable local config overrides in development:
+ *
+ * 1. Add environment variable: VITE_USE_LOCAL_TENANT_CONFIG=true in .env.local
+ * 2. Update TenantContext.tsx to use mergeTenantConfig when USE_LOCAL_CONFIG_IN_DEV is true
+ * 3. This would allow local tenant configs to override database values during development
+ *
+ * Example integration:
+ * ```typescript
+ * const USE_LOCAL_CONFIG_IN_DEV =
+ *   import.meta.env.MODE === 'development' &&
+ *   import.meta.env.VITE_USE_LOCAL_TENANT_CONFIG === 'true';
+ *
+ * if (USE_LOCAL_CONFIG_IN_DEV && data) {
+ *   setTenant(mergeTenantConfig(data, subdomain));
+ * } else {
+ *   setTenant(data);
+ * }
+ * ```
+ */
 export default {
   getLocalTenantConfig,
   hasLocalConfig,
   getRegisteredTenants,
   mergeTenantConfig,
   getTenantTheme,
-  USE_LOCAL_CONFIG_IN_DEV,
   tenantMetadata,
 };

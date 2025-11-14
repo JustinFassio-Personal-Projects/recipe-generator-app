@@ -59,6 +59,37 @@
   --noise: 0;
 }
 
+/* Sanctuary Health Theme - Luxury Gold & Parchment */
+[data-theme='sanctuary-health'] {
+  color-scheme: light;
+  /* Primary: Luxury Gold (#d4af37) */
+  --color-primary: #d4af37;
+  --color-primary-content: #1a1400;
+  /* Secondary: Warm Parchment (#f7f1d3) */
+  --color-secondary: #f7f1d3;
+  --color-secondary-content: #3d2817;
+  /* Accent: Rich Gold (darker shade for contrast) */
+  --color-accent: #b8941f;
+  --color-accent-content: #1a1400;
+  /* Neutral: Warm Gray-Brown */
+  --color-neutral: #5d4e37;
+  --color-neutral-content: #fef7ed;
+  /* Base: Light Parchment Background */
+  --color-base-100: #fef7ed;
+  --color-base-200: #f7f1d3;
+  --color-base-300: #e8dfc4;
+  --color-base-content: #3d2817;
+  /* Semantic Colors */
+  --color-info: #3b82f6;
+  --color-info-content: #ffffff;
+  --color-success: #22c55e;
+  --color-success-content: #ffffff;
+  --color-warning: #f59e0b;
+  --color-warning-content: #1a1400;
+  --color-error: #ef4444;
+  --color-error-content: #ffffff;
+}
+
 /* Custom component variants */
 @layer components {
   .btn-recipe {

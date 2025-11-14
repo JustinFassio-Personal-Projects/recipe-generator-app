@@ -20,28 +20,28 @@ export const THEME_NAME = DEFAULT_THEME_NAME;
 export const AVAILABLE_THEMES = {
   caramellatte: 'caramellatte',
   silk: 'silk',
+  'sanctuary-health': 'sanctuary-health',
 } as const;
 
 export type ThemeName = keyof typeof AVAILABLE_THEMES;
 
 /**
- * Tenant theme registry (Reference Only)
+ * Theme Management Architecture
  *
- * This mapping serves as documentation of available themes per tenant.
- * The actual theme values are stored in the tenants.branding.theme_name database field
- * and applied by TenantProvider at runtime.
+ * IMPORTANT: Themes are purely database-driven. The actual theme for each tenant
+ * is stored in the `tenants.branding.theme_name` database field and applied
+ * automatically by TenantProvider at runtime.
  *
  * To add a new tenant theme:
  * 1. Define the theme CSS in src/index.css using [data-theme='theme-name']
- * 2. Add the theme to AVAILABLE_THEMES constant
+ * 2. Add the theme to AVAILABLE_THEMES constant above
  * 3. Set the theme_name in the tenant's branding column in the database
- * 4. Update this documentation registry for reference
+ *    (via Admin Panel → Tenant Settings)
+ *
+ * No code changes are needed to change a tenant's theme - just update the database!
+ *
+ * @see TenantContext.tsx - Handles all theme initialization from database
  */
-export const TENANT_THEMES: Record<string, ThemeName> = {
-  app: 'caramellatte', // Default/main app
-  sanctuaryhealth: 'silk', // Sanctuary Health tenant
-  // Add more tenant themes as needed
-};
 
 /**
  * Initialize the DaisyUI theme by setting the data-theme attribute
@@ -90,17 +90,6 @@ export function initializeTheme(
  */
 export function isValidTheme(themeName: string): boolean {
   return Object.keys(AVAILABLE_THEMES).includes(themeName);
-}
-
-/**
- * Get theme for a specific tenant subdomain
- *
- * @param subdomain - The tenant subdomain
- * @returns The theme name for the tenant, or default theme
- */
-export function getThemeForTenant(subdomain: string | null): string {
-  if (!subdomain) return DEFAULT_THEME_NAME;
-  return TENANT_THEMES[subdomain] || DEFAULT_THEME_NAME;
 }
 
 /**

@@ -7,6 +7,9 @@ import React, {
 } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Tenant } from '@/lib/types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('TenantProvider');
 
 interface TenantContextType {
   tenant: Tenant | null;
@@ -57,10 +60,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const isMainApp = !subdomain;
 
   const fetchTenant = useCallback(async () => {
-    console.log(
-      '🏢 [TenantProvider] Fetching tenant for subdomain:',
-      subdomain || 'app'
-    );
+    logger.debug('🏢 Fetching tenant for subdomain:', subdomain || 'app');
 
     if (!subdomain) {
       // Main app - load default tenant
@@ -72,10 +72,10 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (fetchError) throw fetchError;
-        console.log('🏢 [TenantProvider] Loaded main app tenant:', data);
+        logger.debug('🏢 Loaded main app tenant:', data);
         setTenant(data);
       } catch (err) {
-        console.error('Failed to load default tenant:', err);
+        logger.error('Failed to load default tenant:', err);
         setError('Failed to load tenant configuration');
       } finally {
         setLoading(false);
@@ -93,21 +93,19 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle(); // Use maybeSingle instead of single to avoid 406 errors
 
       if (fetchError) {
-        console.error('Tenant fetch error:', fetchError);
+        logger.error('Tenant fetch error:', fetchError);
         setError(`Failed to load tenant configuration: ${fetchError.message}`);
       } else if (!data) {
-        console.error(
-          `🏢 [TenantProvider] Tenant "${subdomain}" not found in database`
-        );
+        logger.error(`🏢 Tenant "${subdomain}" not found in database`);
         setError(
           `Tenant "${subdomain}" not found. Please create this tenant in the admin panel first.`
         );
       } else {
-        console.log('🏢 [TenantProvider] Loaded tenant:', data);
+        logger.debug('🏢 Loaded tenant:', data);
         setTenant(data);
       }
     } catch (err) {
-      console.error('Failed to load tenant:', err);
+      logger.error('Failed to load tenant:', err);
       setError('Failed to load tenant configuration');
     } finally {
       setLoading(false);
@@ -124,7 +122,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
     const { branding } = tenant;
 
-    console.log('🎨 [TenantProvider] Applying tenant branding:', {
+    logger.debug('🎨 Applying tenant branding:', {
       subdomain: tenant.subdomain,
       theme_name: branding?.theme_name,
       hasTheme: !!branding?.theme_name,
@@ -132,33 +130,35 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
     // Apply theme if specified in branding
     if (branding?.theme_name) {
-      console.log(
-        `🎨 [TenantProvider] Setting theme to: ${branding.theme_name}`
-      );
+      logger.debug(`🎨 Setting theme to: ${branding.theme_name}`);
       document.documentElement.setAttribute('data-theme', branding.theme_name);
       localStorage.setItem('theme', branding.theme_name);
 
-      // Force style recalculation
-      document.body.style.display = 'none';
-      void document.body.offsetHeight; // Trigger reflow
-      document.body.style.display = '';
+      // Trigger style recalculation without hiding content
+      // Modern browsers handle CSS custom property changes automatically,
+      // but this ensures immediate application if needed
+      void getComputedStyle(document.documentElement).getPropertyValue(
+        '--color-primary'
+      );
 
-      console.log(
-        '🎨 [TenantProvider] Theme applied:',
+      logger.debug(
+        '🎨 Theme applied:',
         document.documentElement.getAttribute('data-theme')
       );
     } else {
       // Fallback to default caramellatte theme
-      console.log('🎨 [TenantProvider] No theme specified, using caramellatte');
+      logger.debug('🎨 No theme specified, using caramellatte');
       document.documentElement.setAttribute('data-theme', 'caramellatte');
       localStorage.setItem('theme', 'caramellatte');
     }
 
-    // Apply primary color override (if provided)
+    // DEPRECATED: Color overrides via primary_color/secondary_color
+    // These are kept for backward compatibility but should NOT be used with custom themes.
+    // Instead, create a custom theme in src/index.css and set theme_name in the database.
+    // Custom themes follow DaisyUI best practices and are easier for admins to manage.
     if (branding?.primary_color) {
-      console.log(
-        '🎨 [TenantProvider] Applying primary color:',
-        branding.primary_color
+      logger.warn(
+        '⚠️ Using deprecated primary_color override. Consider creating a custom theme instead.'
       );
       document.documentElement.style.setProperty(
         '--color-primary',
@@ -166,11 +166,9 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
-    // Apply secondary color override (if provided)
     if (branding?.secondary_color) {
-      console.log(
-        '🎨 [TenantProvider] Applying secondary color:',
-        branding.secondary_color
+      logger.warn(
+        '⚠️ Using deprecated secondary_color override. Consider creating a custom theme instead.'
       );
       document.documentElement.style.setProperty(
         '--color-secondary',

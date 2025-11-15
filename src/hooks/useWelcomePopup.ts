@@ -154,9 +154,7 @@ export function useWelcomePopup(
       // 1. User logs out (previousUserId !== null, currentUserId === null)
       // 2. User switches (both non-null but different)
       // 3. User logs in fresh (previousUserId === null, currentUserId !== null)
-      if (previousUserId !== currentUserId) {
-        clearWelcomePopupSessionFlags();
-      }
+      clearWelcomePopupSessionFlags();
 
       setPreviousUserId(currentUserId);
     }

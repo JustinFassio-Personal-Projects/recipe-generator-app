@@ -16,6 +16,7 @@ interface TermsDialogProps {
   initialTab?: 'terms' | 'privacy';
   showAcceptButton?: boolean;
   onAccept?: () => void;
+  preventDismiss?: boolean;
 }
 
 export function TermsDialog({
@@ -24,12 +25,33 @@ export function TermsDialog({
   initialTab = 'terms',
   showAcceptButton = false,
   onAccept,
+  preventDismiss = false,
 }: TermsDialogProps) {
   const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>(initialTab);
 
+  // Prevent closing when acceptance is required
+  const handleOpenChange = (newOpen: boolean) => {
+    if (preventDismiss && !newOpen) {
+      return; // Prevent closing
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className={`max-w-3xl max-h-[90vh] overflow-hidden flex flex-col ${preventDismiss ? '[&>button]:hidden' : ''}`}
+        onInteractOutside={(e) => {
+          if (preventDismiss) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          if (preventDismiss) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white">
             Legal Information
@@ -76,13 +98,6 @@ export function TermsDialog({
         {/* Accept Button (optional - for forced acceptance flow) */}
         {showAcceptButton && (
           <div className="flex justify-end gap-2 border-t border-base-300 pt-4">
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="btn btn-ghost"
-            >
-              Cancel
-            </button>
             <button
               type="button"
               onClick={onAccept}

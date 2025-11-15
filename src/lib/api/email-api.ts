@@ -5,14 +5,6 @@
 
 import { supabase } from '../supabase';
 
-// Supabase error type with code property
-interface SupabaseError {
-  code?: string;
-  message: string;
-  details?: string;
-  hint?: string;
-}
-
 export interface EmailPreferences {
   user_id: string;
   tenant_id: string | null;
@@ -66,12 +58,9 @@ export async function getEmailPreferences(): Promise<{
       return { data: existingData, error: null };
     }
 
-    // If no preferences exist (no data and no error, or PGRST116 error code),
-    // create default preferences for existing users
-    if (
-      !existingData &&
-      (!selectError || (selectError as SupabaseError)?.code === 'PGRST116')
-    ) {
+    // If no preferences exist and no error, create default preferences for existing users
+    // maybeSingle() returns null (no error) when no record exists
+    if (!existingData && !selectError) {
       // Get user's profile to retrieve tenant_id
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -79,10 +68,8 @@ export async function getEmailPreferences(): Promise<{
         .eq('id', user.id)
         .maybeSingle();
 
-      if (
-        profileError &&
-        (profileError as SupabaseError)?.code !== 'PGRST116'
-      ) {
+      // Warn if there's a real error (maybeSingle returns null without error if no record)
+      if (profileError) {
         console.warn('Error fetching profile for tenant_id:', profileError);
       }
 
@@ -189,15 +176,14 @@ export async function updateEmailPreferences(
     }
 
     // Check if preferences already exist
-    const { data: existing, error: checkError } = await supabase
+    const { data: existing } = await supabase
       .from('email_preferences')
       .select('unsubscribe_token, tenant_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const preferencesExist =
-      !!existing &&
-      (!checkError || (checkError as SupabaseError)?.code === 'PGRST116');
+    // maybeSingle() returns null (no error) when no record exists
+    const preferencesExist = !!existing;
 
     // Get user's profile to retrieve tenant_id (needed for insert)
     const { data: profile, error: profileError } = await supabase
@@ -206,7 +192,8 @@ export async function updateEmailPreferences(
       .eq('id', user.id)
       .maybeSingle();
 
-    if (profileError && (profileError as SupabaseError)?.code !== 'PGRST116') {
+    // Warn if there's a real error (maybeSingle returns null without error if no record)
+    if (profileError) {
       console.warn(
         'Error fetching profile for tenant_id in update:',
         profileError

@@ -68,9 +68,13 @@ export async function getTenantContext(
     }
 
     // Parse branding and email config
-    const branding = (tenant.branding as Record<string, unknown>) || {};
+    const branding =
+      (tenant.branding as Partial<TenantBranding>) ||
+      ({} as Partial<TenantBranding>);
     const settings = (tenant.settings as Record<string, unknown>) || {};
-    const emailConfig = settings.email || {};
+    const emailConfig =
+      (settings.email as Partial<TenantEmailConfig>) ||
+      ({} as Partial<TenantEmailConfig>);
 
     return {
       id: tenant.id,

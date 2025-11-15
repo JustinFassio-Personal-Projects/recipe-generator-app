@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRecipes } from '@/hooks/use-recipes';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, BookOpen, Globe, ShoppingCart, X } from 'lucide-react';
+import { Plus, BookOpen, Globe, ShoppingCart, X, Sparkles } from 'lucide-react';
 
 interface QuickNavigationFlowProps {
   onClose: () => void;
@@ -40,6 +40,15 @@ export function QuickNavigationFlow({
 
       {/* Quick Navigation Buttons */}
       <div className="space-y-2">
+        <Button
+          onClick={() => handleNavigation('/chat-recipe')}
+          className="w-full justify-start gap-3 bg-white text-gray-900 shadow-sm hover:bg-gray-50"
+          variant="outline"
+        >
+          <Sparkles className="h-4 w-4 text-purple-600" />
+          <span>AI Recipe Creator</span>
+        </Button>
+
         <Button
           onClick={() => handleNavigation('/add')}
           className="w-full justify-start gap-3 bg-white text-gray-900 shadow-sm hover:bg-gray-50"

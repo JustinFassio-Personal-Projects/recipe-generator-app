@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { acceptTermsAndPrivacy } from '@/lib/auth';
 import {
@@ -6,12 +6,14 @@ import {
   CURRENT_PRIVACY_VERSION,
 } from '@/lib/legal-constants';
 import { toast } from '@/hooks/use-toast';
+import type { Profile } from '@/lib/types';
 
 export function useTermsAcceptance() {
   const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const [needsAcceptance, setNeedsAcceptance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
+  const refreshInProgressRef = useRef(false);
 
   useEffect(() => {
     // Don't recalculate while accepting terms to prevent race conditions
@@ -80,9 +82,24 @@ export function useTermsAcceptance() {
         });
 
         // Refresh profile to get updated terms acceptance data
-        // Use a promise to ensure refresh completes before releasing the lock
+        // Use a promise with retry limit to prevent infinite loops
         await new Promise<void>((resolve) => {
-          refreshProfile((updatedProfile) => {
+          // Prevent concurrent refresh calls
+          if (refreshInProgressRef.current) {
+            console.warn('Profile refresh already in progress, skipping');
+            resolve();
+            return;
+          }
+
+          refreshInProgressRef.current = true;
+          let retryCount = 0;
+          const maxRetries = 3;
+          let isResolved = false;
+
+          const checkAndRefresh = (updatedProfile: Profile | null) => {
+            // Prevent multiple resolutions
+            if (isResolved) return;
+
             // Verify the profile was actually updated
             if (updatedProfile) {
               const termsMatch =
@@ -92,18 +109,41 @@ export function useTermsAcceptance() {
                 CURRENT_PRIVACY_VERSION;
 
               if (!termsMatch || !privacyMatch) {
-                // If profile still doesn't match, force one more refresh
-                console.warn('Profile refresh incomplete, retrying...');
-                setTimeout(() => {
-                  refreshProfile(() => resolve());
-                }, 500);
+                // If profile still doesn't match and we haven't exceeded retries
+                if (retryCount < maxRetries) {
+                  retryCount++;
+                  console.warn(
+                    `Profile refresh incomplete, retrying (${retryCount}/${maxRetries})...`
+                  );
+                  setTimeout(() => {
+                    if (!isResolved) {
+                      refreshProfile(checkAndRefresh);
+                    }
+                  }, 1000 * retryCount); // Exponential backoff
+                } else {
+                  // Max retries exceeded, resolve anyway to prevent infinite loop
+                  console.warn(
+                    'Max retries exceeded for profile refresh, resolving anyway'
+                  );
+                  isResolved = true;
+                  refreshInProgressRef.current = false;
+                  resolve();
+                }
               } else {
+                // Profile matches, we're done
+                isResolved = true;
+                refreshInProgressRef.current = false;
                 resolve();
               }
             } else {
+              // No profile returned, resolve to prevent infinite loop
+              isResolved = true;
+              refreshInProgressRef.current = false;
               resolve();
             }
-          });
+          };
+
+          refreshProfile(checkAndRefresh);
         });
 
         return { success: true };
@@ -124,6 +164,7 @@ export function useTermsAcceptance() {
       return { success: false };
     } finally {
       setIsAccepting(false);
+      refreshInProgressRef.current = false;
     }
   };
 

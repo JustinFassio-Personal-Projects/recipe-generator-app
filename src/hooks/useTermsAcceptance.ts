@@ -70,6 +70,17 @@ export function useTermsAcceptance() {
     // CRITICAL FIX: Only check once per user session to prevent infinite loops
     // But allow re-evaluation when terms acceptance data becomes available
     // (e.g., when detailed profile loads after immediate profile)
+    //
+    // PROGRESSIVE LOADING WORKAROUND: Check if profile has terms data loaded.
+    // This allows re-evaluation when detailed profile loads after immediate profile.
+    //
+    // EDGE CASE RISK: This creates a subtle dependency on data presence (not just value).
+    // If terms data becomes null unexpectedly (e.g., database migration, data reset, bugs),
+    // the hook will re-evaluate even for already-checked users. This is acceptable for the
+    // progressive loading pattern but could cause issues if terms data is cleared for other reasons.
+    //
+    // FUTURE REFACTOR: Consider adding explicit 'isDetailedProfile' flag to Profile type
+    // to make this dependency more explicit and robust.
     const hasTermsData =
       profile.terms_version_accepted !== null ||
       profile.privacy_version_accepted !== null;

@@ -622,19 +622,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 );
               }
 
-              // CRITICAL FIX: Always call setProfile, even if component unmounted
-              // React will safely ignore state updates on unmounted components
-              // But if the component remounted, we NEED this update to propagate
-              logger.db(`Initial profile fetch result: ${!!profileData}`);
-              setProfile(profileData);
+              // Only update state if component is still mounted to avoid React warnings
+              if (isMounted) {
+                logger.db(`Initial profile fetch result: ${!!profileData}`);
+                setProfile(profileData);
 
-              if (import.meta.env.DEV) {
-                console.log('[AuthProvider] setProfile CALLED:', {
-                  isMounted,
-                  username: profileData?.username,
-                  terms: profileData?.terms_version_accepted,
-                  privacy: profileData?.privacy_version_accepted,
-                });
+                if (import.meta.env.DEV) {
+                  console.log('[AuthProvider] setProfile CALLED:', {
+                    isMounted,
+                    username: profileData?.username,
+                    terms: profileData?.terms_version_accepted,
+                    privacy: profileData?.privacy_version_accepted,
+                  });
+                }
               }
             } catch (profileError) {
               logger.error('Initial profile fetch failed:', profileError);

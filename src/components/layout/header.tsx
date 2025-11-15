@@ -10,12 +10,14 @@ import {
   Compass,
   ChefHat,
   Heart,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useTenant } from '@/contexts/TenantContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useHasPremiumAccess } from '@/hooks/useSubscription';
+import { TermsDialog } from '@/components/legal/TermsDialog';
 
 export function Header() {
   const { user, profile, signOut } = useAuth();
@@ -23,6 +25,7 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [termsDialogOpen, setTermsDialogOpen] = useState(false);
   const { hasAccess, isInTrial } = useHasPremiumAccess();
 
   // Use tenant branding if available
@@ -151,6 +154,18 @@ export function Header() {
               >
                 <Settings className="h-5 w-5" />
                 Account Settings
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => {
+                  setTermsDialogOpen(true);
+                  closeMobileMenu();
+                }}
+                className="w-full justify-start"
+              >
+                <FileText className="h-5 w-5" />
+                Terms & Conditions
               </button>
             </li>
             <li>
@@ -301,6 +316,15 @@ export function Header() {
                 </li>
                 <li>
                   <button
+                    onClick={() => setTermsDialogOpen(true)}
+                    className="flex items-center"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Terms & Conditions
+                  </button>
+                </li>
+                <li>
+                  <button
                     onClick={handleSignOut}
                     className="text-error flex items-center"
                   >
@@ -337,6 +361,13 @@ export function Header() {
           </ul>
         </div>
       </div>
+
+      {/* Terms & Conditions Dialog */}
+      <TermsDialog
+        open={termsDialogOpen}
+        onOpenChange={setTermsDialogOpen}
+        showAcceptButton={false}
+      />
     </div>
   );
 }

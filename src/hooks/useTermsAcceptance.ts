@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { acceptTermsAndPrivacy } from '@/lib/auth';
 import {
@@ -8,15 +8,56 @@ import {
 import { toast } from '@/hooks/use-toast';
 
 export function useTermsAcceptance() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [needsAcceptance, setNeedsAcceptance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
 
+  // Track when acceptance is in progress to prevent useEffect from recalculating
+  const acceptanceInProgressRef = useRef(false);
+
+  // Track which user we've checked to prevent re-checking on profile updates
+  const checkedUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!user || !profile) {
+    // Don't recalculate while accepting terms to prevent race conditions
+    if (isAccepting || acceptanceInProgressRef.current) {
+      if (import.meta.env.DEV) {
+        console.log(
+          '[useTermsAcceptance] Skipping check - acceptance in progress'
+        );
+      }
+      return;
+    }
+
+    // Wait for auth to finish loading before making decisions
+    if (authLoading) {
+      setIsLoading(true);
+      return;
+    }
+
+    // If no user, we're definitely not loading and don't need acceptance
+    if (!user) {
       setIsLoading(false);
       setNeedsAcceptance(false);
+      checkedUserIdRef.current = null;
+      return;
+    }
+
+    // If user exists but profile is null, profile is still loading
+    if (!profile) {
+      setIsLoading(true);
+      return;
+    }
+
+    // CRITICAL FIX: Only check once per user session to prevent infinite loops
+    // If we've already checked this user's terms, don't check again
+    if (checkedUserIdRef.current === user.id) {
+      if (import.meta.env.DEV) {
+        console.log(
+          '[useTermsAcceptance] Already checked terms for this user session'
+        );
+      }
       return;
     }
 
@@ -29,9 +70,25 @@ export function useTermsAcceptance() {
     // User needs acceptance if either is missing or doesn't match current version
     const needsToAccept = !termsVersionMatch || !privacyVersionMatch;
 
+    if (import.meta.env.DEV) {
+      console.log('[useTermsAcceptance] Terms check:', {
+        userId: user.id,
+        termsVersionMatch,
+        privacyVersionMatch,
+        needsToAccept,
+        currentTerms: CURRENT_TERMS_VERSION,
+        currentPrivacy: CURRENT_PRIVACY_VERSION,
+        profileTerms: profile.terms_version_accepted,
+        profilePrivacy: profile.privacy_version_accepted,
+      });
+    }
+
+    // Mark that we've checked this user
+    checkedUserIdRef.current = user.id;
+
     setNeedsAcceptance(needsToAccept);
     setIsLoading(false);
-  }, [user, profile]);
+  }, [user?.id, profile, isAccepting, authLoading]);
 
   const acceptTerms = async () => {
     if (!user) {
@@ -43,6 +100,12 @@ export function useTermsAcceptance() {
       return { success: false };
     }
 
+    // Prevent multiple simultaneous acceptance calls
+    if (acceptanceInProgressRef.current) {
+      return { success: false };
+    }
+
+    acceptanceInProgressRef.current = true;
     setIsAccepting(true);
 
     try {
@@ -52,14 +115,19 @@ export function useTermsAcceptance() {
       );
 
       if (success) {
+        // Optimistically set needsAcceptance to false
         setNeedsAcceptance(false);
+
         toast({
           title: 'Success',
           description: 'Terms and Privacy Policy accepted',
           variant: 'success',
         });
-        // Refresh profile to get updated terms acceptance data
-        await refreshProfile();
+
+        // Don't call refreshProfile here - it triggers the useEffect which recalculates needsAcceptance
+        // The database has been updated successfully, and we've optimistically set needsAcceptance to false
+        // The profile will be refreshed naturally on the next page load or navigation
+
         return { success: true };
       } else {
         toast({
@@ -78,6 +146,7 @@ export function useTermsAcceptance() {
       return { success: false };
     } finally {
       setIsAccepting(false);
+      acceptanceInProgressRef.current = false;
     }
   };
 

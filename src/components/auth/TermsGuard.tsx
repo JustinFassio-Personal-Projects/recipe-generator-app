@@ -1,5 +1,8 @@
 import { ReactNode, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { useTermsAcceptance } from '@/hooks/useTermsAcceptance';
+import { useAuth } from '@/contexts/AuthProvider';
 import { TermsDialog } from '@/components/legal/TermsDialog';
 
 interface TermsGuardProps {
@@ -9,7 +12,18 @@ interface TermsGuardProps {
 export function TermsGuard({ children }: TermsGuardProps) {
   const { needsAcceptance, isLoading, isAccepting, acceptTerms } =
     useTermsAcceptance();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/auth/signin');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
 
   // Show loading state while checking
   if (isLoading) {
@@ -34,16 +48,26 @@ export function TermsGuard({ children }: TermsGuardProps) {
               Terms Update Required
             </h2>
             <p className="mb-6 text-base-content/70">
-              We've updated our Terms & Conditions and Privacy Policy. Please
+              We've updated our Terms & Conditions and Privacy Policy. You must
               review and accept them to continue using Recipe Generator.
             </p>
-            <button
-              onClick={() => setDialogOpen(true)}
-              className="btn btn-success w-full"
-              disabled={isAccepting}
-            >
-              {isAccepting ? 'Processing...' : 'Review and Accept'}
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => setDialogOpen(true)}
+                className="btn btn-success w-full"
+                disabled={isAccepting}
+              >
+                {isAccepting ? 'Processing...' : 'Review and Accept'}
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="btn btn-ghost w-full text-base-content/70 hover:text-base-content"
+                disabled={isAccepting}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out Instead
+              </button>
+            </div>
           </div>
         </div>
 
@@ -51,13 +75,10 @@ export function TermsGuard({ children }: TermsGuardProps) {
         <TermsDialog
           open={dialogOpen}
           onOpenChange={(open) => {
-            // Prevent closing the dialog if acceptance is required
-            if (!open && needsAcceptance) {
-              return;
-            }
             setDialogOpen(open);
           }}
           showAcceptButton={true}
+          preventDismiss={true}
           onAccept={async () => {
             await acceptTerms();
             setDialogOpen(false);

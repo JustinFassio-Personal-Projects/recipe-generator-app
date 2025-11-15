@@ -208,14 +208,90 @@ export function useProfileOnboarding() {
           ? { ...formData, ...overrideData }
           : formData;
 
-        // Save profile data
+        // Helper function to sanitize optional string fields: convert empty strings to null
+        const sanitizeString = (
+          value: string | null | undefined
+        ): string | null => {
+          if (value === null || value === undefined) return null;
+          const trimmed = value.trim();
+          return trimmed === '' ? null : trimmed;
+        };
+
+        // Helper function to ensure arrays are never null
+        const sanitizeArray = <T>(value: T[] | null | undefined): T[] => {
+          return value && Array.isArray(value) ? value : [];
+        };
+
+        // Sanitize optional string fields - convert empty strings to null to satisfy CHECK constraints
+        const sanitizedFullName = sanitizeString(dataToSave.full_name);
+        const sanitizedCountry = sanitizeString(dataToSave.country);
+        const sanitizedStateProvince = sanitizeString(
+          dataToSave.state_province
+        );
+        const sanitizedCity = sanitizeString(dataToSave.city);
+
+        // Ensure arrays are never null
+        const sanitizedAllergies = sanitizeArray(dataToSave.allergies);
+        const sanitizedDietaryRestrictions = sanitizeArray(
+          dataToSave.dietary_restrictions
+        );
+        const sanitizedMedicalConditions = sanitizeArray(
+          dataToSave.medical_conditions
+        );
+        const sanitizedPreferredCuisines = sanitizeArray(
+          dataToSave.preferred_cuisines
+        );
+        const sanitizedAvailableEquipment = sanitizeArray(
+          dataToSave.available_equipment
+        );
+        const sanitizedDislikedIngredients = sanitizeArray(
+          dataToSave.disliked_ingredients
+        );
+
+        // Ensure profile exists first - check if profile exists, create if not
+        const { data: existingProfile, error: profileCheckError } =
+          await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+          // PGRST116 is "not found" which is fine, we'll create it
+          console.error('[Onboarding] Profile check error:', profileCheckError);
+          throw profileCheckError;
+        }
+
+        // If profile doesn't exist, create it first with minimal required fields
+        if (!existingProfile) {
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              language: 'en',
+              units: dataToSave.units || 'imperial',
+              skill_level: dataToSave.skill_level || 'beginner',
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('[Onboarding] Profile creation error:', createError);
+            // If it's a conflict (profile was created between check and insert), continue
+            if (createError.code !== '23505') {
+              throw createError;
+            }
+          }
+        }
+
+        // Update profile data
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
-            full_name: dataToSave.full_name,
-            country: dataToSave.country,
-            state_province: dataToSave.state_province,
-            city: dataToSave.city,
+            full_name: sanitizedFullName,
+            country: sanitizedCountry,
+            state_province: sanitizedStateProvince,
+            city: sanitizedCity,
             skill_level: dataToSave.skill_level,
             units: dataToSave.units,
             time_per_meal: dataToSave.time_per_meal,
@@ -225,19 +301,25 @@ export function useProfileOnboarding() {
           .select();
 
         if (profileError) {
-          console.error('[Onboarding] Profile update error:', profileError);
+          console.error('[Onboarding] Profile update error:', {
+            code: profileError.code,
+            message: profileError.message,
+            details: profileError.details,
+            hint: profileError.hint,
+          });
           throw profileError;
         }
 
         // Save user safety data (allergies, dietary restrictions, and medical conditions)
+        // Handle 409 conflicts gracefully - if conflict occurs, try update instead
         const { error: safetyError } = await supabase
           .from('user_safety')
           .upsert(
             {
               user_id: user.id,
-              allergies: dataToSave.allergies,
-              dietary_restrictions: dataToSave.dietary_restrictions,
-              medical_conditions: dataToSave.medical_conditions,
+              allergies: sanitizedAllergies,
+              dietary_restrictions: sanitizedDietaryRestrictions,
+              medical_conditions: sanitizedMedicalConditions,
               updated_at: new Date().toISOString(),
             },
             {
@@ -247,8 +329,39 @@ export function useProfileOnboarding() {
           .select();
 
         if (safetyError) {
-          console.error('[Onboarding] Safety data upsert error:', safetyError);
-          throw safetyError;
+          // Handle 409 conflict - try update instead
+          if (safetyError.code === '23505' || safetyError.code === '409') {
+            console.warn(
+              '[Onboarding] Safety data conflict, attempting update:',
+              safetyError
+            );
+            const { error: updateError } = await supabase
+              .from('user_safety')
+              .update({
+                allergies: sanitizedAllergies,
+                dietary_restrictions: sanitizedDietaryRestrictions,
+                medical_conditions: sanitizedMedicalConditions,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('user_id', user.id)
+              .select();
+
+            if (updateError) {
+              console.error('[Onboarding] Safety data update error:', {
+                code: updateError.code,
+                message: updateError.message,
+                details: updateError.details,
+              });
+              throw updateError;
+            }
+          } else {
+            console.error('[Onboarding] Safety data upsert error:', {
+              code: safetyError.code,
+              message: safetyError.message,
+              details: safetyError.details,
+            });
+            throw safetyError;
+          }
         }
 
         // Save cooking preferences
@@ -257,10 +370,10 @@ export function useProfileOnboarding() {
           .upsert(
             {
               user_id: user.id,
-              preferred_cuisines: dataToSave.preferred_cuisines,
-              available_equipment: dataToSave.available_equipment,
-              spice_tolerance: dataToSave.spice_tolerance,
-              disliked_ingredients: dataToSave.disliked_ingredients,
+              preferred_cuisines: sanitizedPreferredCuisines,
+              available_equipment: sanitizedAvailableEquipment,
+              spice_tolerance: dataToSave.spice_tolerance ?? 3,
+              disliked_ingredients: sanitizedDislikedIngredients,
               updated_at: new Date().toISOString(),
             },
             {
@@ -270,11 +383,40 @@ export function useProfileOnboarding() {
           .select();
 
         if (cookingError) {
-          console.error(
-            '[Onboarding] Cooking preferences upsert error:',
-            cookingError
-          );
-          throw cookingError;
+          // Handle 409 conflict - try update instead
+          if (cookingError.code === '23505' || cookingError.code === '409') {
+            console.warn(
+              '[Onboarding] Cooking preferences conflict, attempting update:',
+              cookingError
+            );
+            const { error: updateError } = await supabase
+              .from('cooking_preferences')
+              .update({
+                preferred_cuisines: sanitizedPreferredCuisines,
+                available_equipment: sanitizedAvailableEquipment,
+                spice_tolerance: dataToSave.spice_tolerance ?? 3,
+                disliked_ingredients: sanitizedDislikedIngredients,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('user_id', user.id)
+              .select();
+
+            if (updateError) {
+              console.error('[Onboarding] Cooking preferences update error:', {
+                code: updateError.code,
+                message: updateError.message,
+                details: updateError.details,
+              });
+              throw updateError;
+            }
+          } else {
+            console.error('[Onboarding] Cooking preferences upsert error:', {
+              code: cookingError.code,
+              message: cookingError.message,
+              details: cookingError.details,
+            });
+            throw cookingError;
+          }
         }
 
         // Clear local storage
@@ -286,6 +428,21 @@ export function useProfileOnboarding() {
         return true;
       } catch (error) {
         console.error('[Onboarding] Failed to save onboarding data:', error);
+        // Log detailed error information for debugging
+        if (error && typeof error === 'object' && 'code' in error) {
+          const errorObj = error as {
+            code?: string;
+            message?: string;
+            details?: string;
+            hint?: string;
+          };
+          console.error('[Onboarding] Error details:', {
+            code: errorObj.code,
+            message: errorObj.message,
+            details: errorObj.details,
+            hint: errorObj.hint,
+          });
+        }
         return false;
       } finally {
         setIsSaving(false);

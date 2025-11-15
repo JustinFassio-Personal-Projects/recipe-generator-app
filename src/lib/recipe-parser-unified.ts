@@ -15,7 +15,7 @@ export interface ParsedRecipe {
   title: string;
   description: string;
   ingredients: string[];
-  instructions: string;
+  instructions: string[];
   notes: string;
   categories: string[];
   setup: string[];
@@ -110,6 +110,12 @@ function tryParseStructuredJSON(content: string): RecipeParseResult {
     }
 
     const normalizedIngredients = normalizeIngredients(parsed.ingredients);
+    const normalizedInstructions = normalizeInstructions(parsed.instructions);
+
+    // Ensure we have at least one instruction
+    if (normalizedInstructions.length === 0) {
+      return { success: false };
+    }
 
     // Extract description or generate one if missing
     let description = '';
@@ -130,7 +136,7 @@ function tryParseStructuredJSON(content: string): RecipeParseResult {
       title: String(parsed.title),
       description,
       ingredients: normalizedIngredients,
-      instructions: String(parsed.instructions),
+      instructions: normalizedInstructions,
       notes: String(parsed.notes || ''),
       categories: Array.isArray(parsed.categories)
         ? parsed.categories.map(String)
@@ -171,11 +177,19 @@ async function tryAIParsing(content: string): Promise<RecipeParseResult> {
     const { parseRecipeFromText } = await import('./recipe-parser');
     const parsed = await parseRecipeFromText(content);
 
+    // Normalize instructions to array, splitting by periods
+    const normalizedInstructions = normalizeInstructions(parsed.instructions);
+
+    // Ensure we have at least one instruction
+    if (normalizedInstructions.length === 0) {
+      return { success: false };
+    }
+
     const recipe: RecipeFormData = {
       title: parsed.title,
       description: parsed.description || '',
       ingredients: parsed.ingredients,
-      instructions: parsed.instructions,
+      instructions: normalizedInstructions,
       notes: parsed.notes || '',
       categories: parsed.categories,
       setup: parsed.setup,
@@ -341,11 +355,16 @@ function tryPatternParsing(content: string): RecipeParseResult {
       ingredients
     );
 
+    // Ensure we have at least one instruction
+    if (instructions.length === 0) {
+      return { success: false };
+    }
+
     const recipe: RecipeFormData = {
       title,
       description,
       ingredients,
-      instructions: instructions.join('\n'),
+      instructions,
       notes: '',
       categories,
       setup,
@@ -393,6 +412,78 @@ function normalizeIngredients(ingredients: unknown): string[] {
       return rawIngredient.trim();
     })
     .filter((item) => item.length > 0);
+}
+
+/**
+ * Normalize instructions to string array regardless of input format
+ * Splits by periods (.) first, then falls back to newlines if no periods found
+ */
+function normalizeInstructions(instructions: unknown): string[] {
+  if (Array.isArray(instructions)) {
+    return instructions
+      .map((item: unknown) => String(item).trim())
+      .filter((item) => item.length > 0);
+  }
+
+  if (typeof instructions !== 'string') {
+    return [];
+  }
+
+  const instructionsStr = instructions.trim();
+  if (!instructionsStr) {
+    return [];
+  }
+
+  // Split by periods (.) followed by space, newline, or end of string
+  // This handles "Step 1. Do this. Step 2. Do that."
+  if (instructionsStr.includes('.')) {
+    // Split by period followed by space, newline, or end of string
+    // Uses lookahead (?=\s+|\n+|$) to avoid capturing delimiter in split result
+    const steps = instructionsStr
+      .split(/\.(?=\s+|\n+|$)/)
+      .map((step) => step.trim())
+      .filter((step) => step.length > 0);
+
+    // If we got reasonable results, return them
+    if (steps.length > 0) {
+      // Clean up any remaining periods at the start
+      return steps
+        .map((step) => step.replace(/^\.+\s*/, '').trim())
+        .filter((step) => step.length > 0);
+    }
+  }
+
+  // Fallback: split by newlines
+  const lines = instructionsStr
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  // If single line with numbered steps, split by numbered pattern
+  if (lines.length === 1 && /\d+\.\s+/.test(lines[0])) {
+    const numberedSteps = lines[0]
+      .split(/(?=\d+\.\s+)/)
+      .map((step) =>
+        step
+          .replace(/^\d+\.\s*/, '')
+          .replace(/^[-*•]\s*/, '')
+          .trim()
+      )
+      .filter((step) => step.length > 0);
+    if (numberedSteps.length > 0) {
+      return numberedSteps;
+    }
+  }
+
+  // Clean up lines: remove number prefixes and bullet points
+  return lines
+    .map((line) =>
+      line
+        .replace(/^\d+\.\s*/, '')
+        .replace(/^[-*•]\s*/, '')
+        .trim()
+    )
+    .filter((line) => line.length > 0);
 }
 
 /**

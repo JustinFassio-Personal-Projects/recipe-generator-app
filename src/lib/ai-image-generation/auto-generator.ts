@@ -190,7 +190,15 @@ export function shouldAutoGenerateImage(
   }
 
   // 5. Instructions are too short
-  if (!recipe.instructions || recipe.instructions.trim().length < 50) {
+  if (!recipe.instructions) {
+    return false;
+  }
+  const instructionsLength = Array.isArray(recipe.instructions)
+    ? recipe.instructions.join(' ').trim().length
+    : typeof recipe.instructions === 'string'
+      ? (recipe.instructions as string).trim().length
+      : 0;
+  if (instructionsLength < 50) {
     return false;
   }
 

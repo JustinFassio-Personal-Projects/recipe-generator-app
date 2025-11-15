@@ -64,8 +64,12 @@ export const recipeApi = {
       // This prevents SQL injection while maintaining search functionality
       const searchTerm = filters.searchTerm.trim().replace(/[%_\\]/g, '\\$&'); // Escape LIKE wildcards
 
+      // Search in title, instructions (array), and ingredients (array)
+      // For instructions array, use the search_instructions_array function to search within array elements
+      // For ingredients, use cs (contains) operator for array search
+      // Note: PostgREST function calls in filters require proper quoting for string parameters
       query = query.or(
-        `title.ilike.%${searchTerm}%,instructions.ilike.%${searchTerm}%,ingredients.cs.{${searchTerm}}`
+        `title.ilike.%${searchTerm}%,ingredients.cs.{${searchTerm}},search_instructions_array(instructions,"${searchTerm}").eq.true`
       );
     }
 

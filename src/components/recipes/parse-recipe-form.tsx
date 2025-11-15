@@ -43,12 +43,25 @@ export function ParseRecipeForm({ onParsed }: ParseRecipeFormProps) {
       const parsed = (await parseRecipe.mutateAsync(
         data.recipeText
       )) as ParsedRecipe;
+
+      // Instructions are now always an array from the parser
+      let instructionsArray: string[] = Array.isArray(parsed.instructions)
+        ? parsed.instructions
+            .map((line) => String(line).trim())
+            .filter((line) => line.length > 0)
+        : [];
+
+      // Ensure we have at least one instruction
+      if (instructionsArray.length === 0) {
+        instructionsArray = [''];
+      }
+
       // Convert ParsedRecipe to RecipeFormData
       const recipeFormData: RecipeFormData = {
         title: parsed.title,
         description: parsed.description || '',
         ingredients: parsed.ingredients,
-        instructions: parsed.instructions,
+        instructions: instructionsArray,
         notes: parsed.notes || '',
         image_url: null,
         categories: parsed.categories || [],

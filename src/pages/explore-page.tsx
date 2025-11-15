@@ -193,14 +193,20 @@ export default function ExplorePage() {
     // Search filter
     if (filters.searchTerm) {
       const searchTerm = filters.searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (recipe) =>
+      filtered = filtered.filter((recipe) => {
+        const instructionsText = Array.isArray(recipe.instructions)
+          ? recipe.instructions.join(' ')
+          : typeof recipe.instructions === 'string'
+            ? recipe.instructions
+            : '';
+        return (
           recipe.title.toLowerCase().includes(searchTerm) ||
-          recipe.instructions.toLowerCase().includes(searchTerm) ||
+          instructionsText.toLowerCase().includes(searchTerm) ||
           recipe.ingredients.some((ingredient) =>
             ingredient.toLowerCase().includes(searchTerm)
           )
-      );
+        );
+      });
     }
 
     // Categories filter

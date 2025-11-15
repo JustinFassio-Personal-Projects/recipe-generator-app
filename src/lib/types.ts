@@ -6,7 +6,7 @@ export type Recipe = {
   title: string;
   description: string | null;
   ingredients: string[];
-  instructions: string;
+  instructions: string[];
   notes: string | null;
   image_url: string | null;
   categories: string[];
@@ -37,7 +37,7 @@ export type RecipeVersion = {
   title: string;
   description: string | null;
   ingredients: string[];
-  instructions: string;
+  instructions: string[];
   notes: string | null;
   setup: string[];
   categories: string[];
@@ -240,7 +240,7 @@ export type ParsedRecipe = {
   description: string;
   setup: string[];
   ingredients: string[];
-  instructions: string;
+  instructions: string[];
   notes: string | null;
   categories: string[];
 };

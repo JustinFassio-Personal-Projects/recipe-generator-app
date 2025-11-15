@@ -163,7 +163,13 @@ function analyzeCuisine(recipe: RecipeFormData): CuisineInfo | null {
 function analyzeCookingMethods(recipe: RecipeFormData): CookingMethod[] {
   if (!recipe.instructions) return [];
 
-  const instructionsLower = recipe.instructions.toLowerCase();
+  // Handle instructions as array or string
+  const instructionsText = Array.isArray(recipe.instructions)
+    ? recipe.instructions.join(' ')
+    : typeof recipe.instructions === 'string'
+      ? recipe.instructions
+      : '';
+  const instructionsLower = instructionsText.toLowerCase();
   const methods: CookingMethod[] = [];
 
   const methodPatterns: Record<string, CookingMethod> = {
@@ -409,9 +415,14 @@ function analyzeComplexity(recipe: RecipeFormData): ComplexityLevel {
 
   // Instruction length
   if (recipe.instructions) {
-    if (recipe.instructions.length > 500) complexityScore += 3;
-    else if (recipe.instructions.length > 300) complexityScore += 2;
-    else if (recipe.instructions.length > 150) complexityScore += 1;
+    const instructionsLength = Array.isArray(recipe.instructions)
+      ? recipe.instructions.join(' ').length
+      : typeof recipe.instructions === 'string'
+        ? (recipe.instructions as string).length
+        : 0;
+    if (instructionsLength > 500) complexityScore += 3;
+    else if (instructionsLength > 300) complexityScore += 2;
+    else if (instructionsLength > 150) complexityScore += 1;
   }
 
   // Setup items
@@ -509,7 +520,13 @@ function analyzeVisualStyle(recipe: RecipeFormData): VisualStyle | null {
 function analyzeTemperature(recipe: RecipeFormData): TemperatureContext | null {
   if (!recipe.instructions) return null;
 
-  const instructionsLower = recipe.instructions.toLowerCase();
+  // Handle instructions as array or string
+  const instructionsText = Array.isArray(recipe.instructions)
+    ? recipe.instructions.join(' ')
+    : typeof recipe.instructions === 'string'
+      ? recipe.instructions
+      : '';
+  const instructionsLower = instructionsText.toLowerCase();
 
   if (instructionsLower.includes('hot') || instructionsLower.includes('warm')) {
     return {

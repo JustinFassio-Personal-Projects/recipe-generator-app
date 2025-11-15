@@ -133,7 +133,16 @@ export function RecipeForm({
           title: editRecipe.title,
           description: editRecipe.description || '',
           ingredients: editRecipe.ingredients,
-          instructions: editRecipe.instructions,
+          instructions: Array.isArray(editRecipe.instructions)
+            ? editRecipe.instructions.length > 0
+              ? editRecipe.instructions
+              : ['']
+            : typeof editRecipe.instructions === 'string' &&
+                editRecipe.instructions
+              ? (editRecipe.instructions as string)
+                  .split('\n')
+                  .filter((line: string) => line.trim().length > 0)
+              : [''],
           notes: editRecipe.notes || '',
           image_url: editRecipe.image_url || null,
           categories: editRecipe.categories || [],
@@ -144,7 +153,7 @@ export function RecipeForm({
           title: '',
           description: '',
           ingredients: [''],
-          instructions: '',
+          instructions: [''],
           notes: '',
           image_url: null,
           categories: [],
@@ -171,6 +180,15 @@ export function RecipeForm({
     name: 'setup' as FieldArrayPath<RecipeFormData>,
   });
 
+  const {
+    fields: instructionFields,
+    append: appendInstruction,
+    remove: removeInstruction,
+  } = useFieldArray<RecipeFormData, FieldArrayPath<RecipeFormData>>({
+    control: control,
+    name: 'instructions' as FieldArrayPath<RecipeFormData>,
+  });
+
   // Scroll to top when form is loaded with parsed recipe data
   useEffect(() => {
     if (initialData) {
@@ -183,7 +201,15 @@ export function RecipeForm({
         ingredients: initialData.ingredients?.length
           ? initialData.ingredients
           : [''],
-        instructions: initialData.instructions || '',
+        instructions: Array.isArray(initialData.instructions)
+          ? initialData.instructions.length > 0
+            ? initialData.instructions
+            : ['']
+          : typeof initialData.instructions === 'string'
+            ? (initialData.instructions as string)
+                .split('\n')
+                .filter((line: string) => line.trim().length > 0)
+            : [''],
         notes: initialData.notes || '',
         image_url: initialData.image_url || null,
         categories: initialData.categories || [],
@@ -212,7 +238,11 @@ export function RecipeForm({
           initialData.description &&
           initialData.description.trim().length > 20 && // Has description
           initialData.instructions &&
-          initialData.instructions.trim().length > 50; // Has instructions
+          (Array.isArray(initialData.instructions)
+            ? initialData.instructions.length > 0 &&
+              initialData.instructions.some((step) => step.trim().length > 10)
+            : typeof initialData.instructions === 'string' &&
+              (initialData.instructions as string).trim().length > 50); // Has instructions
 
         console.log('🔍 AUTO-GENERATION DECISION:', {
           shouldAutoGenerate,
@@ -751,17 +781,46 @@ export function RecipeForm({
 
       <div className={createDaisyUICardClasses('bordered')}>
         <div className="card-body">
-          <h3 className={createDaisyUICardTitleClasses()}>Instructions *</h3>
-          <Textarea
-            {...register('instructions')}
-            placeholder="Enter cooking instructions..."
-            rows={6}
-            variant="default"
-            size="md"
-            className="w-full resize-none"
-          />
+          <h3
+            className={`${createDaisyUICardTitleClasses()} flex items-center justify-between`}
+          >
+            Instructions *
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-green-600 text-green-600 hover:bg-green-50"
+              onClick={() => appendInstruction('')}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Instruction
+            </Button>
+          </h3>
+          <div className="space-y-2">
+            {instructionFields.map((field, index) => (
+              <div key={field.id} className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  {...register(`instructions.${index}` as const)}
+                  placeholder={`Instruction step ${index + 1} (e.g., Heat oil in a large pan)`}
+                  className={`${createDaisyUIInputClasses('bordered')} flex-1`}
+                />
+                {instructionFields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => removeInstruction(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
           {errors.instructions && (
-            <p className="mt-1 text-sm text-red-500">
+            <p className="mt-2 text-sm text-red-500">
               {errors.instructions.message}
             </p>
           )}

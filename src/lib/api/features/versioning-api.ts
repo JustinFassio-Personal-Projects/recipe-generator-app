@@ -53,7 +53,7 @@ export const versioningApi = {
       title?: string;
       description?: string;
       ingredients?: string[];
-      instructions?: string;
+      instructions?: string[];
       notes?: string;
       setup?: string[];
       categories?: string[];

@@ -6,7 +6,7 @@ describe('recipeSchema', () => {
     const validRecipe = {
       title: 'Test Recipe',
       ingredients: ['ingredient 1', 'ingredient 2'],
-      instructions: 'Test instructions',
+      instructions: ['Step 1', 'Step 2'],
       notes: 'Test notes',
       image_url: 'https://example.com/image.jpg',
       categories: ['Italian', 'Quick'],
@@ -20,7 +20,7 @@ describe('recipeSchema', () => {
     const invalidRecipe = {
       title: 'Test Recipe',
       ingredients: ['ingredient 1'],
-      instructions: 'Test instructions',
+      instructions: ['Step 1'],
       notes: 'Test notes',
       categories: ['Cat1', 'Cat2', 'Cat3', 'Cat4', 'Cat5', 'Cat6', 'Cat7'], // 7 categories
     };
@@ -39,7 +39,7 @@ describe('recipeSchema', () => {
     const invalidRecipe = {
       title: 'Test Recipe',
       ingredients: ['ingredient 1'],
-      instructions: 'Test instructions',
+      instructions: ['Step 1'],
       notes: 'Test notes',
       categories: ['A'.repeat(51)], // 51 characters
     };
@@ -55,7 +55,7 @@ describe('recipeSchema', () => {
   it('should require title', () => {
     const invalidRecipe = {
       ingredients: ['ingredient 1'],
-      instructions: 'Test instructions',
+      instructions: ['Step 1'],
       notes: 'Test notes',
       categories: [],
     };
@@ -71,7 +71,7 @@ describe('recipeSchema', () => {
     const invalidRecipe = {
       title: 'Test Recipe',
       ingredients: [],
-      instructions: 'Test instructions',
+      instructions: ['Step 1'],
       notes: 'Test notes',
       categories: [],
     };
@@ -87,7 +87,7 @@ describe('recipeSchema', () => {
     const invalidRecipe = {
       title: 'Test Recipe',
       ingredients: ['ingredient 1', '', 'ingredient 3'],
-      instructions: 'Test instructions',
+      instructions: ['Step 1'],
       notes: 'Test notes',
       categories: [],
     };
@@ -118,7 +118,7 @@ describe('recipeSchema', () => {
     const validRecipe = {
       title: 'Test Recipe',
       ingredients: ['ingredient 1'],
-      instructions: 'Test instructions',
+      instructions: ['Step 1'],
       notes: '',
       categories: [],
     };
@@ -131,7 +131,7 @@ describe('recipeSchema', () => {
     const validRecipe = {
       title: 'Test Recipe',
       ingredients: ['ingredient 1'],
-      instructions: 'Test instructions',
+      instructions: ['Step 1'],
       notes: 'Test notes',
       categories: [],
     };

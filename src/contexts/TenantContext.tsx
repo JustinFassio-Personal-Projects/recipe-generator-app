@@ -205,30 +205,6 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('theme', 'caramellatte');
     }
 
-    // DEPRECATED: Color overrides via primary_color/secondary_color
-    // These are kept for backward compatibility but should NOT be used with custom themes.
-    // Instead, create a custom theme in src/index.css and set theme_name in the database.
-    // Custom themes follow DaisyUI best practices and are easier for admins to manage.
-    if (branding?.primary_color) {
-      logger.warn(
-        '⚠️ Using deprecated primary_color override. Consider creating a custom theme instead.'
-      );
-      document.documentElement.style.setProperty(
-        '--color-primary',
-        branding.primary_color
-      );
-    }
-
-    if (branding?.secondary_color) {
-      logger.warn(
-        '⚠️ Using deprecated secondary_color override. Consider creating a custom theme instead.'
-      );
-      document.documentElement.style.setProperty(
-        '--color-secondary',
-        branding.secondary_color
-      );
-    }
-
     // Apply favicon
     if (branding?.favicon_url) {
       const link = document.querySelector(

@@ -2,18 +2,19 @@
 
 ## Overview
 
-This guide explains the simplified theme setup for the Recipe Generator project, which now uses a single **Caramellatte** theme for a consistent coffee shop aesthetic.
+This guide explains the theme setup for the Recipe Generator project, which uses **Tailwind config-based themes** for both the main app and tenant subdomains. Themes are defined in `tailwind.config.js` and applied automatically based on tenant configuration.
 
 ## Current Theme Setup
 
-### Single Theme: Caramellatte ☕
+### Multi-Theme Support
 
-The project now uses only the **Caramellatte** theme, which provides:
+The project supports multiple themes:
 
-- **Warm brown colors**: Rich dark browns, medium browns, and golden browns
-- **Light cream background**: `#fef7ed` for a warm, inviting feel
-- **Dark brown text**: `#3d2817` for excellent readability
-- **Consistent branding**: No theme switching, just one beautiful theme
+- **Caramellatte** (default): Warm brown colors with light cream background
+- **Silk**: Custom dark theme with elegant styling
+- **Sanctuary Health**: Luxury gold and parchment theme
+
+Themes are applied automatically via `TenantProvider` based on the tenant's `branding.theme_name` database field.
 
 ### Theme Colors
 
@@ -42,31 +43,31 @@ caramellatte: {
 }
 ```
 
-## Benefits of Single Theme
+## Benefits of Tailwind Config-Based Themes
 
 ### ✅ **Consistency**
 
-- All users see the same beautiful interface
-- No confusion from theme switching
-- Consistent brand experience
+- All themes defined in one place (`tailwind.config.js`)
+- Consistent theme structure across all themes
+- Easy to maintain and update
 
 ### ✅ **Performance**
 
-- Smaller CSS bundle (only one theme)
-- Faster loading times
-- Reduced complexity
+- Themes are compiled at build time
+- No runtime CSS injection needed
+- Efficient theme switching
 
-### ✅ **Maintenance**
+### ✅ **Multi-Tenant Support**
 
-- Easier to maintain and update
-- No theme compatibility issues
-- Simplified codebase
+- Each tenant can have its own theme
+- Themes applied automatically from database
+- No code changes needed to change tenant themes
 
-### ✅ **User Experience**
+### ✅ **Developer Experience**
 
-- No decision fatigue from theme options
-- Familiar, consistent interface
-- Perfect for recipe/cooking apps
+- Type-safe theme definitions
+- Easy to add new themes
+- Clear theme structure
 
 ## Theme Configuration
 
@@ -93,20 +94,23 @@ daisyui: {
 
 ### Automatic Theme Application
 
-The theme is automatically applied via the `AccessibilityProvider` component:
+Themes are automatically applied via the `TenantProvider` component:
 
 ```javascript
-// src/components/ui/accessibility-provider.tsx
-export function AccessibilityProvider() {
-  useEffect(() => {
-    // Always set to caramellatte theme
-    document.documentElement.setAttribute('data-theme', 'caramellatte');
-    localStorage.setItem('theme', 'caramellatte');
-  }, []);
-
-  return null; // Hidden component
+// src/contexts/TenantContext.tsx
+// Theme is applied based on tenant.branding.theme_name from database
+if (branding?.theme_name) {
+  document.documentElement.setAttribute('data-theme', branding.theme_name);
+  localStorage.setItem('theme', branding.theme_name);
+} else {
+  // Fallback to default caramellatte theme
+  document.documentElement.setAttribute('data-theme', 'caramellatte');
+  localStorage.setItem('theme', 'caramellatte');
 }
 ```
+
+**For the main app**: Uses `caramellatte` theme by default  
+**For tenant subdomains**: Uses the theme specified in the tenant's `branding.theme_name` database field
 
 ## Customizing the Theme
 
@@ -152,13 +156,13 @@ caramellatte: {
 
 ### Colors Not Updating
 
-1. Verify hex color format: `#RRGGBB`
-2. Check for CSS specificity conflicts
+1. Verify hex color format: `#RRGGBB` (or OKLCH format for silk theme)
+2. Check that theme is properly defined in `tailwind.config.js`
 3. Ensure DaisyUI is properly configured
-4. **Check for conflicting CSS custom properties** in `src/index.css`
-5. Rebuild the project: `npm run build`
+4. Rebuild the project: `npm run build`
+5. Clear browser cache and localStorage
 
-**Note**: If buttons appear black despite updating the DaisyUI theme, check that the CSS custom properties in `src/index.css` match your theme colors. The CSS variables can override the DaisyUI theme system.
+**Note**: Themes are now defined in `tailwind.config.js`, not in CSS. Make sure to update the Tailwind config, not CSS files.
 
 ### Build Errors
 
@@ -169,19 +173,20 @@ caramellatte: {
 
 ## Best Practices
 
-1. **Consistency**: Keep the single theme approach for simplicity
+1. **Theme Definition**: Always define themes in `tailwind.config.js`, not in CSS
 2. **Colors**: Ensure sufficient contrast for accessibility
-3. **Testing**: Test the theme across all components
+3. **Testing**: Test themes across all components and tenant subdomains
 4. **Documentation**: Keep theme colors documented
-5. **Performance**: Single theme keeps bundle size small
+5. **Multi-Tenant**: Use database-driven theme selection via `branding.theme_name`
+6. **Consistency**: Use semantic DaisyUI classes (`bg-primary`, `text-base-content`) instead of hardcoded colors
 
-## Future Considerations
+## Adding New Themes
 
-If you ever want to add theme switching back:
+To add a new theme:
 
-1. **Add more themes** to the `themes` array
-2. **Restore theme toggle** functionality
-3. **Add theme selection** UI
-4. **Consider user preferences** storage
+1. **Define in Tailwind config**: Add theme object to `daisyui.themes` array in `tailwind.config.js`
+2. **Add to constants**: Add theme name to `AVAILABLE_THEMES` in `src/lib/theme.ts`
+3. **Set in database**: Update tenant's `branding.theme_name` field in the database
+4. **Test**: Verify theme applies correctly for the tenant
 
-But for now, enjoy the simplicity and beauty of the Caramellatte theme! ☕✨
+See `docs/theme/Adding-Custom-Themes.md` for detailed instructions.

@@ -6,9 +6,9 @@ This guide shows you how to add custom themes like "Caramellatte" to your Recipe
 
 **This project uses DaisyUI 5.0.50**, which supports both the traditional configuration format and the new CSS-based theme format.
 
-### DaisyUI 5 (Current Project) ✅
+### Tailwind Config Format (Current Project) ✅
 
-The project currently uses the traditional configuration format in `tailwind.config.js`:
+The project uses the **Tailwind config-based format** in `tailwind.config.js`. All themes are defined here:
 
 ```javascript
 // tailwind.config.js
@@ -16,47 +16,34 @@ daisyui: {
   themes: [
     {
       caramellatte: {
-        primary: '#3d2817', // Dark brown (was black)
-        secondary: '#6b4423', // Medium brown
-        accent: '#8b5a2b', // Lighter brown
-        neutral: '#5d4037', // Rich brown
-        'base-100': '#fef7ed', // Cream background
-        'base-200': '#f5e6d3', // Medium cream
-        'base-300': '#e7d5c4', // Light cream
-        'base-content': '#3d2817', // Dark brown text
-        'primary-content': '#ffffff', // White text on primary
-        'secondary-content': '#e7d5c4', // Light text on secondary
-        'accent-content': '#e7d5c4', // Light text on accent
-        'neutral-content': '#fef7ed', // Light text on neutral
-        info: '#3abff8',
-        'info-content': '#e7d5c4',
-        success: '#36d399',
-        'success-content': '#e7d5c4',
-        warning: '#fbbd23',
-        'warning-content': '#3d2817',
-        error: '#f87272',
-        'error-content': '#3d2817',
+        'color-scheme': 'light',
+        primary: '#3d2817',
+        'primary-content': '#ffffff',
+        secondary: '#6b4423',
+        'secondary-content': '#e7d5c4',
+        // ... other colors
       },
     },
-  ];
+    {
+      silk: {
+        'color-scheme': 'dark',
+        'base-100': 'oklch(14% 0.004 49.25)',
+        primary: 'oklch(68% 0.162 75.834)',
+        // ... other colors (OKLCH format supported)
+      },
+    },
+    {
+      'sanctuary-health': {
+        'color-scheme': 'light',
+        primary: '#d4af37',
+        // ... other colors
+      },
+    },
+  ],
 }
 ```
 
-### Alternative: DaisyUI 5 CSS Format (Also Supported) ✅
-
-DaisyUI 5 also supports the new CSS-based theme format:
-
-```css
-/* This format is also supported in DaisyUI 5 */
-@plugin "daisyui/theme" {
-  name: 'caramellatte';
-  --color-primary: oklch(0% 0 0);
-  --color-secondary: oklch(22.45% 0.075 37.85);
-  /* ... */
-}
-```
-
-**Both formats work with DaisyUI 5. Choose the one that fits your workflow best.**
+**Note**: This project uses Tailwind config format exclusively. Themes are NOT defined in CSS files.
 
 ## Quick Start: Adding a Custom Theme
 
@@ -97,68 +84,67 @@ daisyui: {
 }
 ```
 
-### Step 2: Add to Theme Toggle
+### Step 2: Add to Theme Constants
 
-Edit `src/components/ui/theme-toggle.tsx`:
+Edit `src/lib/theme.ts`:
 
 ```javascript
-// Add to quick themes (for fast switching)
-const quickThemes = ['light', 'dark', 'recipeGenerator', 'caramellatte'];
-
-// Add to all themes (for full cycling)
-const allThemes = [
-  'recipeGenerator',
-  'recipeWarm',
-  'recipeCool',
-  'recipeEarthy',
-  'caramellatte', // ← Add here
-  'light',
-  'dark',
-  // ... other themes
-];
+export const AVAILABLE_THEMES = {
+  caramellatte: 'caramellatte',
+  silk: 'silk',
+  'sanctuary-health': 'sanctuary-health',
+  'your-new-theme': 'your-new-theme', // ← Add here
+} as const;
 ```
 
-### Step 3: Test Your Theme
+### Step 3: Set Theme in Database (for tenants)
+
+For tenant subdomains, set the theme in the database:
+
+```sql
+UPDATE tenants
+SET branding = jsonb_set(
+  branding,
+  '{theme_name}',
+  '"your-new-theme"'
+)
+WHERE subdomain = 'your-tenant';
+```
+
+Or use the Admin Panel → Tenant Settings to set the theme.
+
+### Step 4: Test Your Theme
 
 1. Run `npm run build` to ensure no errors
-2. Click the theme toggle to cycle through themes
-3. Your new theme should appear in the rotation
+2. For main app: Theme will default to `caramellatte`
+3. For tenant: Set `branding.theme_name` in database and verify theme applies
+4. Check that all components render correctly with the new theme
 
-## Using DaisyUI 5 CSS Format (Alternative)
+## Color Format Support
 
-DaisyUI 5 supports both configuration formats. If you prefer the CSS-based approach:
-
-```css
-@plugin "daisyui/theme" {
-  name: 'caramellatte';
-  --color-primary: oklch(0% 0 0);
-  --color-secondary: oklch(22.45% 0.075 37.85);
-  --color-accent: oklch(46.44% 0.111 37.85);
-  --color-base-100: oklch(98% 0.016 73.684);
-  --color-base-content: oklch(40% 0.123 38.172);
-}
-```
-
-### Converting Between Formats
-
-If you need to convert between OKLCH (CSS format) and hex (config format):
+The Tailwind config format supports both hex and OKLCH color formats:
 
 ```javascript
-// OKLCH to Hex conversion example
+// Hex format (most themes)
 caramellatte: {
-  primary: '#000000',        // Convert oklch(0% 0 0) to hex
-  secondary: '#3d2817',      // Convert oklch(22.45% 0.075 37.85) to hex
-  accent: '#92400e',         // Convert oklch(46.44% 0.111 37.85) to hex
-  'base-100': '#fef7ed',     // Convert oklch(98% 0.016 73.684) to hex
-  'base-content': '#3d2817', // Convert oklch(40% 0.123 38.172) to hex
+  primary: '#3d2817',
+  secondary: '#6b4423',
+  // ...
+}
+
+// OKLCH format (used in silk theme)
+silk: {
+  'base-100': 'oklch(14% 0.004 49.25)',
+  primary: 'oklch(68% 0.162 75.834)',
+  // ...
 }
 ```
 
 ### Color Conversion Tools
 
-- Use [OKLCH to Hex Converter](https://oklch.com/)
+- Use [OKLCH to Hex Converter](https://oklch.com/) to convert between formats
 - Or use browser dev tools to convert colors
-- DaisyUI 5 CSS format uses OKLCH, config format uses hex colors
+- Both formats work in Tailwind config - choose what works best for your theme
 
 ## Theme Color Guidelines
 
@@ -340,13 +326,14 @@ console.log(document.documentElement.getAttribute('data-theme'));
 
 ### Colors Not Updating
 
-1. Verify hex color format: `#RRGGBB`
-2. Check for CSS specificity conflicts
-3. Ensure DaisyUI is properly configured
-4. **Check for conflicting CSS custom properties** in `src/index.css`
+1. Verify color format: `#RRGGBB` for hex or `oklch(...)` for OKLCH
+2. Ensure theme is properly defined in `tailwind.config.js`
+3. Check that theme name matches exactly (case-sensitive)
+4. Verify theme is added to `AVAILABLE_THEMES` in `src/lib/theme.ts`
 5. Rebuild the project: `npm run build`
+6. Clear browser cache and localStorage
 
-**Important**: If buttons appear black despite updating the DaisyUI theme, check that the CSS custom properties in `src/index.css` match your theme colors. The CSS variables can override the DaisyUI theme system.
+**Important**: Themes are now defined in `tailwind.config.js` only. Do NOT define themes in CSS files - they will conflict with the Tailwind config.
 
 ### Build Errors
 
@@ -355,21 +342,24 @@ console.log(document.documentElement.getAttribute('data-theme'));
 3. Ensure theme object structure is correct
 4. Check for missing commas or brackets
 
-### DaisyUI 5 CSS Issues
+### Theme Application Issues
 
-1. **Both CSS and config formats are supported** in DaisyUI 5
-2. Choose the format that works best for your workflow
-3. If using CSS format, ensure proper `@plugin` syntax
-4. If using config format, ensure proper JSON structure in `tailwind.config.js`
+1. **Themes are applied via TenantProvider** - check tenant's `branding.theme_name` in database
+2. **Main app** defaults to `caramellatte` theme
+3. **Tenant subdomains** use theme from database configuration
+4. Verify `data-theme` attribute is set on `document.documentElement`
+5. Check browser console for theme-related errors
 
 ## Best Practices
 
-1. **Naming**: Use descriptive, lowercase names (e.g., `caramellatte`, `spiceCabinet`)
-2. **Colors**: Ensure sufficient contrast for accessibility
-3. **Testing**: Test themes in both light and dark contexts
+1. **Naming**: Use descriptive, kebab-case names (e.g., `caramellatte`, `sanctuary-health`)
+2. **Colors**: Ensure sufficient contrast for accessibility (WCAG AA: 4.5:1)
+3. **Testing**: Test themes across all components and tenant subdomains
 4. **Documentation**: Add theme descriptions to your docs
 5. **Organization**: Group related themes together in the config
-6. **Version**: This project uses DaisyUI 5.0.50 - both CSS and config formats are supported
+6. **Format**: Use Tailwind config format - themes are NOT defined in CSS
+7. **Multi-Tenant**: Set themes via database `branding.theme_name` field
+8. **Constants**: Always add new themes to `AVAILABLE_THEMES` in `src/lib/theme.ts`
 
 ## Example: Complete Theme Addition
 
@@ -391,11 +381,23 @@ sunsetKitchen: {
 }
 ```
 
-### 2. Add to `theme-toggle.tsx`:
+### 2. Add to `src/lib/theme.ts`:
 
 ```javascript
-const quickThemes = ['light', 'dark', 'recipeGenerator', 'caramellatte', 'sunsetKitchen'];
-const allThemes = ['recipeGenerator', 'caramellatte', 'sunsetKitchen', 'light', 'dark', ...];
+export const AVAILABLE_THEMES = {
+  caramellatte: 'caramellatte',
+  silk: 'silk',
+  'sanctuary-health': 'sanctuary-health',
+  'sunset-kitchen': 'sunset-kitchen', // ← Add here
+} as const;
+```
+
+### 3. Set in Database (for tenant):
+
+```sql
+UPDATE tenants
+SET branding = jsonb_set(branding, '{theme_name}', '"sunset-kitchen"')
+WHERE subdomain = 'your-tenant';
 ```
 
 ### 3. Test:

@@ -2,89 +2,109 @@
 
 This guide shows you how to add custom themes like "Caramellatte" to your Recipe Generator project.
 
-## ⚠️ Important: DaisyUI Version Compatibility
+## ⚠️ Important: Tailwind CSS v4 & DaisyUI 5 Compatibility
 
-**This project uses DaisyUI 5.0.50**, which supports both the traditional configuration format and the new CSS-based theme format.
+**This project uses Tailwind CSS v4 with DaisyUI 5**, which requires the **CSS plugin format** for theme definitions.
 
-### Tailwind Config Format (Current Project) ✅
+### CSS Plugin Format (Current Project) ✅
 
-The project uses the **Tailwind config-based format** in `tailwind.config.js`. All themes are defined here:
+The project uses the **CSS plugin format** in `src/index.css`. All themes are defined here using `@plugin "daisyui/theme"` syntax:
 
-```javascript
-// tailwind.config.js
-daisyui: {
-  themes: [
-    {
-      caramellatte: {
-        'color-scheme': 'light',
-        primary: '#3d2817',
-        'primary-content': '#ffffff',
-        secondary: '#6b4423',
-        'secondary-content': '#e7d5c4',
-        // ... other colors
-      },
-    },
-    {
-      silk: {
-        'color-scheme': 'dark',
-        'base-100': 'oklch(14% 0.004 49.25)',
-        primary: 'oklch(68% 0.162 75.834)',
-        // ... other colors (OKLCH format supported)
-      },
-    },
-    {
-      'sanctuary-health': {
-        'color-scheme': 'light',
-        primary: '#d4af37',
-        // ... other colors
-      },
-    },
-  ],
+```css
+/* src/index.css */
+@import 'tailwindcss';
+@plugin 'daisyui';
+
+/* Caramellatte Theme */
+@plugin "daisyui/theme" {
+  name: 'caramellatte';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'light';
+  --color-base-100: oklch(98% 0.016 73.684);
+  --color-base-200: oklch(95% 0.038 75.164);
+  --color-primary: oklch(0% 0 0);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(22.45% 0.075 37.85);
+  --color-secondary-content: oklch(90% 0.076 70.697);
+  /* ... other colors */
+}
+
+/* Silk Theme */
+@plugin "daisyui/theme" {
+  name: 'silk';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'dark';
+  --color-base-100: oklch(14% 0.004 49.25);
+  --color-primary: oklch(68% 0.162 75.834);
+  /* ... other colors (OKLCH format supported) */
+}
+
+/* Sanctuary Health Theme */
+@plugin "daisyui/theme" {
+  name: 'sanctuary-health';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'light';
+  --color-primary: #d4af37;
+  /* ... other colors */
 }
 ```
 
-**Note**: This project uses Tailwind config format exclusively. Themes are NOT defined in CSS files.
+**Note**: With Tailwind CSS v4, themes MUST be defined in `src/index.css` using CSS plugin format. The `tailwind.config.js` file only contains DaisyUI plugin configuration, not theme definitions.
 
 ## Quick Start: Adding a Custom Theme
 
 ### Step 1: Define the Theme Colors
 
-Edit `tailwind.config.js` and add your theme to the `daisyui.themes` array:
+Edit `src/index.css` and add your theme using `@plugin "daisyui/theme"` syntax:
 
-```javascript
-daisyui: {
-  themes: [
-    {
-      // Your existing themes...
-      caramellatte: {
-        primary: '#3d2817',      // Dark brown (was black)
-        secondary: '#6b4423',    // Medium brown
-        accent: '#8b5a2b',       // Lighter brown
-        neutral: '#5d4037',      // Rich brown
-        'base-100': '#fef7ed',   // Cream background
-        'base-200': '#f5e6d3',   // Medium cream
-        'base-300': '#e7d5c4',   // Light cream
-        'base-content': '#3d2817', // Dark brown text
-        'primary-content': '#ffffff', // White text on primary
-        'secondary-content': '#e7d5c4', // Light text on secondary
-        'accent-content': '#e7d5c4', // Light text on accent
-        'neutral-content': '#fef7ed', // Light text on neutral
-        info: '#3abff8',         // Blue
-        'info-content': '#e7d5c4',
-        success: '#36d399',      // Green
-        'success-content': '#e7d5c4',
-        warning: '#fbbd23',      // Yellow
-        'warning-content': '#3d2817',
-        error: '#f87272',        // Red
-        'error-content': '#3d2817',
-      },
-    },
-    // Built-in themes...
-  ],
+```css
+/* src/index.css */
+@import 'tailwindcss';
+@plugin 'daisyui';
+
+/* Your existing themes... */
+
+/* Your New Theme */
+@plugin "daisyui/theme" {
+  name: 'your-new-theme';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'light';
+  --color-base-100: #fef7ed; /* Cream background */
+  --color-base-200: #f5e6d3; /* Medium cream */
+  --color-base-300: #e7d5c4; /* Light cream */
+  --color-base-content: #3d2817; /* Dark brown text */
+  --color-primary: #3d2817; /* Dark brown (was black) */
+  --color-primary-content: #ffffff; /* White text on primary */
+  --color-secondary: #6b4423; /* Medium brown */
+  --color-secondary-content: #e7d5c4; /* Light text on secondary */
+  --color-accent: #8b5a2b; /* Lighter brown */
+  --color-accent-content: #e7d5c4; /* Light text on accent */
+  --color-neutral: #5d4037; /* Rich brown */
+  --color-neutral-content: #fef7ed; /* Light text on neutral */
+  --color-info: #3abff8; /* Blue */
+  --color-info-content: #e7d5c4;
+  --color-success: #36d399; /* Green */
+  --color-success-content: #e7d5c4;
+  --color-warning: #fbbd23; /* Yellow */
+  --color-warning-content: #3d2817;
+  --color-error: #f87272; /* Red */
+  --color-error-content: #3d2817;
 }
 ```
 
-### Step 2: Add to Theme Constants
+### Step 2: Rebuild CSS
+
+After adding your theme, rebuild the CSS to compile it:
+
+```bash
+npm run build:css
+```
+
+### Step 3: Add to Theme Constants
 
 Edit `src/lib/theme.ts`:
 
@@ -97,7 +117,7 @@ export const AVAILABLE_THEMES = {
 } as const;
 ```
 
-### Step 3: Set Theme in Database (for tenants)
+### Step 4: Set Theme in Database (for tenants)
 
 For tenant subdomains, set the theme in the database:
 
@@ -113,30 +133,33 @@ WHERE subdomain = 'your-tenant';
 
 Or use the Admin Panel → Tenant Settings to set the theme.
 
-### Step 4: Test Your Theme
+### Step 5: Test Your Theme
 
-1. Run `npm run build` to ensure no errors
-2. For main app: Theme will default to `caramellatte`
-3. For tenant: Set `branding.theme_name` in database and verify theme applies
-4. Check that all components render correctly with the new theme
+1. Run `npm run build:css` to compile the theme
+2. Run `npm run build` to ensure no errors
+3. For main app: Theme will default to `caramellatte`
+4. For tenant: Set `branding.theme_name` in database and verify theme applies
+5. Check that all components render correctly with the new theme
 
 ## Color Format Support
 
-The Tailwind config format supports both hex and OKLCH color formats:
+The CSS plugin format supports both hex and OKLCH color formats:
 
-```javascript
-// Hex format (most themes)
-caramellatte: {
-  primary: '#3d2817',
-  secondary: '#6b4423',
-  // ...
+```css
+/* Hex format (most themes) */
+@plugin "daisyui/theme" {
+  name: 'caramellatte';
+  --color-primary: #3d2817;
+  --color-secondary: #6b4423;
+  /* ... */
 }
 
-// OKLCH format (used in silk theme)
-silk: {
-  'base-100': 'oklch(14% 0.004 49.25)',
-  primary: 'oklch(68% 0.162 75.834)',
-  // ...
+/* OKLCH format (used in silk theme) */
+@plugin "daisyui/theme" {
+  name: 'silk';
+  --color-base-100: oklch(14% 0.004 49.25);
+  --color-primary: oklch(68% 0.162 75.834);
+  /* ... */
 }
 ```
 
@@ -144,7 +167,7 @@ silk: {
 
 - Use [OKLCH to Hex Converter](https://oklch.com/) to convert between formats
 - Or use browser dev tools to convert colors
-- Both formats work in Tailwind config - choose what works best for your theme
+- Both formats work in CSS plugin format - choose what works best for your theme
 
 ## Theme Color Guidelines
 

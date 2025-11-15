@@ -141,6 +141,7 @@ export function SubscriptionSuccessPage() {
                   variant="outline"
                 >
                   <Loader2 className="mr-2 h-4 w-4" />
+                  <span className="sr-only">Loading</span>
                   Check Status
                 </Button>
               </div>

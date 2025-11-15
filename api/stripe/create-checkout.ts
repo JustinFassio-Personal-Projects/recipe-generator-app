@@ -3,6 +3,16 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import { createHash } from 'crypto';
+
+/**
+ * Create a secure hash of a sensitive value for debugging purposes.
+ * Returns a short hash (first 8 chars of SHA256) that can be used to verify
+ * the value exists without exposing any actual characters.
+ */
+function hashSensitiveValue(value: string): string {
+  return createHash('sha256').update(value).digest('hex').substring(0, 8);
+}
 
 // Load .env.local for local development (Vercel dev should auto-load but doesn't always)
 // Load in handler to ensure it runs in serverless context
@@ -82,11 +92,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const availableEnvVarsWithValues = availableEnvVars.reduce(
         (acc, key) => {
           const value = process.env[key];
-          // Only show first few chars of sensitive values
-          acc[key] = value ? `${value.substring(0, 10)}...` : 'undefined';
+          // Use secure hash instead of exposing partial values
+          // Include length for debugging without exposing actual characters
+          if (value) {
+            acc[key] = {
+              length: value.length,
+              hash: hashSensitiveValue(value),
+            };
+          } else {
+            acc[key] = 'undefined';
+          }
           return acc;
         },
-        {} as Record<string, string>
+        {} as Record<string, { length: number; hash: string } | string>
       );
 
       console.error('[Checkout] Missing required environment variables:', {

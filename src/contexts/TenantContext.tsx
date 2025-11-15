@@ -51,6 +51,24 @@ function getSubdomainFromClient(): string | null {
   return null;
 }
 
+/**
+ * Creates a fallback tenant object for error/timeout scenarios
+ * @param fallbackSubdomain - Optional subdomain to use (defaults to 'app')
+ */
+function createFallbackTenant(fallbackSubdomain?: string | null): Tenant {
+  return {
+    id: 'default',
+    subdomain: fallbackSubdomain || 'app',
+    name: 'Recipe Generator',
+    is_active: true,
+    branding: undefined,
+    owner_id: '00000000-0000-0000-0000-000000000000',
+    subscription_tier: 'starter',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
 export function TenantProvider({ children }: { children: React.ReactNode }) {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,17 +86,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       logger.error('🏢 Tenant fetch timeout - using fallback');
       setLoading(false);
       // Use a default tenant if fetch times out
-      setTenant({
-        id: 'default',
-        subdomain: 'app',
-        name: 'Recipe Generator',
-        is_active: true,
-        branding: undefined,
-        owner_id: '00000000-0000-0000-0000-000000000000',
-        subscription_tier: 'starter',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      setTenant(createFallbackTenant());
     }, TENANT_FETCH_TIMEOUT);
 
     try {
@@ -98,17 +106,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           if (fetchError) {
             logger.error('Failed to load default tenant:', fetchError);
             // Use fallback tenant instead of error
-            setTenant({
-              id: 'default',
-              subdomain: 'app',
-              name: 'Recipe Generator',
-              is_active: true,
-              branding: undefined,
-              owner_id: '00000000-0000-0000-0000-000000000000',
-              subscription_tier: 'starter',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
+            setTenant(createFallbackTenant());
           } else {
             logger.debug('🏢 Loaded main app tenant:', data);
             setTenant(data);
@@ -117,17 +115,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           clearTimeout(timeoutId);
           logger.error('Failed to load default tenant:', err);
           // Use fallback tenant instead of error
-          setTenant({
-            id: 'default',
-            subdomain: 'app',
-            name: 'Recipe Generator',
-            is_active: true,
-            branding: undefined,
-            owner_id: '00000000-0000-0000-0000-000000000000',
-            subscription_tier: 'starter',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
+          setTenant(createFallbackTenant());
         } finally {
           setLoading(false);
         }
@@ -173,17 +161,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       logger.error('Unexpected error in fetchTenant:', err);
       setLoading(false);
       // Use fallback tenant
-      setTenant({
-        id: 'default',
-        subdomain: subdomain || 'app',
-        name: 'Recipe Generator',
-        is_active: true,
-        branding: undefined,
-        owner_id: '00000000-0000-0000-0000-000000000000',
-        subscription_tier: 'starter',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      setTenant(createFallbackTenant(subdomain));
     }
   }, [subdomain]);
 

@@ -103,15 +103,30 @@ export async function ensureUserProfile(): Promise<{
     }
 
     // Create basic profile without username (users can add one later if needed)
+    // CRITICAL: tenant_id is required for RLS policies to work correctly
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
     const { error: profileError } = await supabase.from('profiles').insert({
       id: user.id,
       full_name: user.user_metadata?.full_name || '',
+      tenant_id: DEFAULT_TENANT_ID,
       // username is now optional - users can set it later in their profile
     });
 
     if (profileError) {
       console.error('Profile creation error:', profileError);
-      return { success: false, error: profileError.message };
+      // Provide more detailed error information for debugging
+      const errorDetails = {
+        message: profileError.message,
+        code: profileError.code,
+        details: profileError.details,
+        hint: profileError.hint,
+      };
+      console.error('Profile creation error details:', errorDetails);
+      return {
+        success: false,
+        error:
+          profileError.message || 'Failed to create profile. Please try again.',
+      };
     }
 
     return { success: true };

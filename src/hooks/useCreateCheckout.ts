@@ -60,9 +60,31 @@ export function useCreateCheckout() {
         const errorData = responseData as {
           error?: string;
           details?: string;
+          missingVariables?: string[];
           debug?: unknown;
         };
-        throw new Error(errorData.error || 'Failed to create checkout session');
+
+        // Build detailed error message
+        let errorMessage =
+          errorData.error || 'Failed to create checkout session';
+        if (errorData.details) {
+          errorMessage += `: ${errorData.details}`;
+        }
+        if (
+          errorData.missingVariables &&
+          errorData.missingVariables.length > 0
+        ) {
+          errorMessage += `\nMissing variables: ${errorData.missingVariables.join(', ')}`;
+        }
+
+        console.error('[Checkout] Full error details:', {
+          error: errorData.error,
+          details: errorData.details,
+          missingVariables: errorData.missingVariables,
+          debug: errorData.debug,
+        });
+
+        throw new Error(errorMessage);
       }
 
       console.log('[Checkout] Success! Redirecting to Stripe...');

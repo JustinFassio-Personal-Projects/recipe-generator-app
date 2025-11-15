@@ -5,26 +5,31 @@
  * cache management and background sync capabilities.
  */
 
-const CACHE_NAME = 'avatar-cache-v1';
+const CACHE_NAME = 'avatar-cache-v2'; // Updated version to force refresh
 const AVATAR_CACHE_SIZE = 50; // Maximum number of avatars to cache
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Install event - set up initial cache
 self.addEventListener('install', (event) => {
-  console.log('Avatar cache service worker installing...');
+  console.log('Avatar cache service worker installing (v2)...');
+  // Force immediate activation
   self.skipWaiting();
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('Avatar cache service worker activating...');
+  console.log('Avatar cache service worker activating (v2)...');
   event.waitUntil(
     caches
       .keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
+            // Delete all old avatar caches (v1 and any other versions)
+            if (
+              cacheName.startsWith('avatar-cache-') &&
+              cacheName !== CACHE_NAME
+            ) {
               console.log('Deleting old avatar cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -32,6 +37,7 @@ self.addEventListener('activate', (event) => {
         );
       })
       .then(() => {
+        // Take control of all clients immediately
         return self.clients.claim();
       })
   );
@@ -40,6 +46,17 @@ self.addEventListener('activate', (event) => {
 // Fetch event - handle avatar requests
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  const request = event.request;
+
+  // NEVER cache HTML files - always let them through
+  if (
+    request.method === 'GET' &&
+    (url.pathname === '/' ||
+      url.pathname === '/index.html' ||
+      request.headers.get('accept')?.includes('text/html'))
+  ) {
+    return; // Let browser handle HTML requests normally
+  }
 
   // Only handle avatar requests
   if (!isAvatarRequest(event.request)) {

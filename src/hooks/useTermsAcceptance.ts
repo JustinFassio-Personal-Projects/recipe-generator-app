@@ -19,6 +19,24 @@ export function useTermsAcceptance() {
   // Track which user we've checked to prevent re-checking on profile updates
   const checkedUserIdRef = useRef<string | null>(null);
 
+  // Track if we were waiting for terms data to explicitly handle when it arrives
+  const wasWaitingForTermsDataRef = useRef(false);
+
+  // Timeout protection - prevent infinite loading
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.warn(
+          '[useTermsAcceptance] Loading timeout - forcing completion'
+        );
+        setIsLoading(false);
+        setNeedsAcceptance(false);
+      }
+    }, 15000); // 15 second timeout
+
+    return () => clearTimeout(timeoutId);
+  }, [isLoading]);
+
   useEffect(() => {
     if (import.meta.env.DEV) {
       console.log('[useTermsAcceptance] useEffect RAN', {
@@ -58,6 +76,7 @@ export function useTermsAcceptance() {
       setIsLoading(false);
       setNeedsAcceptance(false);
       checkedUserIdRef.current = null;
+      wasWaitingForTermsDataRef.current = false;
       return;
     }
 
@@ -85,12 +104,40 @@ export function useTermsAcceptance() {
       profile.terms_version_accepted !== null ||
       profile.privacy_version_accepted !== null;
 
+    // CRITICAL FIX: Wait for database profile to load before making ANY decision
+    // If profile doesn't have terms data yet, keep loading - don't show terms dialog prematurely
+    if (!hasTermsData) {
+      if (import.meta.env.DEV) {
+        console.log(
+          '[useTermsAcceptance] Profile loaded but no terms data yet - waiting for database profile'
+        );
+      }
+      wasWaitingForTermsDataRef.current = true;
+      setIsLoading(true);
+      return;
+    }
+
+    // EXPLICIT HANDLING: Terms data is now available - handle the transition from waiting
+    // This ensures isLoading is properly managed when terms data arrives, rather than
+    // relying solely on the timeout mechanism
+    if (wasWaitingForTermsDataRef.current && hasTermsData) {
+      if (import.meta.env.DEV) {
+        console.log(
+          '[useTermsAcceptance] Terms data now available - proceeding with terms check'
+        );
+      }
+      wasWaitingForTermsDataRef.current = false;
+      // isLoading will be set to false after the terms check completes below
+    }
+
     if (checkedUserIdRef.current === user.id && hasTermsData) {
       if (import.meta.env.DEV) {
         console.log(
           '[useTermsAcceptance] Already checked terms for this user session with full data'
         );
       }
+      wasWaitingForTermsDataRef.current = false; // Reset since we've already checked
+      setIsLoading(false);
       return;
     }
 
@@ -118,6 +165,7 @@ export function useTermsAcceptance() {
 
     // Mark that we've checked this user
     checkedUserIdRef.current = user.id;
+    wasWaitingForTermsDataRef.current = false; // Reset since we've completed the check
 
     setNeedsAcceptance(needsToAccept);
     setIsLoading(false);

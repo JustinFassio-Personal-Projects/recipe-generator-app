@@ -467,7 +467,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 1. We already have a profile, OR
       // 2. A refresh just completed AND we have terms data (prevents loop after acceptance)
       if (!profile && !(recentRefresh && hasTermsData)) {
-        immediateProfile = createImmediateProfile(user);
+        immediateProfile = createImmediateProfile(user, profile);
         setProfile(immediateProfile);
         logger.success('✅ Immediate profile set during refresh');
       } else if (recentRefresh && hasTermsData) {

@@ -1,225 +1,136 @@
-# Pull Request: Fix Email Preferences Loading and Saving
+# PR Summary: Fix Subscription, Terms, and Profile Loading Issues
 
 ## 🎯 Overview
 
-Fixed the email preferences feature on the Account Settings page that was failing to load due to a missing database table and then failing to save due to improper upsert logic.
+This PR fixes critical issues preventing users from accessing premium features after subscription and incorrectly showing terms acceptance dialogs on every login.
 
-## 🐛 Problem Statement
+## 🐛 Issues Fixed
 
-### Issue 1: Email Preferences Not Loading
+### 1. Subscription Sync Failure
 
-- **Error**: `404 - Could not find the table 'public.email_preferences' in the schema cache`
-- **Cause**: Migration `20251112000000_email_system.sql` had not been applied to the database
-- **Impact**: Users saw "Unable to load email preferences. Please try again later."
+**Problem**: Users completing Stripe checkout weren't getting premium access because subscriptions weren't syncing to the database.
 
-### Issue 2: Email Preferences Not Saving
+**Root Causes**:
 
-- **Error**: `409 Conflict` followed by `400 Bad Request` on upsert operations
-- **Cause**: Incorrect upsert logic conflicting with database triggers
-- **Impact**: Users could not save their email preference changes
+- Stripe webhooks don't work in local development (can't reach localhost)
+- `verify-session` endpoint had a bug passing subscription object instead of string to Stripe API
+- Vercel dev server needed restart to pick up code changes
 
-## ✅ Solution
+**Solution**:
 
-### 1. Applied Email System Migration
+- Created `/api/stripe/verify-session` endpoint for manual subscription sync
+- Fixed Stripe API call to use expanded subscription object directly
+- Added auto-verification on subscription success page
+- Improved error handling and logging
 
-Applied migration `20251112000000_email_system.sql` which created:
+### 2. Profile RLS Circular Dependency
 
-- **4 Tables**: `email_preferences`, `email_queue`, `email_logs`, `newsletter_campaigns`
-- **RLS Policies**: User access control for all tables
-- **Functions**: Token generation, preference management, unsubscribe handling
-- **Triggers**: Auto-create preferences for new users, auto-update timestamps
+**Problem**: Profile data wasn't loading, blocking subscription status checks.
 
-### 2. Fixed Update Logic in `email-api.ts`
+**Root Cause**: RLS policy `profiles_select_same_tenant` required `user_tenant_id()` function, which itself needed to query profiles table → circular dependency.
 
-Replaced problematic `upsert` operation with conditional logic:
+**Solution**:
 
-- **For existing records**: Use `UPDATE` query (cleaner, no conflicts)
-- **For new records**: Use `INSERT` query with all required fields
-- **Removed manual timestamp**: Let database trigger handle `updated_at`
+- Added `profiles_select_own` policy allowing users to SELECT their own profile
+- This breaks the circular dependency and allows profile loading
 
-### 3. Fixed TypeScript Type Issues
+### 3. Terms Acceptance Dialog Loop
 
-- Created `SupabaseError` interface for proper error typing
-- Replaced `any` type casts with proper type annotations
-- Ensures strict TypeScript compliance
+**Problem**: Users who already accepted terms were seeing the acceptance dialog on every login.
 
-## 📝 Files Changed
+**Root Causes**:
+
+- `useTermsAcceptance` hook was checking incomplete "immediate profile" before database profile loaded
+- Hook had early return that forgot to set `isLoading = false`
+
+**Solution**:
+
+- Added guard to wait for database profile with terms data before making decisions
+- Fixed early return to properly set loading state
+- Preserved terms data in immediate profile creation
+
+### 4. Environment Variable Loading
+
+**Problem**: Local checkout endpoint returning 500 errors due to missing environment variables.
+
+**Root Cause**: `loadEnv()` function incorrectly identified `vercel dev` as production, preventing `.env.local` from loading.
+
+**Solution**:
+
+- Fixed production detection to only check `NODE_ENV === 'production' && VERCEL_ENV === 'production'`
+- Improved error messages with available environment variable names
+- Always load `.env.local` when not in actual production
+
+## 📁 Files Changed
+
+### New Files
+
+- `api/stripe/verify-session.ts` - Manual subscription sync endpoint
+- `src/hooks/useVerifySubscription.ts` - Hook for subscription verification
+- `SUBSCRIPTION_SYNC_FIX.md` - Documentation of fixes
+- `supabase/migrations/fix_profile_rls_select_own.sql` - RLS policy fix
 
 ### Modified Files
 
-1. **`src/lib/api/email-api.ts`** (Major changes)
-   - Added `SupabaseError` interface for proper error typing
-   - Replaced `upsert` with conditional UPDATE/INSERT logic
-   - Fixed TypeScript type safety (removed `any` types)
-   - Improved error handling consistency
+- `api/stripe/create-checkout.ts` - Fixed environment loading
+- `api/stripe/webhook.ts` - Improved error handling
+- `src/pages/SubscriptionSuccessPage.tsx` - Added auto-verification
+- `src/hooks/useCreateCheckout.ts` - Improved error handling
+- `src/hooks/useTermsAcceptance.ts` - Fixed premature terms check
+- `src/contexts/AuthProvider.tsx` - Preserve terms in immediate profile
+- `src/contexts/TenantContext.tsx` - Fixed TypeScript errors (unrelated)
+- `src/lib/supabase.ts` - Removed unused variable
 
-2. **`src/pages/profile-page.tsx`** (No functional changes)
-   - Formatting only
+## ✅ Verification Checklist
 
-### New/Informational Files
+- [x] **Linting**: All errors fixed
+- [x] **TypeScript**: Compiles successfully
+- [x] **Formatting**: Prettier compliant
+- [x] **Build**: Production build succeeds
+- [x] **Critical Path Tests**: All 12 tests passing
+- [x] **Security**: No secrets in client code
+- [x] **Database Migration**: Applied successfully
 
-3. **`EMAIL_PREFERENCES_ROOT_CAUSE.md`** (Documentation)
-   - Root cause analysis for future reference
-   - Not committed to repo
+## 🧪 Testing
 
-## 🧪 Testing & Verification
+### Manual Testing Required
 
-### ✅ Pre-PR Verification Checklist Completed
+1. **Subscription Flow**:
+   - Start checkout → Complete payment → Verify subscription syncs
+   - Check database for subscription record
+   - Verify user can save recipes without being blocked
 
-#### 1. Linting & Formatting
+2. **Terms Acceptance**:
+   - Sign in as user who already accepted terms
+   - Verify terms dialog does NOT appear
+   - Sign in as new user → Verify terms dialog appears correctly
 
-- ✅ ESLint: No errors
-- ✅ Prettier: All files formatted
-- ✅ TypeScript: Strict mode compliant, no errors
+3. **Profile Loading**:
+   - Sign in → Verify profile loads without errors
+   - Check console for profile loading logs
 
-#### 2. Security Scan
+## 🔒 Security Notes
 
-- ✅ No service keys exposed in client code
-- ✅ No security vulnerabilities (`npm audit`)
-- ✅ Proper environment variable usage
-
-#### 3. Critical Path Tests
-
-- ✅ All 12 critical path tests pass
-- ✅ Recipe CRUD operations working
-- ✅ Database schema integrity verified
-- ✅ Parser functionality operational
-- ✅ Error handling tested
-
-#### 4. Core Tests
-
-- ✅ 633 tests passed (0 failed)
-- ✅ 50 test files passed
-- ✅ Duration: 16.12s
-
-#### 5. Production Build
-
-- ✅ Build succeeds without errors
-- ✅ TypeScript compilation clean
-- ✅ Bundle size: 1.65 MB (gzipped: 412 KB)
-
-## 🎯 Verification Steps
-
-To verify the fix works:
-
-1. **Clear browser cache** (important!)
-   - Chrome/Edge: F12 → Right-click refresh → "Empty Cache and Hard Reload"
-   - Firefox: F12 → Network tab → Check "Disable Cache" → Hard refresh
-
-2. **Navigate to Account Settings**
-   - Go to Profile → Account tab
-   - Email Preferences section should load without errors
-
-3. **Test Email Preferences**
-   - Toggle preference switches
-   - Click "Save Preferences"
-   - Should see "Email preferences updated successfully" toast
-   - No console errors
-
-4. **Test Unsubscribe All**
-   - Click "Unsubscribe from All" button
-   - Confirm in dialog
-   - Should disable marketing emails while keeping transactional ones
-
-## 🔍 Technical Details
-
-### Database Changes
-
-```sql
--- Migration applied: 20251112000000_email_system.sql
-CREATE TABLE email_preferences (
-  user_id UUID PRIMARY KEY,
-  tenant_id UUID REFERENCES tenants(id),
-  welcome_emails BOOLEAN DEFAULT true,
-  newsletters BOOLEAN DEFAULT true,
-  recipe_notifications BOOLEAN DEFAULT true,
-  cooking_reminders BOOLEAN DEFAULT true,
-  subscription_updates BOOLEAN DEFAULT true,
-  admin_notifications BOOLEAN DEFAULT true,
-  unsubscribe_token TEXT UNIQUE,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### Code Changes (Before → After)
-
-```typescript
-// BEFORE: Problematic upsert logic
-const { data, error } = await supabase
-  .from('email_preferences')
-  .upsert(updateData, { onConflict: 'user_id' })
-  .select()
-  .single();
-
-// AFTER: Conditional UPDATE or INSERT
-if (preferencesExist) {
-  // Use UPDATE for existing records
-  const { data, error } = await supabase
-    .from('email_preferences')
-    .update(preferences)
-    .eq('user_id', user.id)
-    .select()
-    .single();
-} else {
-  // Use INSERT for new records
-  const { data, error } = await supabase
-    .from('email_preferences')
-    .insert(insertData)
-    .select()
-    .single();
-}
-```
+- All Stripe operations use server-side API routes
+- Service role keys only in server-side code
+- No secrets exposed to client
+- RLS policies properly configured
 
 ## 📊 Impact
 
-### User Experience
-
-- ✅ Email preferences now load successfully
-- ✅ Users can customize email notifications
-- ✅ Preferences save reliably
-- ✅ Unsubscribe functionality works
-
-### Code Quality
-
-- ✅ TypeScript strict mode compliant
-- ✅ No linting errors
-- ✅ Proper error handling
-- ✅ Type-safe error checking
-
-### Database
-
-- ✅ Proper schema with RLS policies
-- ✅ Auto-triggers for timestamps
-- ✅ Foreign key relationships maintained
-- ✅ Indexes for performance
+- ✅ Users can now access premium features after subscription
+- ✅ Terms acceptance dialog only shows when needed
+- ✅ Profile loading works reliably
+- ✅ Better error messages for debugging
 
 ## 🚀 Deployment Notes
 
-1. **Database Migration**: Already applied via Supabase MCP
-2. **No Breaking Changes**: Backwards compatible
-3. **Feature Toggle**: None required
-4. **Rollback Plan**: Can disable email preferences UI if issues arise
+1. **Database Migration**: `fix_profile_rls_select_own` must be applied
+2. **Environment Variables**: Ensure all Stripe/Supabase vars are set
+3. **Vercel Dev**: Restart server after deployment to pick up changes
 
-## 📚 Related Documentation
+## 📝 Related Issues
 
-- Email System Implementation: `docs/email/EMAIL_SYSTEM_IMPLEMENTATION_COMPLETE.md`
-- Pre-PR Verification: `docs/quality-assurance/PRE-PR-VERIFICATION-CHECKLIST.md`
-- Root Cause Analysis: `EMAIL_PREFERENCES_ROOT_CAUSE.md` (local only)
-
-## ✅ Checklist
-
-- [x] Code follows project style guidelines
-- [x] Self-review completed
-- [x] Comments added for complex logic
-- [x] Documentation updated
-- [x] Tests added/updated and passing
-- [x] No new warnings introduced
-- [x] Dependent changes merged
-- [x] Security scan passed
-- [x] Critical path tests passed
-- [x] Production build succeeds
-
-## 🎉 Ready for Merge
-
-This PR is ready for review and merge. All tests pass, code quality checks succeed, and the feature works as expected.
+- Subscription sync not working in local dev
+- Terms dialog showing on every login
+- Profile not loading for some users

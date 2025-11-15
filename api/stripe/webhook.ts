@@ -2,15 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover',
-});
-
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 // Disable body parsing, need raw body for webhook verification
 export const config = {
   api: {
@@ -28,6 +19,7 @@ async function buffer(readable: NodeJS.ReadableStream) {
 
 // Helper function to trigger subscription update emails
 async function sendSubscriptionEmail(
+  supabase: ReturnType<typeof createClient>,
   userId: string,
   updateType: string,
   subscriptionDetails?: Record<string, string | number>
@@ -51,6 +43,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Initialize Stripe client inside handler (after env var validation)
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+  const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+
+  if (!stripeSecretKey || !stripeWebhookSecret) {
+    console.error('[Webhook] Missing Stripe environment variables:', {
+      hasSecretKey: !!stripeSecretKey,
+      hasWebhookSecret: !!stripeWebhookSecret,
+    });
+    return res.status(500).json({
+      error: 'Stripe not configured',
+      details: 'Missing required Stripe environment variables',
+    });
+  }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2025-09-30.clover',
+  });
+
+  // Initialize Supabase client with fallback for environment variable names
+  const supabaseUrl =
+    process.env.SUPABASE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim();
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('[Webhook] Missing Supabase environment variables:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      availableEnvVars: Object.keys(process.env).filter((k) =>
+        k.includes('SUPABASE')
+      ),
+    });
+    return res.status(500).json({
+      error: 'Supabase not configured',
+      details: 'Missing required Supabase environment variables',
+    });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   const buf = await buffer(req);
   const sig = req.headers['stripe-signature'];
 
@@ -61,69 +93,163 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      buf,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(buf, sig, stripeWebhookSecret);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    console.error('[Webhook] Signature verification failed:', err);
     return res.status(400).json({
       error: err instanceof Error ? err.message : 'Webhook verification failed',
     });
   }
+
+  // Log webhook event received
+  console.log(`[Webhook] Received event: ${event.type} (id: ${event.id})`);
 
   // Handle the event
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.metadata?.supabase_user_id;
+        console.log(
+          `[Webhook] Processing checkout.session.completed for session: ${session.id}`
+        );
 
-        if (!userId) {
-          console.error('No user ID in checkout session metadata');
-          break;
+        // Try to get user_id from session metadata, fallback to customer metadata
+        let userId = session.metadata?.supabase_user_id;
+
+        if (!userId && session.customer) {
+          try {
+            const customer = await stripe.customers.retrieve(
+              session.customer as string
+            );
+            userId = customer.metadata?.supabase_user_id;
+            console.log(
+              `[Webhook] Retrieved user_id from customer metadata: ${userId}`
+            );
+          } catch (customerError) {
+            console.error(
+              '[Webhook] Failed to retrieve customer:',
+              customerError
+            );
+          }
         }
 
-        // Get subscription details
-        const subscription = (await stripe.subscriptions.retrieve(
-          session.subscription as string
-        )) as unknown as Stripe.Subscription & {
+        if (!userId) {
+          console.error(
+            '[Webhook] No user ID found in checkout session metadata',
+            {
+              sessionId: session.id,
+              sessionMetadata: session.metadata,
+              customerId: session.customer,
+            }
+          );
+          return res.status(400).json({
+            error: 'Missing user ID in checkout session metadata',
+            details:
+              'Could not determine user_id from session or customer metadata',
+          });
+        }
+
+        // Get subscription details with error handling
+        let subscription: Stripe.Subscription & {
           current_period_start: number;
           current_period_end: number;
         };
 
-        // Create or update subscription record
-        await supabase.from('user_subscriptions').upsert({
-          user_id: userId,
-          stripe_customer_id: session.customer as string,
-          stripe_subscription_id: subscription.id,
-          stripe_price_id: subscription.items.data[0]?.price?.id,
-          status: subscription.status,
-          trial_start: subscription.trial_start
-            ? new Date(subscription.trial_start * 1000).toISOString()
-            : null,
-          trial_end: subscription.trial_end
-            ? new Date(subscription.trial_end * 1000).toISOString()
-            : null,
-          current_period_start: new Date(
-            subscription.current_period_start * 1000
-          ).toISOString(),
-          current_period_end: new Date(
-            subscription.current_period_end * 1000
-          ).toISOString(),
-          cancel_at_period_end: subscription.cancel_at_period_end,
-        });
+        try {
+          if (!session.subscription) {
+            console.error('[Webhook] No subscription ID in checkout session', {
+              sessionId: session.id,
+            });
+            return res.status(400).json({
+              error: 'No subscription ID in checkout session',
+            });
+          }
 
-        // Send welcome to premium email
-        await sendSubscriptionEmail(userId, 'subscription_created', {
+          subscription = (await stripe.subscriptions.retrieve(
+            session.subscription as string
+          )) as unknown as Stripe.Subscription & {
+            current_period_start: number;
+            current_period_end: number;
+          };
+        } catch (subscriptionError) {
+          console.error('[Webhook] Failed to retrieve subscription:', {
+            subscriptionId: session.subscription,
+            error: subscriptionError,
+          });
+          return res.status(500).json({
+            error: 'Failed to retrieve subscription details',
+            details:
+              subscriptionError instanceof Error
+                ? subscriptionError.message
+                : 'Unknown error',
+          });
+        }
+
+        // Create or update subscription record with error handling
+        const { data: subscriptionData, error: dbError } = await supabase
+          .from('user_subscriptions')
+          .upsert({
+            user_id: userId,
+            stripe_customer_id: session.customer as string,
+            stripe_subscription_id: subscription.id,
+            stripe_price_id: subscription.items.data[0]?.price?.id,
+            status: subscription.status,
+            trial_start: subscription.trial_start
+              ? new Date(subscription.trial_start * 1000).toISOString()
+              : null,
+            trial_end: subscription.trial_end
+              ? new Date(subscription.trial_end * 1000).toISOString()
+              : null,
+            current_period_start: new Date(
+              subscription.current_period_start * 1000
+            ).toISOString(),
+            current_period_end: new Date(
+              subscription.current_period_end * 1000
+            ).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+          })
+          .select();
+
+        if (dbError) {
+          console.error('[Webhook] Database operation failed:', {
+            error: dbError,
+            userId,
+            subscriptionId: subscription.id,
+            sessionId: session.id,
+          });
+          return res.status(500).json({
+            error: 'Database operation failed',
+            details: dbError.message,
+          });
+        }
+
+        if (!subscriptionData || subscriptionData.length === 0) {
+          console.error('[Webhook] Upsert returned no data', {
+            userId,
+            subscriptionId: subscription.id,
+          });
+          return res.status(500).json({
+            error: 'Failed to create subscription record',
+            details: 'Database upsert returned no data',
+          });
+        }
+
+        // Send welcome to premium email (non-blocking)
+        sendSubscriptionEmail(supabase, userId, 'subscription_created', {
           plan: subscription.items.data[0]?.price?.nickname || 'Premium',
           nextBillingDate: new Date(
             subscription.current_period_end * 1000
           ).toLocaleDateString(),
+        }).catch((emailError) => {
+          console.error(
+            '[Webhook] Email sending failed (non-blocking):',
+            emailError
+          );
         });
 
-        console.log(`✅ Subscription created for user ${userId}`);
+        console.log(
+          `[Webhook] ✅ Subscription created for user ${userId} (subscription: ${subscription.id})`
+        );
         break;
       }
 
@@ -133,7 +259,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           current_period_end: number;
         };
 
-        await supabase
+        console.log(
+          `[Webhook] Processing customer.subscription.updated for subscription: ${subscription.id}`
+        );
+
+        const { error: updateError } = await supabase
           .from('user_subscriptions')
           .update({
             status: subscription.status,
@@ -156,6 +286,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           })
           .eq('stripe_subscription_id', subscription.id);
 
+        if (updateError) {
+          console.error('[Webhook] Failed to update subscription:', {
+            error: updateError,
+            subscriptionId: subscription.id,
+          });
+          return res.status(500).json({
+            error: 'Database update failed',
+            details: updateError.message,
+          });
+        }
+
         // Get user ID from subscription to send email
         const { data: subData } = await supabase
           .from('user_subscriptions')
@@ -164,27 +305,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .single();
 
         if (subData?.user_id) {
-          await sendSubscriptionEmail(subData.user_id, 'subscription_updated', {
-            nextBillingDate: new Date(
-              subscription.current_period_end * 1000
-            ).toLocaleDateString(),
+          sendSubscriptionEmail(
+            supabase,
+            subData.user_id,
+            'subscription_updated',
+            {
+              nextBillingDate: new Date(
+                subscription.current_period_end * 1000
+              ).toLocaleDateString(),
+            }
+          ).catch((emailError) => {
+            console.error(
+              '[Webhook] Email sending failed (non-blocking):',
+              emailError
+            );
           });
         }
 
-        console.log(`✅ Subscription updated: ${subscription.id}`);
+        console.log(`[Webhook] ✅ Subscription updated: ${subscription.id}`);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
 
-        await supabase
+        console.log(
+          `[Webhook] Processing customer.subscription.deleted for subscription: ${subscription.id}`
+        );
+
+        const { error: updateError } = await supabase
           .from('user_subscriptions')
           .update({
             status: 'canceled',
             canceled_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
+
+        if (updateError) {
+          console.error('[Webhook] Failed to cancel subscription:', {
+            error: updateError,
+            subscriptionId: subscription.id,
+          });
+          return res.status(500).json({
+            error: 'Database update failed',
+            details: updateError.message,
+          });
+        }
 
         // Get user ID to send cancellation email
         const { data: cancelData } = await supabase
@@ -194,13 +360,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .single();
 
         if (cancelData?.user_id) {
-          await sendSubscriptionEmail(
+          sendSubscriptionEmail(
+            supabase,
             cancelData.user_id,
             'subscription_cancelled'
-          );
+          ).catch((emailError) => {
+            console.error(
+              '[Webhook] Email sending failed (non-blocking):',
+              emailError
+            );
+          });
         }
 
-        console.log(`✅ Subscription canceled: ${subscription.id}`);
+        console.log(`[Webhook] ✅ Subscription canceled: ${subscription.id}`);
         break;
       }
 
@@ -238,16 +410,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           subscription?: string;
         };
 
+        console.log(
+          `[Webhook] Processing invoice.payment_failed for invoice: ${invoice.id}`
+        );
+
         // Update subscription status to past_due
         if (invoice.subscription) {
-          await supabase
+          const { error: updateError } = await supabase
             .from('user_subscriptions')
             .update({ status: 'past_due' })
             .eq('stripe_subscription_id', invoice.subscription);
-        }
 
-        // Send payment failure notification
-        if (invoice.subscription) {
+          if (updateError) {
+            console.error(
+              '[Webhook] Failed to update subscription status to past_due:',
+              {
+                error: updateError,
+                subscriptionId: invoice.subscription,
+                invoiceId: invoice.id,
+              }
+            );
+            return res.status(500).json({
+              error: 'Database update failed',
+              details: updateError.message,
+            });
+          }
+
+          // Send payment failure notification
           const { data: failureData } = await supabase
             .from('user_subscriptions')
             .select('user_id')
@@ -255,21 +444,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .single();
 
           if (failureData?.user_id) {
-            await sendSubscriptionEmail(failureData.user_id, 'payment_failed');
+            sendSubscriptionEmail(
+              supabase,
+              failureData.user_id,
+              'payment_failed'
+            ).catch((emailError) => {
+              console.error(
+                '[Webhook] Email sending failed (non-blocking):',
+                emailError
+              );
+            });
           }
         }
 
-        console.log(`❌ Payment failed for customer: ${invoice.customer}`);
+        console.log(
+          `[Webhook] ❌ Payment failed for customer: ${invoice.customer}`
+        );
         break;
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(
+          `[Webhook] Unhandled event type: ${event.type} (id: ${event.id})`
+        );
     }
 
+    console.log(
+      `[Webhook] ✅ Successfully processed event: ${event.type} (id: ${event.id})`
+    );
     return res.status(200).json({ received: true });
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    console.error('[Webhook] Error processing webhook:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      eventType: event?.type,
+      eventId: event?.id,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return res.status(500).json({
       error:
         error instanceof Error ? error.message : 'Webhook processing failed',

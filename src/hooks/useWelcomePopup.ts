@@ -44,6 +44,22 @@ function markFlowAsShown(flowType: WelcomeFlowType): void {
   }
 }
 
+function clearWelcomePopupSessionFlags(): void {
+  try {
+    // Clear all welcome popup session flags
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith(SESSION_STORAGE_PREFIX)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => sessionStorage.removeItem(key));
+  } catch {
+    // Silently fail if sessionStorage is not available
+  }
+}
+
 export function useWelcomePopup(
   context: WelcomeFlowContext = 'general'
 ): UseWelcomePopupReturn {
@@ -54,6 +70,7 @@ export function useWelcomePopup(
   const [isLoading, setIsLoading] = useState(true);
   const [hasIncrementedVisit, setHasIncrementedVisit] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [previousUserId, setPreviousUserId] = useState<string | null>(null);
 
   // Determine which welcome flow to show based on user profile
   const determineFlowType = useCallback(
@@ -122,7 +139,30 @@ export function useWelcomePopup(
     }
   }, [user, profile, hasIncrementedVisit, refreshProfile]);
 
-  // Initialize popup visibility on mount
+  // Reset initialization state when user changes (logout/login or user switch)
+  useEffect(() => {
+    const currentUserId = user?.id || null;
+
+    // If user changed (login, logout, or different user), reset initialization
+    if (previousUserId !== currentUserId) {
+      setHasInitialized(false);
+      setHasIncrementedVisit(false);
+      setShouldShow(false);
+      setFlowType(null);
+
+      // Clear sessionStorage flags when:
+      // 1. User logs out (previousUserId !== null, currentUserId === null)
+      // 2. User switches (both non-null but different)
+      // 3. User logs in fresh (previousUserId === null, currentUserId !== null)
+      if (previousUserId !== currentUserId) {
+        clearWelcomePopupSessionFlags();
+      }
+
+      setPreviousUserId(currentUserId);
+    }
+  }, [user?.id, previousUserId]);
+
+  // Initialize popup visibility on mount or when user changes
   useEffect(() => {
     // Prevent re-evaluating visibility after initial load to avoid
     // immediate auto-close when profile is refreshed (e.g. after visit count increment)

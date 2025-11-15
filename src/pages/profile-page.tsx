@@ -34,6 +34,7 @@ import {
 } from '@/components/profile/cooking';
 import { EmailCard, PasswordCard } from '@/components/profile/account';
 import { AppPreferencesCard } from '@/components/profile/preferences/AppPreferencesCard';
+import { EmailPreferencesCard } from '@/components/profile/EmailPreferencesCard';
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, error: authError } = useAuth();
@@ -409,25 +410,30 @@ export default function ProfilePage() {
 
       {/* Account Tab */}
       {activeTab === 'account' && (
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* Email Section */}
-          <EmailCard
-            currentEmail={accountManagement.currentEmail}
-            newEmail={accountManagement.newEmail}
-            onNewEmailChange={accountManagement.setNewEmail}
-            onSubmit={handleEmailUpdate}
-            loading={accountManagement.emailLoading}
-          />
+        <div className="space-y-8">
+          <div className="grid gap-8 md:grid-cols-2">
+            {/* Email Section */}
+            <EmailCard
+              currentEmail={accountManagement.currentEmail}
+              newEmail={accountManagement.newEmail}
+              onNewEmailChange={accountManagement.setNewEmail}
+              onSubmit={handleEmailUpdate}
+              loading={accountManagement.emailLoading}
+            />
 
-          {/* Password Section */}
-          <PasswordCard
-            newPassword={accountManagement.newPassword}
-            onNewPasswordChange={accountManagement.setNewPassword}
-            confirmPassword={accountManagement.confirmPassword}
-            onConfirmPasswordChange={accountManagement.setConfirmPassword}
-            onSubmit={handlePasswordUpdate}
-            loading={accountManagement.passwordLoading}
-          />
+            {/* Password Section */}
+            <PasswordCard
+              newPassword={accountManagement.newPassword}
+              onNewPasswordChange={accountManagement.setNewPassword}
+              confirmPassword={accountManagement.confirmPassword}
+              onConfirmPasswordChange={accountManagement.setConfirmPassword}
+              onSubmit={handlePasswordUpdate}
+              loading={accountManagement.passwordLoading}
+            />
+          </div>
+
+          {/* Email Preferences Section */}
+          <EmailPreferencesCard />
         </div>
       )}
     </div>

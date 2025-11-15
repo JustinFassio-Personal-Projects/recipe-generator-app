@@ -23,6 +23,7 @@ interface ProfileOnboardingWizardProps {
 }
 
 const TOTAL_STEPS = 14;
+const SAVE_WARNING_TITLE = 'Save Warning';
 
 export function ProfileOnboardingWizard({
   onClose,
@@ -115,7 +116,7 @@ export function ProfileOnboardingWizard({
     } else {
       // Allow progression even if save fails - location is optional
       toast({
-        title: 'Save Warning',
+        title: SAVE_WARNING_TITLE,
         description:
           'Your location information could not be saved. You can continue and update it later in your profile settings.',
         variant: 'destructive',
@@ -132,7 +133,7 @@ export function ProfileOnboardingWizard({
     } else {
       // Allow progression even if save fails - location is optional
       toast({
-        title: 'Save Warning',
+        title: SAVE_WARNING_TITLE,
         description:
           'Some information could not be saved. You can continue and update it later in your profile settings.',
         variant: 'destructive',
@@ -182,7 +183,7 @@ export function ProfileOnboardingWizard({
     } else {
       // Allow progression even if save fails - disliked ingredients is optional
       toast({
-        title: 'Save Warning',
+        title: SAVE_WARNING_TITLE,
         description:
           'Your preferences could not be saved. You can continue and update them later in your profile settings.',
         variant: 'destructive',
@@ -199,7 +200,7 @@ export function ProfileOnboardingWizard({
     } else {
       // Allow progression even if save fails - this is optional data
       toast({
-        title: 'Save Warning',
+        title: SAVE_WARNING_TITLE,
         description:
           'Some information could not be saved. You can continue and update it later in your profile settings.',
         variant: 'destructive',

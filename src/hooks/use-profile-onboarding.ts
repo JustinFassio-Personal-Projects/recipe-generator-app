@@ -26,6 +26,12 @@ export interface OnboardingFormData {
 
 const STORAGE_KEY = 'onboarding_progress';
 
+// Postgres error codes
+const POSTGRES_UNIQUE_VIOLATION = '23505';
+
+// HTTP status codes
+const HTTP_CONFLICT = '409';
+
 const getDefaultData = (): OnboardingFormData => {
   return {
     dietary_restrictions: [],
@@ -208,7 +214,14 @@ export function useProfileOnboarding() {
           ? { ...formData, ...overrideData }
           : formData;
 
-        // Helper function to sanitize optional string fields: convert empty strings to null
+        /**
+         * Sanitizes optional string fields by converting empty strings to null.
+         * This prevents database CHECK constraint violations for fields that require
+         * non-empty strings or null values.
+         *
+         * @param {string | null | undefined} value - The string value to sanitize.
+         * @returns {string | null} The trimmed string if non-empty, otherwise null.
+         */
         const sanitizeString = (
           value: string | null | undefined
         ): string | null => {
@@ -217,7 +230,14 @@ export function useProfileOnboarding() {
           return trimmed === '' ? null : trimmed;
         };
 
-        // Helper function to ensure arrays are never null
+        /**
+         * Converts null or undefined array values to empty arrays to prevent database constraint violations.
+         * Ensures arrays are never null, which is required for array columns in the database.
+         *
+         * @template T
+         * @param {T[] | null | undefined} value - The array value to sanitize.
+         * @returns {T[]} The original array if not null/undefined, otherwise an empty array.
+         */
         const sanitizeArray = <T>(value: T[] | null | undefined): T[] => {
           return value && Array.isArray(value) ? value : [];
         };
@@ -278,7 +298,7 @@ export function useProfileOnboarding() {
           if (createError) {
             console.error('[Onboarding] Profile creation error:', createError);
             // If it's a conflict (profile was created between check and insert), continue
-            if (createError.code !== '23505') {
+            if (createError.code !== POSTGRES_UNIQUE_VIOLATION) {
               throw createError;
             }
           }
@@ -330,7 +350,10 @@ export function useProfileOnboarding() {
 
         if (safetyError) {
           // Handle 409 conflict - try update instead
-          if (safetyError.code === '23505' || safetyError.code === '409') {
+          if (
+            safetyError.code === POSTGRES_UNIQUE_VIOLATION ||
+            safetyError.code === HTTP_CONFLICT
+          ) {
             console.warn(
               '[Onboarding] Safety data conflict, attempting update:',
               safetyError
@@ -384,7 +407,10 @@ export function useProfileOnboarding() {
 
         if (cookingError) {
           // Handle 409 conflict - try update instead
-          if (cookingError.code === '23505' || cookingError.code === '409') {
+          if (
+            cookingError.code === POSTGRES_UNIQUE_VIOLATION ||
+            cookingError.code === HTTP_CONFLICT
+          ) {
             console.warn(
               '[Onboarding] Cooking preferences conflict, attempting update:',
               cookingError

@@ -21,7 +21,7 @@ describe('Category Schema Validation', () => {
     const baseRecipe = {
       title: 'Test Recipe',
       ingredients: ['Test ingredient'],
-      instructions: 'Test instructions',
+      instructions: ['Step 1'],
       notes: '',
     };
 

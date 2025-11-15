@@ -2,33 +2,47 @@
 @plugin 'daisyui';
 
 /* Caramellatte Theme */
-[data-theme='caramellatte'] {
-  color-scheme: light;
-  --color-primary: #3d2817;
-  --color-secondary: #6b4423;
-  --color-accent: #8b5a2b;
-  --color-neutral: #5d4037;
-  --color-base-100: #fef7ed;
-  --color-base-200: #f5e6d3;
-  --color-base-300: #e7d5c4;
-  --color-base-content: #3d2817;
-  --color-primary-content: #ffffff;
-  --color-secondary-content: #e7d5c4;
-  --color-accent-content: #e7d5c4;
-  --color-neutral-content: #fef7ed;
-  --color-info: #3abff8;
-  --color-info-content: #e7d5c4;
-  --color-success: #36d399;
-  --color-success-content: #e7d5c4;
-  --color-warning: #fbbd23;
-  --color-warning-content: #3d2817;
-  --color-error: #f87272;
-  --color-error-content: #3d2817;
+@plugin "daisyui/theme" {
+  name: 'caramellatte';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'light';
+  --color-base-100: oklch(98% 0.016 73.684);
+  --color-base-200: oklch(95% 0.038 75.164);
+  --color-base-300: oklch(90% 0.076 70.697);
+  --color-base-content: oklch(40% 0.123 38.172);
+  --color-primary: oklch(0% 0 0);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(22.45% 0.075 37.85);
+  --color-secondary-content: oklch(90% 0.076 70.697);
+  --color-accent: oklch(46.44% 0.111 37.85);
+  --color-accent-content: oklch(90% 0.076 70.697);
+  --color-neutral: oklch(55% 0.195 38.402);
+  --color-neutral-content: oklch(98% 0.016 73.684);
+  --color-info: oklch(42% 0.199 265.638);
+  --color-info-content: oklch(90% 0.076 70.697);
+  --color-success: oklch(43% 0.095 166.913);
+  --color-success-content: oklch(90% 0.076 70.697);
+  --color-warning: oklch(82% 0.189 84.429);
+  --color-warning-content: oklch(41% 0.112 45.904);
+  --color-error: oklch(70% 0.191 22.216);
+  --color-error-content: oklch(39% 0.141 25.723);
+  --radius-selector: 2rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 1;
+  --noise: 1;
 }
 
 /* Silk Theme - Custom Dark Theme */
-[data-theme='silk'] {
-  color-scheme: dark;
+@plugin "daisyui/theme" {
+  name: 'silk';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'dark';
   --color-base-100: oklch(14% 0.004 49.25);
   --color-base-200: oklch(21% 0.006 56.043);
   --color-base-300: oklch(26% 0.007 34.298);
@@ -60,26 +74,23 @@
 }
 
 /* Sanctuary Health Theme - Luxury Gold & Parchment */
-[data-theme='sanctuary-health'] {
-  color-scheme: light;
-  /* Primary: Luxury Gold (#d4af37) */
+@plugin "daisyui/theme" {
+  name: 'sanctuary-health';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'light';
   --color-primary: #d4af37;
   --color-primary-content: #1a1400;
-  /* Secondary: Warm Parchment (#f7f1d3) */
   --color-secondary: #f7f1d3;
   --color-secondary-content: #3d2817;
-  /* Accent: Rich Gold (darker shade for contrast) */
   --color-accent: #b8941f;
   --color-accent-content: #1a1400;
-  /* Neutral: Warm Gray-Brown */
   --color-neutral: #5d4e37;
   --color-neutral-content: #fef7ed;
-  /* Base: Light Parchment Background */
   --color-base-100: #fef7ed;
   --color-base-200: #f7f1d3;
   --color-base-300: #e8dfc4;
   --color-base-content: #3d2817;
-  /* Semantic Colors */
   --color-info: #3b82f6;
   --color-info-content: #ffffff;
   --color-success: #22c55e;

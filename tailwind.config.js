@@ -3,10 +3,8 @@ export default {
   content: ['./src/**/*.{ts,tsx}', './index.html'],
   plugins: [require('daisyui')],
   daisyui: {
-    themes: [
-      'caramellatte', // Register custom theme
-      'silk', // Register custom theme
-    ],
+    // Themes are defined in src/index.css using CSS plugin format (Tailwind v4)
+    // See docs/theme/DaisyUI-Theme-Guide.md for theme definitions
     base: true,
     styled: true,
     utils: true,

@@ -78,10 +78,20 @@
 
     <link href="/output.css" rel="stylesheet" />
     <title>Recipe Generator</title>
+    <!-- Set theme immediately before React loads to prevent flash -->
+    <script>
+      // Set default theme immediately to prevent flash of unstyled content
+      (function () {
+        const storedTheme = localStorage.getItem('theme');
+        const defaultTheme = 'caramellatte';
+        const theme = storedTheme || defaultTheme;
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Theme is applied by ThemeProvider component -->
+    <!-- Theme is applied by TenantProvider component, but set early above to prevent flash -->
   </body>
 </html>

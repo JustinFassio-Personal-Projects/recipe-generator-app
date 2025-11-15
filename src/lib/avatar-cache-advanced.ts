@@ -71,9 +71,31 @@ class AdvancedAvatarCache {
     }
 
     try {
-      const registration =
-        await navigator.serviceWorker.register('/sw-avatar.js');
+      // Unregister any existing service workers first to prevent conflicts
+      const existingRegistrations =
+        await navigator.serviceWorker.getRegistrations();
+      for (const registration of existingRegistrations) {
+        // Only unregister if it's the avatar service worker
+        if (
+          registration.scope.includes('/sw-avatar.js') ||
+          registration.active?.scriptURL.includes('sw-avatar')
+        ) {
+          await registration.unregister();
+          console.log('Unregistered old avatar service worker');
+        }
+      }
+
+      // Register new service worker
+      const registration = await navigator.serviceWorker.register(
+        '/sw-avatar.js',
+        {
+          updateViaCache: 'none', // Always check for updates
+        }
+      );
       console.log('Avatar cache service worker registered:', registration);
+
+      // Check for updates immediately
+      registration.update();
     } catch (error) {
       console.warn('Failed to register avatar cache service worker:', error);
     }

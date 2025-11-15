@@ -8,7 +8,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 
 export function useTermsAcceptance() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [needsAcceptance, setNeedsAcceptance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -19,7 +19,34 @@ export function useTermsAcceptance() {
   // Track which user we've checked to prevent re-checking on profile updates
   const checkedUserIdRef = useRef<string | null>(null);
 
+  // Timeout protection - prevent infinite loading
   useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.warn(
+          '[useTermsAcceptance] Loading timeout - forcing completion'
+        );
+        setIsLoading(false);
+        setNeedsAcceptance(false);
+      }
+    }, 15000); // 15 second timeout
+
+    return () => clearTimeout(timeoutId);
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[useTermsAcceptance] useEffect RAN', {
+        isAccepting,
+        acceptanceInProgress: acceptanceInProgressRef.current,
+        authLoading,
+        hasUser: !!user,
+        hasProfile: !!profile,
+        profileTerms: profile?.terms_version_accepted,
+        profilePrivacy: profile?.privacy_version_accepted,
+      });
+    }
+
     // Don't recalculate while accepting terms to prevent race conditions
     if (isAccepting || acceptanceInProgressRef.current) {
       if (import.meta.env.DEV) {
@@ -32,6 +59,11 @@ export function useTermsAcceptance() {
 
     // Wait for auth to finish loading before making decisions
     if (authLoading) {
+      if (import.meta.env.DEV) {
+        console.log(
+          '[useTermsAcceptance] Waiting for auth to load, keeping isLoading=true'
+        );
+      }
       setIsLoading(true);
       return;
     }
@@ -51,13 +83,42 @@ export function useTermsAcceptance() {
     }
 
     // CRITICAL FIX: Only check once per user session to prevent infinite loops
-    // If we've already checked this user's terms, don't check again
-    if (checkedUserIdRef.current === user.id) {
+    // But allow re-evaluation when terms acceptance data becomes available
+    // (e.g., when detailed profile loads after immediate profile)
+    //
+    // PROGRESSIVE LOADING WORKAROUND: Check if profile has terms data loaded.
+    // This allows re-evaluation when detailed profile loads after immediate profile.
+    //
+    // EDGE CASE RISK: This creates a subtle dependency on data presence (not just value).
+    // If terms data becomes null unexpectedly (e.g., database migration, data reset, bugs),
+    // the hook will re-evaluate even for already-checked users. This is acceptable for the
+    // progressive loading pattern but could cause issues if terms data is cleared for other reasons.
+    //
+    // FUTURE REFACTOR: Consider adding explicit 'isDetailedProfile' flag to Profile type
+    // to make this dependency more explicit and robust.
+    const hasTermsData =
+      profile.terms_version_accepted !== null ||
+      profile.privacy_version_accepted !== null;
+
+    // CRITICAL FIX: Wait for database profile to load before making ANY decision
+    // If profile doesn't have terms data yet, keep loading - don't show terms dialog prematurely
+    if (!hasTermsData) {
       if (import.meta.env.DEV) {
         console.log(
-          '[useTermsAcceptance] Already checked terms for this user session'
+          '[useTermsAcceptance] Profile loaded but no terms data yet - waiting for database profile'
         );
       }
+      setIsLoading(true);
+      return;
+    }
+
+    if (checkedUserIdRef.current === user.id && hasTermsData) {
+      if (import.meta.env.DEV) {
+        console.log(
+          '[useTermsAcceptance] Already checked terms for this user session with full data'
+        );
+      }
+      setIsLoading(false);
       return;
     }
 
@@ -88,7 +149,15 @@ export function useTermsAcceptance() {
 
     setNeedsAcceptance(needsToAccept);
     setIsLoading(false);
-  }, [user?.id, profile, isAccepting, authLoading]);
+  }, [
+    user?.id,
+    profile,
+    isAccepting,
+    authLoading,
+    // Also depend on terms acceptance fields to re-evaluate when profile loads from database
+    profile?.terms_version_accepted,
+    profile?.privacy_version_accepted,
+  ]);
 
   const acceptTerms = async () => {
     if (!user) {
@@ -124,9 +193,55 @@ export function useTermsAcceptance() {
           variant: 'success',
         });
 
-        // Don't call refreshProfile here - it triggers the useEffect which recalculates needsAcceptance
-        // The database has been updated successfully, and we've optimistically set needsAcceptance to false
-        // The profile will be refreshed naturally on the next page load or navigation
+        // Refresh profile to get updated terms acceptance data from database
+        // This ensures the profile context has the latest data
+        try {
+          // DON'T clear checkedUserIdRef here - keep the guard active during refresh!
+          // We'll update it in the callback once we confirm the updated profile
+
+          await refreshProfile((updatedProfile) => {
+            if (import.meta.env.DEV) {
+              console.log(
+                '[useTermsAcceptance] Profile refreshed after terms acceptance',
+                {
+                  termsAcceptedAt: updatedProfile?.terms_accepted_at,
+                  termsVersion: updatedProfile?.terms_version_accepted,
+                  privacyAcceptedAt: updatedProfile?.privacy_accepted_at,
+                  privacyVersion: updatedProfile?.privacy_version_accepted,
+                }
+              );
+            }
+
+            // Mark user as checked now that we have the updated profile
+            // Only clear flags AFTER we confirm the profile has terms data
+            if (
+              updatedProfile &&
+              updatedProfile.terms_version_accepted === CURRENT_TERMS_VERSION
+            ) {
+              checkedUserIdRef.current = user.id;
+              // Clear flags here, inside the callback, after confirming success
+              acceptanceInProgressRef.current = false;
+              setIsAccepting(false);
+            } else {
+              // Profile didn't have expected terms data - something went wrong
+              console.error(
+                '[useTermsAcceptance] Profile refresh completed but terms not found'
+              );
+              acceptanceInProgressRef.current = false;
+              setIsAccepting(false);
+            }
+          });
+        } catch (refreshError) {
+          // Don't fail the acceptance if refresh fails - the database is already updated
+          console.error(
+            '[useTermsAcceptance] Profile refresh failed after acceptance:',
+            refreshError
+          );
+
+          // Clear the flags even on error
+          acceptanceInProgressRef.current = false;
+          setIsAccepting(false);
+        }
 
         return { success: true };
       } else {
@@ -135,6 +250,11 @@ export function useTermsAcceptance() {
           description: error?.message || 'Failed to accept terms',
           variant: 'destructive',
         });
+
+        // Clear flags on failure
+        setIsAccepting(false);
+        acceptanceInProgressRef.current = false;
+
         return { success: false };
       }
     } catch {
@@ -143,10 +263,12 @@ export function useTermsAcceptance() {
         description: 'An unexpected error occurred',
         variant: 'destructive',
       });
-      return { success: false };
-    } finally {
+
+      // Clear flags on unexpected error
       setIsAccepting(false);
       acceptanceInProgressRef.current = false;
+
+      return { success: false };
     }
   };
 

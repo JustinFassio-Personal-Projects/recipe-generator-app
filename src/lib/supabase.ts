@@ -44,9 +44,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
   console.error('Please configure these in your environment variables.');
 
-  throw new Error(
-    'Missing Supabase environment variables. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.'
-  );
+  // In development, use fallback values to prevent app crash
+  // This allows the app to load and show proper error messages
+  if (import.meta.env.DEV) {
+    console.warn('⚠️ Using fallback Supabase URL for development');
+    supabaseUrl = supabaseUrl || 'http://localhost:54321';
+    // Note: If supabaseAnonKey is missing, queries will fail but app won't crash
+    console.warn(
+      '⚠️ App will load but database operations will fail until env vars are set'
+    );
+  } else {
+    // In production, throw error to fail fast
+    throw new Error(
+      'Missing Supabase environment variables. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.'
+    );
+  }
 }
 
 // Create Supabase client with optimized configuration for production

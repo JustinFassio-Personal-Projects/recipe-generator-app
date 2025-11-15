@@ -351,7 +351,7 @@ export default function ExplorePage() {
           <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             {/* Sort by label */}
             <div className="flex items-center">
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-base-content">
                 Sort by:
               </span>
             </div>

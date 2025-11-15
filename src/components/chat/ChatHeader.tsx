@@ -43,16 +43,16 @@ export function ChatHeader({
   const getPersonaColor = (persona: PersonaType) => {
     switch (persona) {
       case 'chef':
-        return 'bg-orange-100 text-orange-600';
+        return 'bg-warning/20 text-warning';
       case 'nutritionist':
-        return 'bg-green-100 text-green-600';
+        return 'bg-success/20 text-success';
       case 'homeCook':
-        return 'bg-blue-100 text-blue-600';
+        return 'bg-info/20 text-info';
       case 'assistantNutritionist':
       case 'jamieBrightwell':
-        return 'bg-gradient-to-br from-purple-100 to-blue-100 text-purple-600';
+        return 'bg-accent/20 text-accent';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-base-200 text-base-content';
     }
   };
 
@@ -68,10 +68,10 @@ export function ChatHeader({
             </div>
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">
+            <h2 className="font-semibold text-base-content">
               {RECIPE_BOT_PERSONAS[selectedPersona].name}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-base-content/70">
               Let's create something delicious together!
             </p>
           </div>
@@ -81,14 +81,14 @@ export function ChatHeader({
         <div className="hidden items-center space-x-2 md:flex">
           <Button
             variant="outline"
-            className="border-green-600 text-green-600 hover:bg-green-50"
+            className="border-success text-success hover:bg-success/10"
             onClick={onNewRecipe}
           >
             New Recipe
           </Button>
           <Button
             variant="outline"
-            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+            className="border-warning text-warning hover:bg-warning/10"
             onClick={onChangeAssistant}
           >
             Change Assistant
@@ -115,7 +115,7 @@ export function ChatHeader({
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="bg-base-100 absolute top-full right-0 left-0 z-50 border-b border-gray-200 shadow-lg md:hidden"
+          className="bg-base-100 absolute top-full right-0 left-0 z-50 border-b border-base-300 shadow-lg md:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Mobile menu"
@@ -130,7 +130,7 @@ export function ChatHeader({
                 onNewRecipe();
                 closeMobileMenu();
               }}
-              className="w-full justify-start border-green-600 text-green-600 hover:bg-green-50"
+              className="w-full justify-start border-success text-success hover:bg-success/10"
             >
               New Recipe
             </Button>
@@ -140,7 +140,7 @@ export function ChatHeader({
                 onChangeAssistant();
                 closeMobileMenu();
               }}
-              className="w-full justify-start border-orange-500 text-orange-600 hover:bg-orange-50"
+              className="w-full justify-start border-warning text-warning hover:bg-warning/10"
             >
               Change Assistant
             </Button>

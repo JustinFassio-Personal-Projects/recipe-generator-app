@@ -142,17 +142,17 @@ export function ChatInterface({
   const getPersonaColor = (personaType: PersonaType) => {
     switch (personaType) {
       case 'chef':
-        return 'bg-orange-100 text-orange-600';
+        return 'bg-warning/20 text-warning';
       case 'nutritionist':
-        return 'bg-green-100 text-green-600';
+        return 'bg-success/20 text-success';
       case 'homeCook':
-        return 'bg-blue-100 text-blue-600';
+        return 'bg-info/20 text-info';
       case 'assistantNutritionist':
       case 'jamieBrightwell':
       case 'drLunaClearwater':
-        return 'bg-gradient-to-br from-purple-100 to-blue-100 text-purple-600';
+        return 'bg-accent/20 text-accent';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-base-200 text-base-content';
     }
   };
 
@@ -252,10 +252,10 @@ export function ChatInterface({
       {/* Cuisine & Category Selector */}
       <div className="bg-base-100 border-t border-b p-4">
         <div className="max-w-4xl mx-auto">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
+          <h3 className="text-sm font-medium text-base-content mb-3">
             🎯 Recipe Preferences (Optional)
           </h3>
-          <p className="text-xs text-gray-500 mb-3">
+          <p className="text-xs text-base-content/70 mb-3">
             Select categories, cuisines, and moods to help guide your AI
             assistant in creating the perfect recipe
           </p>
@@ -280,7 +280,7 @@ export function ChatInterface({
         ref={scrollAreaRef}
         className={`${createDaisyUIScrollAreaClasses(
           'default',
-          'bg-gray-50 p-4'
+          'bg-base-200 p-4'
         )} ${
           messages.length === 0
             ? 'min-h-[150px] max-h-[250px] sm:min-h-[200px] sm:max-h-[300px]' // Compact when empty
@@ -299,14 +299,14 @@ export function ChatInterface({
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">
+                <h3 className="text-lg font-semibold text-base-content">
                   {getPersonaIntroduction(persona).title}
                 </h3>
-                <p className="text-sm text-gray-600 max-w-md">
+                <p className="text-sm text-base-content/80 max-w-md">
                   {getPersonaIntroduction(persona).description}
                 </p>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-base-content/70">
                 {getPersonaIntroduction(persona).guidance}
               </p>
             </div>
@@ -327,13 +327,13 @@ export function ChatInterface({
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-sm ${
                   message.role === 'user'
-                    ? 'bg-green-100'
+                    ? 'bg-success/20'
                     : getPersonaColor(persona)
                 }`}
               >
                 <div
                   className={`flex items-center justify-center ${
-                    message.role === 'user' ? 'text-green-600' : ''
+                    message.role === 'user' ? 'text-success' : ''
                   }`}
                 >
                   {message.role === 'user' ? (
@@ -347,7 +347,7 @@ export function ChatInterface({
               <div
                 className={`${createDaisyUICardClasses('bordered')} max-w-[80%] ${
                   message.role === 'user'
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-success text-success-content'
                     : 'bg-base-100'
                 }`}
               >
@@ -358,8 +358,8 @@ export function ChatInterface({
                   <div
                     className={`mt-2 text-xs ${
                       message.role === 'user'
-                        ? 'text-green-100'
-                        : 'text-gray-500'
+                        ? 'text-success-content/80'
+                        : 'text-base-content/70'
                     }`}
                   >
                     {message.timestamp.toLocaleTimeString([], {
@@ -386,8 +386,8 @@ export function ChatInterface({
               >
                 <div className="card-body p-3">
                   <div className="flex items-center space-x-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                    <span className="text-sm text-gray-600">
+                    <Loader2 className="h-4 w-4 animate-spin text-warning" />
+                    <span className="text-sm text-base-content/80">
                       {RECIPE_BOT_PERSONAS[persona].name} is thinking...
                     </span>
                   </div>
@@ -405,7 +405,7 @@ export function ChatInterface({
             .map((m) => `${m.role}: ${m.content}`)
             .join('\n\n')}
           onRecipeParsed={onRecipeGenerated}
-          className="bg-gradient-to-r from-green-50 to-blue-50 border-t"
+          className="bg-gradient-to-r from-success/10 to-info/10 border-t"
           persona={persona}
           onGenerateReport={generateEvaluationReport}
           onSaveReport={saveEvaluationReport}
@@ -439,12 +439,12 @@ export function ChatInterface({
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
             size="sm"
-            className="bg-green-600 hover:bg-green-700 min-h-[44px] px-4"
+            className="bg-success hover:bg-success/90 min-h-[44px] px-4"
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-base-content/70">
           Press Enter to send, or Shift+Enter for a new line
         </p>
       </div>

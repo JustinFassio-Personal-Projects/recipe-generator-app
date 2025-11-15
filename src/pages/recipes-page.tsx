@@ -70,7 +70,7 @@ export function RecipesPage() {
               <h2 className="mb-2 text-xl font-semibold">
                 Something went wrong
               </h2>
-              <p className="mb-4 text-gray-600">
+              <p className="mb-4 text-base-content/80">
                 We couldn't load your recipes. Please try refreshing the page.
               </p>
               <Button onClick={() => window.location.reload()}>
@@ -159,9 +159,9 @@ export function RecipesPage() {
               className={`${createDaisyUICardClasses('bordered')} mx-auto max-w-md`}
             >
               <div className="card-body">
-                <ChefHat className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                <ChefHat className="mx-auto mb-4 h-12 w-12 text-base-content/40" />
                 <h3 className="mb-2 text-lg font-semibold">No recipes found</h3>
-                <p className="mb-4 text-gray-600">
+                <p className="mb-4 text-base-content/80">
                   {filters.searchTerm ||
                   filters.categories?.length ||
                   filters.cuisine?.length ||

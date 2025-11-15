@@ -64,20 +64,20 @@ export function ChatRecipeWelcome({
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-orange-100 to-teal-100">
-          <ChefHat className="h-8 w-8 text-orange-600" />
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-warning/20 to-info/20">
+          <ChefHat className="h-8 w-8 text-warning" />
         </div>
-        <h2 className="mb-2 text-2xl font-bold text-orange-600">
+        <h2 className="mb-2 text-2xl font-bold text-warning">
           👨‍🍳 Choose Your Cooking Guide
         </h2>
-        <p className="text-teal-600">
+        <p className="text-info">
           Select a chef personality to guide your recipe creation
         </p>
       </div>
 
       {/* Chef Selection */}
       <div className="space-y-3">
-        <p className="text-center font-medium text-gray-500">
+        <p className="text-center font-medium text-base-content/70">
           Who would you like to cook with today?
         </p>
 
@@ -88,8 +88,8 @@ export function ChatRecipeWelcome({
               onClick={() => setSelectedChef(chef.id)}
               className={`w-full rounded-lg border-2 p-4 text-left transition-all ${
                 selectedChef === chef.id
-                  ? 'border-orange-500 bg-orange-50 shadow-md'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                  ? 'border-warning bg-warning/10 shadow-md'
+                  : 'border-base-300 bg-base-100 hover:border-base-content/20 hover:shadow-sm'
               }`}
             >
               <div className="flex items-start gap-4">
@@ -100,20 +100,22 @@ export function ChatRecipeWelcome({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900">{chef.name}</h3>
-                    <span className="text-sm text-gray-500">-</span>
-                    <span className="text-sm font-medium text-gray-600">
+                    <h3 className="font-semibold text-base-content">
+                      {chef.name}
+                    </h3>
+                    <span className="text-sm text-base-content/70">-</span>
+                    <span className="text-sm font-medium text-base-content/80">
                       {chef.title}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-sm text-base-content/80">
                     {chef.description}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {chef.specialties.map((specialty) => (
                       <span
                         key={specialty}
-                        className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                        className="rounded-full bg-base-200 px-2 py-1 text-xs text-base-content/80"
                       >
                         {specialty}
                       </span>
@@ -121,7 +123,7 @@ export function ChatRecipeWelcome({
                   </div>
                 </div>
                 {selectedChef === chef.id && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-white">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-warning text-warning-content">
                     <Heart className="h-4 w-4 fill-current" />
                   </div>
                 )}
@@ -139,7 +141,7 @@ export function ChatRecipeWelcome({
         <Button
           onClick={handleContinue}
           disabled={!selectedChef}
-          className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 py-6"
+          className="flex-1 bg-warning text-warning-content hover:bg-warning/90 disabled:opacity-50 py-6"
         >
           {selectedChef
             ? `Start Cooking with ${CHEF_PERSONALITIES.find((c) => c.id === selectedChef)?.name}!`

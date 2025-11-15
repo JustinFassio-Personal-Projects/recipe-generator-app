@@ -8,7 +8,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 
 export function useTermsAcceptance() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const [needsAcceptance, setNeedsAcceptance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -19,9 +19,22 @@ export function useTermsAcceptance() {
       return;
     }
 
-    if (!user || !profile) {
+    // Wait for auth to finish loading before making decisions
+    if (authLoading) {
+      setIsLoading(true);
+      return;
+    }
+
+    // If no user, we're definitely not loading and don't need acceptance
+    if (!user) {
       setIsLoading(false);
       setNeedsAcceptance(false);
+      return;
+    }
+
+    // If user exists but profile is null, profile is still loading
+    if (!profile) {
+      setIsLoading(true);
       return;
     }
 
@@ -36,7 +49,7 @@ export function useTermsAcceptance() {
 
     setNeedsAcceptance(needsToAccept);
     setIsLoading(false);
-  }, [user, profile, isAccepting]);
+  }, [user, profile, isAccepting, authLoading]);
 
   const acceptTerms = async () => {
     if (!user) {

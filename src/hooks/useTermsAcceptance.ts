@@ -14,6 +14,11 @@ export function useTermsAcceptance() {
   const [isAccepting, setIsAccepting] = useState(false);
 
   useEffect(() => {
+    // Don't recalculate while accepting terms to prevent race conditions
+    if (isAccepting) {
+      return;
+    }
+
     if (!user || !profile) {
       setIsLoading(false);
       setNeedsAcceptance(false);
@@ -31,7 +36,7 @@ export function useTermsAcceptance() {
 
     setNeedsAcceptance(needsToAccept);
     setIsLoading(false);
-  }, [user, profile]);
+  }, [user, profile, isAccepting]);
 
   const acceptTerms = async () => {
     if (!user) {
@@ -52,14 +57,42 @@ export function useTermsAcceptance() {
       );
 
       if (success) {
+        // Optimistically set needsAcceptance to false
         setNeedsAcceptance(false);
+
         toast({
           title: 'Success',
           description: 'Terms and Privacy Policy accepted',
           variant: 'success',
         });
+
         // Refresh profile to get updated terms acceptance data
-        await refreshProfile();
+        // Use a promise to ensure refresh completes before releasing the lock
+        await new Promise<void>((resolve) => {
+          refreshProfile((updatedProfile) => {
+            // Verify the profile was actually updated
+            if (updatedProfile) {
+              const termsMatch =
+                updatedProfile.terms_version_accepted === CURRENT_TERMS_VERSION;
+              const privacyMatch =
+                updatedProfile.privacy_version_accepted ===
+                CURRENT_PRIVACY_VERSION;
+
+              if (!termsMatch || !privacyMatch) {
+                // If profile still doesn't match, force one more refresh
+                console.warn('Profile refresh incomplete, retrying...');
+                setTimeout(() => {
+                  refreshProfile(() => resolve());
+                }, 500);
+              } else {
+                resolve();
+              }
+            } else {
+              resolve();
+            }
+          });
+        });
+
         return { success: true };
       } else {
         toast({

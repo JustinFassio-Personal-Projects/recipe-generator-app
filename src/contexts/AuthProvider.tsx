@@ -49,8 +49,13 @@ function createMinimalProfile(userId: string): Profile {
 
 /**
  * Creates an immediate profile from user metadata for instant loading
+ * @param user - The authenticated user
+ * @param preserveTermsFrom - Optional existing profile to preserve terms data from during refresh
  */
-function createImmediateProfile(user: User): Profile {
+function createImmediateProfile(
+  user: User,
+  preserveTermsFrom?: Profile | null
+): Profile {
   return {
     id: user.id,
     username: null,
@@ -69,10 +74,12 @@ function createImmediateProfile(user: User): Profile {
     visit_count: 0,
     last_visit_at: null,
     show_welcome_popup: true,
-    terms_accepted_at: null,
-    terms_version_accepted: null,
-    privacy_accepted_at: null,
-    privacy_version_accepted: null,
+    // CRITICAL: Preserve terms data from existing profile during refresh to prevent modal flashing
+    terms_accepted_at: preserveTermsFrom?.terms_accepted_at ?? null,
+    terms_version_accepted: preserveTermsFrom?.terms_version_accepted ?? null,
+    privacy_accepted_at: preserveTermsFrom?.privacy_accepted_at ?? null,
+    privacy_version_accepted:
+      preserveTermsFrom?.privacy_version_accepted ?? null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -236,6 +243,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     timestamp: number;
   }>({ promise: null, completed: false, timestamp: 0 });
 
+  // Track if a profile refresh is currently in progress to prevent race conditions
+  const refreshInProgress = useRef(false);
+  const lastRefreshCompletedAt = useRef<number>(0);
+
   // Backoff delays: 1s, 2s, 4s
   const getBackoffDelay = (attempt: number): number =>
     Math.min(1000 * Math.pow(2, attempt), 4000);
@@ -322,6 +333,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: data.id,
             username: data.username,
             full_name: data.full_name,
+            terms_accepted_at: data.terms_accepted_at,
+            terms_version_accepted: data.terms_version_accepted,
+            privacy_accepted_at: data.privacy_accepted_at,
+            privacy_version_accepted: data.privacy_version_accepted,
             usernameType: typeof data.username,
             usernameIsNull: data.username === null,
             usernameIsUndefined: data.username === undefined,
@@ -419,14 +434,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       logger.auth(`🔐 Refreshing profile for user: ${user.id}`);
 
+      // CRITICAL FIX: Prevent race conditions from multiple simultaneous refreshes
+      // If a refresh is already in progress, skip this one
+      if (refreshInProgress.current) {
+        logger.debug(
+          '⏭️ Refresh already in progress - skipping duplicate refresh call'
+        );
+        return;
+      }
+
+      // Mark refresh as in progress
+      refreshInProgress.current = true;
+
       // Clear cache for this user to force fresh data
       logger.db('🗑️ Clearing profile cache for user');
       profileCache.current.delete(user.id);
 
-      // PHASE 4.4: Progressive refresh - immediate profile first, then detailed
-      const immediateProfile = createImmediateProfile(user);
-      setProfile(immediateProfile);
-      logger.success('✅ Immediate profile set during refresh');
+      // CRITICAL FIX: Don't replace existing profile during refresh
+      // Setting immediate profile during refresh can cause race conditions with terms acceptance
+      // If we already have a profile, keep it while we fetch the updated one
+      // Also skip if a refresh completed very recently AND we have terms data (to prevent loop after acceptance)
+      const timeSinceLastRefresh = Date.now() - lastRefreshCompletedAt.current;
+      const recentRefresh = timeSinceLastRefresh < 2000;
+      const hasTermsData =
+        profile?.terms_version_accepted !== null ||
+        profile?.privacy_version_accepted !== null;
+
+      // Create immediate profile variable outside conditional for error handling
+      let immediateProfile: Profile | null = null;
+
+      // Only skip immediate profile if:
+      // 1. We already have a profile, OR
+      // 2. A refresh just completed AND we have terms data (prevents loop after acceptance)
+      if (!profile && !(recentRefresh && hasTermsData)) {
+        immediateProfile = createImmediateProfile(user);
+        setProfile(immediateProfile);
+        logger.success('✅ Immediate profile set during refresh');
+      } else if (recentRefresh && hasTermsData) {
+        logger.debug(
+          `⏭️ Skipping immediate profile - recent refresh with terms data completed ${timeSinceLastRefresh}ms ago`
+        );
+      } else {
+        // Keep the existing profile - don't create an immediate profile that might lose data
+        logger.debug(
+          '⏭️ Keeping existing profile during refresh (no immediate profile needed)'
+        );
+      }
 
       // Fetch detailed profile in background
       try {
@@ -452,6 +505,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.error('Detailed profile refresh failed:', refreshError);
         logger.success('✅ Using immediate profile as fallback');
         onComplete?.(immediateProfile);
+      } finally {
+        // CRITICAL: Clear refresh flag and record completion time to prevent race conditions
+        refreshInProgress.current = false;
+        lastRefreshCompletedAt.current = Date.now();
+        logger.debug('🔓 Refresh completed - cleared refresh lock');
       }
     },
     [user?.id, fetchProfile, logger]
@@ -564,9 +622,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 );
               }
 
-              if (isMounted) {
-                logger.db(`Initial profile fetch result: ${!!profileData}`);
-                setProfile(profileData);
+              // CRITICAL FIX: Always call setProfile, even if component unmounted
+              // React will safely ignore state updates on unmounted components
+              // But if the component remounted, we NEED this update to propagate
+              logger.db(`Initial profile fetch result: ${!!profileData}`);
+              setProfile(profileData);
+
+              if (import.meta.env.DEV) {
+                console.log('[AuthProvider] setProfile CALLED:', {
+                  isMounted,
+                  username: profileData?.username,
+                  terms: profileData?.terms_version_accepted,
+                  privacy: profileData?.privacy_version_accepted,
+                });
               }
             } catch (profileError) {
               logger.error('Initial profile fetch failed:', profileError);
@@ -677,6 +745,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   }
 
                   // Only update if we got detailed data and component is still mounted
+                  console.log('[AuthProvider] After fetchProfile:', {
+                    hasDetailedProfile: !!detailedProfileData,
+                    isMounted,
+                    termsAccepted: detailedProfileData?.terms_accepted_at,
+                    termsVersion: detailedProfileData?.terms_version_accepted,
+                  });
+
                   if (detailedProfileData && isMounted) {
                     setProfile(detailedProfileData);
                     logger.success(
@@ -685,6 +760,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   } else if (isMounted) {
                     logger.warn(
                       '⚠️ Detailed profile fetch returned null - keeping immediate profile'
+                    );
+                  } else {
+                    logger.warn(
+                      '⚠️ Component unmounted before detailed profile could be set'
                     );
                   }
                 } catch (profileError) {

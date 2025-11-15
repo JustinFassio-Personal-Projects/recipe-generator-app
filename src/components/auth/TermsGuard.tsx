@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useTermsAcceptance } from '@/hooks/useTermsAcceptance';
@@ -12,9 +12,38 @@ interface TermsGuardProps {
 export function TermsGuard({ children }: TermsGuardProps) {
   const { needsAcceptance, isLoading, isAccepting, acceptTerms } =
     useTermsAcceptance();
-  const { signOut } = useAuth();
+  const { signOut, user, profile } = useAuth();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  if (import.meta.env.DEV) {
+    console.log('[TermsGuard] RENDER', {
+      hasUser: !!user,
+      hasProfile: !!profile,
+      profileTerms: profile?.terms_version_accepted,
+      isLoading,
+      needsAcceptance,
+    });
+  }
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[TermsGuard] Component MOUNTED');
+      return () => {
+        console.log('[TermsGuard] Component UNMOUNTED');
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[TermsGuard] State changed:', {
+        isLoading,
+        needsAcceptance,
+        isAccepting,
+      });
+    }
+  }, [isLoading, needsAcceptance, isAccepting]);
 
   const handleSignOut = async () => {
     try {

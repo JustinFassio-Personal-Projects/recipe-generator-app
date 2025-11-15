@@ -64,14 +64,13 @@ export const recipeApi = {
       // This prevents SQL injection while maintaining search functionality
       const searchTerm = filters.searchTerm.trim().replace(/[%_\\]/g, '\\$&'); // Escape LIKE wildcards
 
-      // Search in title, instructions (now array), and ingredients (array)
-      // For arrays, use array_to_string to search within array elements
+      // Search in title, instructions (array), and ingredients (array)
+      // For instructions array, use the search_instructions_array function to search within array elements
+      // For ingredients, use cs (contains) operator for array search
+      // Note: PostgREST function calls in filters require proper quoting for string parameters
       query = query.or(
-        `title.ilike.%${searchTerm}%,ingredients.cs.{${searchTerm}}`
+        `title.ilike.%${searchTerm}%,ingredients.cs.{${searchTerm}},search_instructions_array(instructions,"${searchTerm}").eq.true`
       );
-      // For instructions array, we need to search within array elements
-      // Supabase doesn't support direct ilike on arrays, so we'll search in a different way
-      // Note: This is a simplified search - full-text search on arrays would require a different approach
     }
 
     // Apply category filter

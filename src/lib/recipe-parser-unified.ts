@@ -434,14 +434,15 @@ function normalizeInstructions(instructions: unknown): string[] {
     return [];
   }
 
-  // Split by periods (.) followed by space or newline
+  // Split by periods (.) followed by space, newline, or end of string
   // This handles "Step 1. Do this. Step 2. Do that."
   if (instructionsStr.includes('.')) {
-    // Split by period followed by space or newline
+    // Split by period followed by space, newline, or end of string
+    // Uses lookahead (?=\s+|\n+|$) to avoid capturing delimiter in split result
     const steps = instructionsStr
-      .split(/\.(\s+|\n+)/)
+      .split(/\.(?=\s+|\n+|$)/)
       .map((step) => step.trim())
-      .filter((step) => step.length > 0 && step !== '.');
+      .filter((step) => step.length > 0);
 
     // If we got reasonable results, return them
     if (steps.length > 0) {

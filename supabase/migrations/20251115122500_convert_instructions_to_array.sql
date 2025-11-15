@@ -16,11 +16,12 @@ SET instructions_array = CASE
   
   -- If instructions contains periods, split by periods
   WHEN instructions ~ '\.' THEN 
-    -- Split by period followed by space or newline, then clean up
+    -- Split by period followed by space, newline, or end of string, then clean up
+    -- Uses positive lookahead (?=\s|\n|$) to match periods at end of string too
     array_remove(
       array(
         SELECT trim(unnest(string_to_array(
-          regexp_replace(instructions, '\.(\s|\n)', '|||SPLIT|||', 'g'),
+          regexp_replace(instructions, '\.(?=\s|\n|$)', '|||SPLIT|||', 'g'),
           '|||SPLIT|||'
         )))
       )),
@@ -74,7 +75,7 @@ BEGIN
         array_remove(
           array(
             SELECT trim(unnest(string_to_array(
-              regexp_replace(instructions, '\.(\s|\n)', '|||SPLIT|||', 'g'),
+              regexp_replace(instructions, '\.(?=\s|\n|$)', '|||SPLIT|||', 'g'),
               '|||SPLIT|||'
             )))
           )),

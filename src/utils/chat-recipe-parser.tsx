@@ -99,10 +99,11 @@ export function parseInstructionsFromText(text: string): {
       // Split by periods (.) if the line contains periods
       // This handles "Step 1. Do this. Step 2. Do that."
       if (line.includes('.')) {
+        // Use lookahead to avoid capturing whitespace in split result
         const periodSteps = line
-          .split(/\.(\s+)/)
+          .split(/\.(?=\s+|$)/)
           .map((step) => step.trim())
-          .filter((step) => step.length > 0 && step !== '.');
+          .filter((step) => step.length > 0);
 
         for (const step of periodSteps) {
           const cleanedStep = step.replace(/^\d+\.\s*/, '').trim();

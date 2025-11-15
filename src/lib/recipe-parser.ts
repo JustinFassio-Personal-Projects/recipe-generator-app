@@ -12,6 +12,58 @@ import {
 } from './recipe-standardizer';
 import { generateRecipeDescription } from './description-utils';
 
+/**
+ * Extract a complete JSON object from text that may contain conversational content
+ * Uses brace matching to find the outermost complete JSON object
+ */
+function extractCompleteJSONObject(text: string): string | null {
+  const firstBrace = text.indexOf('{');
+  if (firstBrace === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escapeNext = false;
+  const startPos = firstBrace;
+
+  for (let i = firstBrace; i < text.length; i++) {
+    const char = text[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escapeNext = true;
+      continue;
+    }
+
+    if (char === '"' && !escapeNext) {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) {
+      continue;
+    }
+
+    if (char === '{') {
+      depth++;
+    } else if (char === '}') {
+      depth--;
+      if (depth === 0) {
+        // Found the closing brace for the outermost object
+        return text.substring(startPos, i + 1);
+      }
+    }
+  }
+
+  // If we get here, we didn't find a complete JSON object
+  return null;
+}
+
 // Convert markdown formatting to plain text
 function convertMarkdownToPlainText(text: string): string {
   return (
@@ -71,10 +123,24 @@ export async function parseRecipeFromText(text: string): Promise<ParsedRecipe> {
       const jsonBlockMatch = cleanedText.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonBlockMatch) {
         jsonText = jsonBlockMatch[1];
+      } else {
+        // Try to extract complete JSON object from text that might have conversational content
+        // Use brace matching to find complete JSON objects
+        const extractedJson = extractCompleteJSONObject(jsonText);
+        if (!extractedJson) {
+          throw new Error('Could not extract valid JSON object');
+        }
+        jsonText = extractedJson;
+      }
+
+      // Validate that we have something that looks like JSON before parsing
+      const trimmedJson = jsonText.trim();
+      if (!trimmedJson.startsWith('{') || !trimmedJson.endsWith('}')) {
+        throw new Error('Content does not appear to be valid JSON');
       }
 
       // Try to parse as JSON first
-      const parsed = JSON.parse(jsonText);
+      const parsed = JSON.parse(trimmedJson);
       const jsonRecipe = parseJsonRecipe(parsed);
 
       // Ensure setup field exists for JSON recipes
@@ -83,7 +149,16 @@ export async function parseRecipeFromText(text: string): Promise<ParsedRecipe> {
         setup: jsonRecipe.setup || [],
       };
     } catch (err) {
-      console.error('JSON parsing failed, trying AI standardization:', err);
+      // Silently fall through to AI standardization - this is expected for non-JSON or malformed JSON content
+      // SyntaxErrors are expected when content is not valid JSON or is malformed
+      // Only log unexpected errors (not SyntaxErrors from JSON parsing)
+      if (!(err instanceof SyntaxError)) {
+        console.error(
+          'JSON parsing failed with non-syntax error, trying AI standardization:',
+          err
+        );
+      }
+      // For SyntaxErrors, silently fall through - this is expected behavior
     }
   }
 
@@ -250,7 +325,7 @@ function parseIngredients(ingredients: unknown): string[] {
   });
 }
 
-function parseInstructions(parsed: Record<string, unknown>): string {
+function parseInstructions(parsed: Record<string, unknown>): string[] {
   const instructionParts: string[] = [];
 
   // Add basic/preparation instructions first
@@ -313,7 +388,8 @@ function parseInstructions(parsed: Record<string, unknown>): string {
     instructionParts.push(parsed.instructions.trim());
   }
 
-  return instructionParts.join('\n');
+  // Return as array instead of joined string
+  return instructionParts.filter((part) => part.trim().length > 0);
 }
 
 function parseNotes(parsed: Record<string, unknown>): string {
@@ -751,7 +827,7 @@ function parseFlexibleRecipe(text: string): ParsedRecipe {
     title,
     description,
     ingredients,
-    instructions: instructions.join('\n'),
+    instructions,
     notes: notes.join('\n'),
     categories,
     setup: [], // No setup info in flexible parsing
@@ -822,7 +898,7 @@ function extractFromUnstructuredText(text: string): ParsedRecipe {
     title: 'Recipe from Text',
     description,
     ingredients,
-    instructions: instructions.join('\n'),
+    instructions,
     notes: '',
     categories,
     setup: [], // No setup info in unstructured text

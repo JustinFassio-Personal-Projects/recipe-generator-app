@@ -51,7 +51,7 @@ When generating a complete recipe, structure it as a JSON object with:
       "prep": "preparation instructions"
     }
   ],
-  "instructions": ["Step 1", "Step 2", "Step 3"],
+  "instructions": ["Step 1. First instruction step.", "Step 2. Second instruction step.", "Step 3. Third instruction step."],
   "setup": ["Prep time: X minutes", "Cook time: X minutes", "Equipment needed"],
   "categories": ["Course: Main", "Cuisine: Type", "Technique: Method"],
   "notes": "Tips, variations, and additional notes"
@@ -88,7 +88,7 @@ When generating a complete recipe, structure it as a JSON object with:
       "prep": "preparation instructions"
     }
   ],
-  "instructions": ["Step 1", "Step 2", "Step 3"],
+  "instructions": ["Step 1. First instruction step.", "Step 2. Second instruction step.", "Step 3. Third instruction step."],
   "setup": ["Prep time: X minutes", "Cook time: X minutes", "Equipment needed"],
   "categories": ["Course: Main", "Cuisine: Type", "Technique: Method"],
   "notes": "Nutritional info, tips, and healthy variations"
@@ -125,7 +125,7 @@ When generating a complete recipe, structure it as a JSON object with:
       "prep": "preparation instructions"
     }
   ],
-  "instructions": ["Step 1", "Step 2", "Step 3"],
+  "instructions": ["Step 1. First instruction step.", "Step 2. Second instruction step.", "Step 3. Third instruction step."],
   "setup": ["Prep time: X minutes", "Cook time: X minutes", "Equipment needed"],
   "categories": ["Course: Main", "Cuisine: Type", "Technique: Method"],
   "notes": "Family tips, variations, and serving suggestions"
@@ -374,7 +374,7 @@ CRITICAL: When providing a complete recipe, ALWAYS format it as structured JSON 
       "prep": "preparation instructions"
     }
   ],
-  "instructions": "Step-by-step cooking instructions",
+  "instructions": ["Step 1. First instruction step.", "Step 2. Second instruction step.", "Step 3. Third instruction step."],
   "setup": ["Prep time: X minutes", "Cook time: X minutes", "Equipment needed"],
   "categories": ["Course: Main", "Cuisine: Type", "Technique: Method"],
   "notes": "Tips, variations, and additional notes"

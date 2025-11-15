@@ -24,6 +24,11 @@ import { useSelections } from '@/contexts/SelectionContext';
 import { UserProfileDisplay } from './UserProfileDisplay';
 import { SmartCreateRecipeButton } from './SmartCreateRecipeButton';
 import { useAuth } from '@/contexts/AuthProvider';
+import {
+  hasRecipeContent,
+  parseInstructionsFromText,
+  formatInstructionsForDisplay,
+} from '@/utils/chat-recipe-parser';
 
 interface ChatInterfaceProps {
   onRecipeGenerated: (recipe: RecipeFormData) => void;
@@ -120,6 +125,96 @@ export function ChatInterface({
     availableIngredients?: string[];
   }) => {
     updateSelections(selection);
+  };
+
+  // Helper function to render message content with formatted instructions
+  const renderMessageContent = (content: string, isAssistant: boolean) => {
+    // Only process assistant messages for recipe content
+    if (!isAssistant || !hasRecipeContent(content)) {
+      return (
+        <div className="text-sm leading-relaxed whitespace-pre-wrap">
+          {content}
+        </div>
+      );
+    }
+
+    // Parse instructions from the message
+    const { hasInstructions, instructionLines } =
+      parseInstructionsFromText(content);
+
+    // If no instructions found, render normally
+    if (!hasInstructions || instructionLines.length === 0) {
+      return (
+        <div className="text-sm leading-relaxed whitespace-pre-wrap">
+          {content}
+        </div>
+      );
+    }
+
+    // Find where instructions start and end in the original content
+    const lines = content.split('\n');
+    const trimmedLines = lines.map((line) => line.trim());
+
+    // Find the first instruction line index by matching against parsed instruction lines
+    let instructionStartIndex = -1;
+
+    // First, try to find exact match or partial match with first instruction line
+    if (instructionLines.length > 0) {
+      const firstInstruction = instructionLines[0].trim();
+      for (let i = 0; i < trimmedLines.length; i++) {
+        const trimmedLine = trimmedLines[i];
+        // Exact match
+        if (trimmedLine === firstInstruction) {
+          instructionStartIndex = i;
+          break;
+        }
+        // Partial match (instruction might have number prefix in original)
+        const cleanedTrimmed = trimmedLine.replace(/^\d+\.\s*/, '').trim();
+        if (cleanedTrimmed === firstInstruction) {
+          instructionStartIndex = i;
+          break;
+        }
+      }
+    }
+
+    // If we found where instructions start, render content before instructions normally,
+    // then render instructions formatted, then render content after instructions normally
+    if (instructionStartIndex >= 0) {
+      const beforeInstructions = lines
+        .slice(0, instructionStartIndex)
+        .join('\n');
+      const afterInstructionsStart =
+        instructionStartIndex + instructionLines.length;
+      const afterInstructions = lines.slice(afterInstructionsStart).join('\n');
+
+      return (
+        <>
+          {beforeInstructions.trim() && (
+            <div className="text-sm leading-relaxed whitespace-pre-wrap mb-4">
+              {beforeInstructions}
+            </div>
+          )}
+          <div className="space-y-2">
+            {formatInstructionsForDisplay(instructionLines)}
+          </div>
+          {afterInstructions.trim() && (
+            <div className="text-sm leading-relaxed whitespace-pre-wrap mt-4">
+              {afterInstructions}
+            </div>
+          )}
+        </>
+      );
+    }
+
+    // Fallback: if we can't find the exact position, just render formatted instructions
+    // This handles edge cases where the parsing doesn't perfectly match the original
+    return (
+      <>
+        <div className="space-y-2">
+          {formatInstructionsForDisplay(instructionLines)}
+        </div>
+      </>
+    );
   };
 
   const getPersonaIcon = (personaType: PersonaType) => {
@@ -352,9 +447,10 @@ export function ChatInterface({
                 }`}
               >
                 <div className="card-body p-3">
-                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {message.content}
-                  </div>
+                  {renderMessageContent(
+                    message.content,
+                    message.role === 'assistant'
+                  )}
                   <div
                     className={`mt-2 text-xs ${
                       message.role === 'user'

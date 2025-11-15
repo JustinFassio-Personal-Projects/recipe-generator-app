@@ -330,52 +330,51 @@ export function RecipeView({
                   Instructions
                 </h4>
                 <div className="space-y-2">
-                  {recipe.instructions.split('\n').map((line, index) => {
-                    const trimmedLine = line.trim();
+                  {(() => {
+                    // Instructions are now an array - handle both array and legacy string format
+                    let instructionSteps: string[] = [];
 
-                    if (!trimmedLine) return null;
-
-                    // Check if it's a section header (starts with **)
-                    if (
-                      trimmedLine.startsWith('**') &&
-                      trimmedLine.endsWith('**')
-                    ) {
-                      return (
-                        <div key={index} className="mt-4 first:mt-0">
-                          <h5 className="text-base font-semibold text-gray-800">
-                            {trimmedLine.replace(/\*\*/g, '')}
-                          </h5>
-                        </div>
+                    if (Array.isArray(recipe.instructions)) {
+                      instructionSteps = recipe.instructions.filter(
+                        (step) => step.trim().length > 0
                       );
+                    } else if (typeof recipe.instructions === 'string') {
+                      // Legacy format: split by newlines for backward compatibility
+                      const instructionsStr: string = recipe.instructions;
+                      const lines = instructionsStr.split('\n');
+                      for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        // Skip empty lines and section headers
+                        if (!trimmedLine) continue;
+                        if (
+                          trimmedLine.startsWith('**') &&
+                          trimmedLine.endsWith('**')
+                        ) {
+                          continue;
+                        }
+                        const cleanedStep = trimmedLine
+                          .replace(/^\d+\.\s*/, '')
+                          .trim();
+                        if (cleanedStep.length > 0) {
+                          instructionSteps.push(cleanedStep);
+                        }
+                      }
                     }
 
-                    // Check if it's a numbered step
-                    const numberedMatch = trimmedLine.match(/^(\d+)\.\s*(.+)$/);
-                    if (numberedMatch) {
-                      return (
-                        <div key={index} className="flex items-start">
-                          <div className="mt-0.5 mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-teal-100">
-                            <span className="text-xs font-semibold text-teal-700">
-                              {numberedMatch[1]}
-                            </span>
-                          </div>
-                          <p className="pt-0.5 text-sm leading-relaxed text-gray-800">
-                            {numberedMatch[2]}
-                          </p>
+                    // Render instructions as numbered steps with yellow/brown (amber) colors
+                    return instructionSteps.map((step, index) => (
+                      <div key={index} className="flex items-start">
+                        <div className="mt-0.5 mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
+                          <span className="text-xs font-semibold text-amber-800">
+                            {index + 1}
+                          </span>
                         </div>
-                      );
-                    }
-
-                    // Regular paragraph
-                    return (
-                      <p
-                        key={index}
-                        className="ml-9 text-sm leading-relaxed text-gray-800"
-                      >
-                        {trimmedLine}
-                      </p>
-                    );
-                  })}
+                        <p className="pt-0.5 text-sm leading-relaxed text-gray-800">
+                          {step}
+                        </p>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
 

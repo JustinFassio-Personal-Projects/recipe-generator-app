@@ -327,7 +327,7 @@ export function convertToParsedRecipe(standardized: StandardizedRecipe) {
     title: standardized.title,
     description: standardized.description || '',
     ingredients: standardized.ingredients,
-    instructions: standardized.instructions.join('\n\n'),
+    instructions: standardized.instructions, // Keep as array
     notes:
       notesWithoutCategories.length > 0
         ? notesWithoutCategories.join('\n')

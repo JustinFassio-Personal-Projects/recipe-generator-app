@@ -7,7 +7,9 @@ export const recipeSchema = z.object({
   ingredients: z
     .array(z.string().min(1, 'Ingredient cannot be empty'))
     .min(1, 'At least one ingredient is required'),
-  instructions: z.string().min(1, 'Instructions are required'),
+  instructions: z
+    .array(z.string().min(1, 'Instruction step cannot be empty'))
+    .min(1, 'At least one instruction step is required'),
   notes: z.string(),
   image_url: z.string().nullable().optional(),
   categories: z
@@ -36,7 +38,9 @@ export const recipeFormSchema = z.object({
   ingredients: z
     .array(z.string().min(1, 'Ingredient cannot be empty'))
     .min(1, 'At least one ingredient is required'),
-  instructions: z.string().min(1, 'Instructions are required'),
+  instructions: z
+    .array(z.string().min(1, 'Instruction step cannot be empty'))
+    .min(1, 'At least one instruction step is required'),
   notes: z.string(),
   image_url: z.string().nullable().optional(),
   setup: z.array(z.string().min(1, 'Setup item cannot be empty')),

@@ -80,12 +80,19 @@ export function AIImageGenerator({
     const prompt = optimizePromptForDALLE(enhancedPrompt.primaryPrompt);
 
     try {
+      // Convert instructions array to string for API compatibility
+      const instructionsText = Array.isArray(recipe.instructions)
+        ? recipe.instructions.join(' ')
+        : typeof recipe.instructions === 'string'
+          ? recipe.instructions
+          : '';
+
       await generateImage({
         prompt,
         recipeTitle: recipe.title,
         categories: recipe.categories,
         ingredients: recipe.ingredients,
-        instructions: recipe.instructions,
+        instructions: instructionsText,
         quality: generationOptions.quality,
         size: generationOptions.size,
       });

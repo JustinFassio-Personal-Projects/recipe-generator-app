@@ -9,7 +9,7 @@ import {
 
 // Profile field selection constants for consistency across queries
 export const PROFILE_FIELDS_FULL =
-  'id, username, full_name, avatar_url, bio, region, country, state_province, city, language, units, time_per_meal, skill_level, visit_count, last_visit_at, show_welcome_popup, created_at, updated_at';
+  'id, username, full_name, avatar_url, bio, region, country, state_province, city, language, units, time_per_meal, skill_level, visit_count, last_visit_at, show_welcome_popup, terms_accepted_at, terms_version_accepted, privacy_accepted_at, privacy_version_accepted, created_at, updated_at';
 export const PROFILE_FIELDS_BASIC =
   'bio, region, country, state_province, city, language, units, time_per_meal, skill_level';
 
@@ -387,6 +387,56 @@ export async function claimUsername(
       success: false,
       error: createAuthError(
         'An unexpected error occurred while updating username',
+        undefined,
+        error instanceof Error ? error.message : 'Unknown error'
+      ),
+    };
+  }
+}
+
+// Accept terms and privacy policy
+export async function acceptTermsAndPrivacy(
+  termsVersion: string,
+  privacyVersion: string
+): Promise<{ success: boolean; error?: AuthError }> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: createAuthError(
+          'You must be signed in to accept terms',
+          'UNAUTHENTICATED'
+        ),
+      };
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        terms_accepted_at: new Date().toISOString(),
+        terms_version_accepted: termsVersion,
+        privacy_accepted_at: new Date().toISOString(),
+        privacy_version_accepted: privacyVersion,
+      })
+      .eq('id', user.id);
+
+    if (error) {
+      return {
+        success: false,
+        error: createAuthError(error.message, error.code, error.details),
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: createAuthError(
+        'An unexpected error occurred while accepting terms',
         undefined,
         error instanceof Error ? error.message : 'Unknown error'
       ),

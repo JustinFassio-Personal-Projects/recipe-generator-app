@@ -17,6 +17,18 @@ vi.mock('@/contexts/SimpleAuthProvider', () => ({
   })),
 }));
 
+// Mock TenantContext
+vi.mock('@/contexts/TenantContext', () => ({
+  TenantContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+    Consumer: ({
+      children,
+    }: {
+      children: (value: { tenant: null }) => React.ReactNode;
+    }) => children({ tenant: null }),
+  },
+}));
+
 // Mock auth functions
 vi.mock('@/lib/auth', () => ({
   signUp: vi.fn(),
@@ -54,7 +66,7 @@ describe('Password Validation Integration Tests', () => {
       ) as HTMLInputElement;
       const fullNameInput = screen.getByPlaceholderText(/full name/i);
       const termsCheckbox = screen.getByRole('checkbox', {
-        name: /accept terms/i,
+        name: /i agree to the terms/i,
       });
 
       await act(async () => {
@@ -92,7 +104,7 @@ describe('Password Validation Integration Tests', () => {
       ) as HTMLInputElement;
       const fullNameInput = screen.getByPlaceholderText(/full name/i);
       const termsCheckbox = screen.getByRole('checkbox', {
-        name: /accept terms/i,
+        name: /i agree to the terms/i,
       });
 
       await act(async () => {
@@ -147,7 +159,7 @@ describe('Password Validation Integration Tests', () => {
       ) as HTMLInputElement;
       const fullNameInput = screen.getByPlaceholderText(/full name/i);
       const termsCheckbox = screen.getByRole('checkbox', {
-        name: /accept terms/i,
+        name: /i agree to the terms/i,
       });
 
       await act(async () => {

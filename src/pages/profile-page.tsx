@@ -35,6 +35,10 @@ import {
 import { EmailCard, PasswordCard } from '@/components/profile/account';
 import { AppPreferencesCard } from '@/components/profile/preferences/AppPreferencesCard';
 import { EmailPreferencesCard } from '@/components/profile/EmailPreferencesCard';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { ProfileOnboardingWizard } from '@/components/onboarding/ProfileOnboardingWizard';
+import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, error: authError } = useAuth();
@@ -147,6 +151,9 @@ export default function ProfilePage() {
 
   // Active tab state
   const [activeTab, setActiveTab] = useState<'profile' | 'account'>('profile');
+
+  // Onboarding wizard state
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Simple form handlers that delegate to hooks
   const handleEmailUpdate = async (e: React.FormEvent) => {
@@ -272,13 +279,23 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-base-content text-3xl font-bold">
-          Account Settings
-        </h1>
-        <p className="text-base-content/60 mt-2">
-          Manage your profile and account preferences
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-base-content text-3xl font-bold">
+            Account Settings
+          </h1>
+          <p className="text-base-content/60 mt-2">
+            Manage your profile and account preferences
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowOnboarding(true)}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <Sparkles className="h-4 w-4" />
+          Complete Profile Setup
+        </Button>
       </div>
 
       {/* Tab Navigation */}
@@ -436,6 +453,13 @@ export default function ProfilePage() {
           <EmailPreferencesCard />
         </div>
       )}
+
+      {/* Profile Onboarding Wizard Modal */}
+      <Dialog open={showOnboarding} onOpenChange={setShowOnboarding}>
+        <DialogContent className="max-w-2xl max-h-[90vh] p-0 flex flex-col overflow-y-auto">
+          <ProfileOnboardingWizard onClose={() => setShowOnboarding(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

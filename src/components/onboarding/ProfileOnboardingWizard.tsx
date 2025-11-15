@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useProfileOnboarding } from '@/hooks/use-profile-onboarding';
+import { useToast } from '@/hooks/use-toast';
 import { OnboardingProgress } from './OnboardingProgress';
 import { WelcomeStep } from './steps/WelcomeStep';
 import { DietaryStep } from './steps/DietaryStep';
@@ -22,11 +23,13 @@ interface ProfileOnboardingWizardProps {
 }
 
 const TOTAL_STEPS = 14;
+const SAVE_WARNING_TITLE = 'Save Warning';
 
 export function ProfileOnboardingWizard({
   onClose,
 }: ProfileOnboardingWizardProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     formData,
     updateFormData,
@@ -35,6 +38,7 @@ export function ProfileOnboardingWizard({
     prevStep: handleBack,
     saveToDatabase,
     isLoadingProfile,
+    isSaving,
   } = useProfileOnboarding();
 
   const handleReviewProfile = () => {
@@ -109,12 +113,32 @@ export function ProfileOnboardingWizard({
     const success = await saveToDatabase(data);
     if (success) {
       handleNext();
+    } else {
+      // Allow progression even if save fails - location is optional
+      toast({
+        title: SAVE_WARNING_TITLE,
+        description:
+          'Your location information could not be saved. You can continue and update it later in your profile settings.',
+        variant: 'destructive',
+      });
+      // Still proceed to next step since location is optional
+      handleNext();
     }
   };
 
   const handleLocationSkip = async () => {
     const success = await saveToDatabase();
     if (success) {
+      handleNext();
+    } else {
+      // Allow progression even if save fails - location is optional
+      toast({
+        title: SAVE_WARNING_TITLE,
+        description:
+          'Some information could not be saved. You can continue and update it later in your profile settings.',
+        variant: 'destructive',
+      });
+      // Still proceed to next step since location is optional
       handleNext();
     }
   };
@@ -156,12 +180,32 @@ export function ProfileOnboardingWizard({
     const success = await saveToDatabase({ disliked_ingredients: value });
     if (success) {
       handleNext();
+    } else {
+      // Allow progression even if save fails - disliked ingredients is optional
+      toast({
+        title: SAVE_WARNING_TITLE,
+        description:
+          'Your preferences could not be saved. You can continue and update them later in your profile settings.',
+        variant: 'destructive',
+      });
+      // Still proceed to next step since disliked ingredients is optional
+      handleNext();
     }
   };
 
   const handleDislikedIngredientsSkip = async () => {
     const success = await saveToDatabase();
     if (success) {
+      handleNext();
+    } else {
+      // Allow progression even if save fails - this is optional data
+      toast({
+        title: SAVE_WARNING_TITLE,
+        description:
+          'Some information could not be saved. You can continue and update it later in your profile settings.',
+        variant: 'destructive',
+      });
+      // Still proceed to next step since this is optional
       handleNext();
     }
   };
@@ -299,7 +343,7 @@ export function ProfileOnboardingWizard({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-white relative">
       {/* Progress indicator - hide on welcome and completion steps */}
       {localStep > 0 && localStep < 13 && (
         <OnboardingProgress current={localStep - 1} total={TOTAL_STEPS - 2} />
@@ -311,6 +355,16 @@ export function ProfileOnboardingWizard({
           {renderStep()}
         </div>
       </AnimatePresence>
+
+      {/* Show saving indicator */}
+      {isSaving && (
+        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
+          <div className="flex flex-col items-center gap-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <p className="text-sm text-gray-600">Saving your information...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

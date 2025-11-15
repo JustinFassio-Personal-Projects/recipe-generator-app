@@ -86,8 +86,6 @@ export function LocationStep({
     });
   };
 
-  const hasAnyData = country || stateProvince || city;
-
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -197,7 +195,6 @@ export function LocationStep({
         onNext={handleNext}
         onBack={onBack}
         onSkip={onSkip}
-        isNextDisabled={!hasAnyData}
         showSkip={true}
       />
     </motion.div>

@@ -379,13 +379,13 @@ export function AuthForm() {
                 </div>
 
                 <div className="form-control">
-                  <label className="label cursor-pointer justify-start gap-3">
+                  <label className="label w-full cursor-pointer justify-start gap-3 whitespace-normal">
                     <Checkbox
                       id="accept-terms"
                       checked={acceptTerms}
                       onCheckedChange={(checked) => setAcceptTerms(!!checked)}
                     />
-                    <span className="label-text text-base-content">
+                    <span className="label-text flex-1 min-w-0 break-words text-base-content">
                       I agree to the{' '}
                       <button
                         type="button"
@@ -415,7 +415,7 @@ export function AuthForm() {
                 </div>
 
                 <div className="form-control">
-                  <label className="label cursor-pointer justify-start gap-3">
+                  <label className="label w-full cursor-pointer justify-start gap-3 whitespace-normal">
                     <Checkbox
                       id="subscribe-emails"
                       checked={subscribeEmails}
@@ -423,7 +423,7 @@ export function AuthForm() {
                         setSubscribeEmails(!!checked)
                       }
                     />
-                    <span className="label-text text-base-content">
+                    <span className="label-text flex-1 min-w-0 break-words text-base-content">
                       Subscribe to newsletters, recipe updates, and cooking tips
                     </span>
                   </label>

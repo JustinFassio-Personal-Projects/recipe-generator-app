@@ -64,7 +64,7 @@ export function Header() {
           </button>
           <ul
             tabIndex={0}
-            className="menu dropdown-content menu-sm rounded-box bg-base-100 mt-3 w-52 p-2 shadow z-50"
+            className="menu dropdown-content menu-sm rounded-box bg-base-100 mt-3 w-52 max-w-[calc(100vw-2rem)] p-2 shadow z-50"
           >
             {/* Mobile Navigation Items */}
             <li>
@@ -73,10 +73,10 @@ export function Header() {
                   navigate('/recipes');
                   closeMobileMenu();
                 }}
-                className={`w-full justify-start ${location.pathname === '/recipes' ? 'active' : ''}`}
+                className={`w-full justify-start break-words ${location.pathname === '/recipes' ? 'active' : ''}`}
               >
-                <BookOpen className="h-5 w-5" />
-                My Recipes
+                <BookOpen className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">My Recipes</span>
               </button>
             </li>
             <li>
@@ -85,10 +85,10 @@ export function Header() {
                   navigate('/explore');
                   closeMobileMenu();
                 }}
-                className={`w-full justify-start ${location.pathname === '/explore' ? 'active' : ''}`}
+                className={`w-full justify-start break-words ${location.pathname === '/explore' ? 'active' : ''}`}
               >
-                <Compass className="h-5 w-5" />
-                Explore
+                <Compass className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">Explore</span>
               </button>
             </li>
             <li>
@@ -97,10 +97,10 @@ export function Header() {
                   navigate('/kitchen');
                   closeMobileMenu();
                 }}
-                className={`w-full justify-start ${location.pathname === '/kitchen' ? 'active' : ''}`}
+                className={`w-full justify-start break-words ${location.pathname === '/kitchen' ? 'active' : ''}`}
               >
-                <ChefHat className="h-5 w-5" />
-                My Kitchen
+                <ChefHat className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">My Kitchen</span>
               </button>
             </li>
             <li>
@@ -109,10 +109,10 @@ export function Header() {
                   navigate('/cart');
                   closeMobileMenu();
                 }}
-                className={`w-full justify-start ${location.pathname === '/cart' ? 'active' : ''}`}
+                className={`w-full justify-start break-words ${location.pathname === '/cart' ? 'active' : ''}`}
               >
-                <ShoppingCart className="h-5 w-5" />
-                Shopping List
+                <ShoppingCart className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">Shopping List</span>
               </button>
             </li>
             <li>
@@ -121,10 +121,10 @@ export function Header() {
                   navigate('/evaluation-report');
                   closeMobileMenu();
                 }}
-                className={`w-full justify-start ${location.pathname === '/evaluation-report' ? 'active' : ''}`}
+                className={`w-full justify-start break-words ${location.pathname === '/evaluation-report' ? 'active' : ''}`}
               >
-                <Heart className="h-5 w-5" />
-                Nutrition Reports
+                <Heart className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">Nutrition Reports</span>
               </button>
             </li>
             <li className="divider"></li>
@@ -134,14 +134,16 @@ export function Header() {
                   navigate('/subscription');
                   closeMobileMenu();
                 }}
-                className="w-full justify-start"
+                className="w-full justify-start break-words"
               >
-                <Sparkles className="h-5 w-5" />
-                {hasAccess
-                  ? isInTrial
-                    ? 'Trial Active'
-                    : 'Premium Member'
-                  : 'Upgrade to Premium'}
+                <Sparkles className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">
+                  {hasAccess
+                    ? isInTrial
+                      ? 'Trial Active'
+                      : 'Premium Member'
+                    : 'Upgrade to Premium'}
+                </span>
               </button>
             </li>
             <li>
@@ -150,10 +152,10 @@ export function Header() {
                   navigate('/profile');
                   closeMobileMenu();
                 }}
-                className="w-full justify-start"
+                className="w-full justify-start break-words"
               >
-                <Settings className="h-5 w-5" />
-                Account Settings
+                <Settings className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">Account Settings</span>
               </button>
             </li>
             <li>
@@ -162,10 +164,10 @@ export function Header() {
                   setTermsDialogOpen(true);
                   closeMobileMenu();
                 }}
-                className="w-full justify-start"
+                className="w-full justify-start break-words"
               >
-                <FileText className="h-5 w-5" />
-                Terms & Conditions
+                <FileText className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">Terms & Conditions</span>
               </button>
             </li>
             <li>
@@ -174,10 +176,10 @@ export function Header() {
                   handleSignOut();
                   closeMobileMenu();
                 }}
-                className="w-full justify-start text-error"
+                className="w-full justify-start text-error break-words"
               >
-                <LogOut className="h-5 w-5" />
-                Sign Out
+                <LogOut className="h-5 w-5 flex-shrink-0" />
+                <span className="break-words">Sign Out</span>
               </button>
             </li>
           </ul>
@@ -288,48 +290,50 @@ export function Header() {
           </div>
           <ul
             tabIndex={0}
-            className="menu dropdown-content menu-sm rounded-box bg-base-100 z-[100] mt-3 w-52 border p-2 shadow"
+            className="menu dropdown-content menu-sm rounded-box bg-base-100 z-[100] mt-3 w-52 max-w-[calc(100vw-2rem)] border p-2 shadow"
           >
             {user ? (
               <>
                 <li className="menu-title">
-                  <span className="text-xs">
+                  <span className="text-xs break-words">
                     {profile?.username ? (
-                      <span className="text-base-content/60">
+                      <span className="text-base-content/60 break-words">
                         @{profile.username}
                       </span>
                     ) : profile?.full_name ? (
-                      profile.full_name
+                      <span className="break-words">{profile.full_name}</span>
                     ) : (
-                      user?.email || 'User'
+                      <span className="break-words">
+                        {user?.email || 'User'}
+                      </span>
                     )}
                   </span>
                 </li>
                 <li>
                   <button
                     onClick={() => navigate('/profile')}
-                    className="flex items-center"
+                    className="flex items-center w-full break-words"
                   >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Account Settings
+                    <Settings className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span className="break-words">Account Settings</span>
                   </button>
                 </li>
                 <li>
                   <button
                     onClick={() => setTermsDialogOpen(true)}
-                    className="flex items-center"
+                    className="flex items-center w-full break-words"
                   >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Terms & Conditions
+                    <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span className="break-words">Terms & Conditions</span>
                   </button>
                 </li>
                 <li>
                   <button
                     onClick={handleSignOut}
-                    className="text-error flex items-center"
+                    className="text-error flex items-center w-full break-words"
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
+                    <LogOut className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span className="break-words">Sign Out</span>
                   </button>
                 </li>
               </>

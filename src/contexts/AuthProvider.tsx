@@ -328,7 +328,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Add detailed debugging for profile data
-        if (data) {
+        if (data && import.meta.env.DEV) {
           console.log('🔍 Profile data returned from database:', {
             id: data.id,
             username: data.username,
@@ -745,12 +745,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   }
 
                   // Only update if we got detailed data and component is still mounted
-                  console.log('[AuthProvider] After fetchProfile:', {
-                    hasDetailedProfile: !!detailedProfileData,
-                    isMounted,
-                    termsAccepted: detailedProfileData?.terms_accepted_at,
-                    termsVersion: detailedProfileData?.terms_version_accepted,
-                  });
+                  if (import.meta.env.DEV) {
+                    console.log('[AuthProvider] After fetchProfile:', {
+                      hasDetailedProfile: !!detailedProfileData,
+                      isMounted,
+                      termsAccepted: detailedProfileData?.terms_accepted_at,
+                      termsVersion: detailedProfileData?.terms_version_accepted,
+                    });
+                  }
 
                   if (detailedProfileData && isMounted) {
                     setProfile(detailedProfileData);

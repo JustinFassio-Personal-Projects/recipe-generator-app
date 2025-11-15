@@ -69,6 +69,36 @@ describe('Recipe Critical Path Integration Tests', () => {
       );
     } else {
       testUser = user.user;
+
+      // CRITICAL: Ensure user has a profile with tenant_id before running tests
+      // This is required for RLS policies to work correctly
+      const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+      // Check if profile exists
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.user.id)
+        .single();
+
+      // Create or update profile if it doesn't exist or is missing tenant_id
+      if (profileError || !existingProfile || !existingProfile.tenant_id) {
+        const { error: upsertError } = await supabase.from('profiles').upsert(
+          {
+            id: user.user.id,
+            tenant_id: DEFAULT_TENANT_ID,
+            full_name: user.user.email || 'Test User',
+          },
+          { onConflict: 'id' }
+        );
+
+        if (upsertError) {
+          console.warn(
+            'Could not ensure test user profile, tests may fail:',
+            upsertError.message
+          );
+        }
+      }
     }
   });
 

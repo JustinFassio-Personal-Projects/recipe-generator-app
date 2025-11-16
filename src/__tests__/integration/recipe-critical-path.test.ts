@@ -83,20 +83,36 @@ describe('Recipe Critical Path Integration Tests', () => {
 
       // Create or update profile if it doesn't exist or is missing tenant_id
       if (profileError || !existingProfile || !existingProfile.tenant_id) {
-        const { error: upsertError } = await supabase.from('profiles').upsert(
-          {
-            id: user.user.id,
-            tenant_id: DEFAULT_TENANT_ID,
-            full_name: user.user.email || 'Test User',
-          },
-          { onConflict: 'id' }
-        );
+        // Check if profile doesn't exist (PGRST116 = not found)
+        if (profileError?.code === 'PGRST116' || !existingProfile) {
+          // Profile doesn't exist, create it
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.user.id,
+              tenant_id: DEFAULT_TENANT_ID,
+              full_name: user.user.email || 'Test User',
+            });
 
-        if (upsertError) {
-          console.warn(
-            'Could not ensure test user profile, tests may fail:',
-            upsertError.message
-          );
+          if (insertError) {
+            console.warn(
+              'Could not create test user profile, tests may fail:',
+              insertError.message
+            );
+          }
+        } else if (existingProfile && !existingProfile.tenant_id) {
+          // Profile exists but missing tenant_id, update it
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ tenant_id: DEFAULT_TENANT_ID })
+            .eq('id', user.user.id);
+
+          if (updateError) {
+            console.warn(
+              'Could not update test user profile, tests may fail:',
+              updateError.message
+            );
+          }
         }
       }
     }

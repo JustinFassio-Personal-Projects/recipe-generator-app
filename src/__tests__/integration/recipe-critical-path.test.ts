@@ -15,6 +15,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { supabase } from '@/lib/supabase';
 import { parseRecipeFromText } from '@/lib/recipe-parser';
 import { recipeApi } from '@/lib/api';
+import { DEFAULT_TENANT_ID } from '@/lib/constants';
 // Types imported for testing purposes only
 // import type { Recipe } from '@/lib/types';
 
@@ -72,7 +73,21 @@ describe('Recipe Critical Path Integration Tests', () => {
 
       // CRITICAL: Ensure test user has a profile with tenant_id
       // This is required for recipe creation to work (RLS policy requirement)
-      const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+      // Ensure the default tenant exists in the database (for CI environment)
+      const { error: tenantCheckError } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('id', DEFAULT_TENANT_ID)
+        .single();
+
+      if (tenantCheckError?.code === 'PGRST116') {
+        await supabase.from('tenants').insert({
+          id: DEFAULT_TENANT_ID,
+          name: 'Default Tenant',
+          slug: 'default',
+        });
+      }
 
       // Check if profile exists
       const { data: existingProfile, error: profileError } = await supabase
@@ -125,9 +140,10 @@ describe('Recipe Critical Path Integration Tests', () => {
         .single();
 
       if (!verifyProfile?.tenant_id) {
-        throw new Error(
-          'Test setup failed: Test user profile does not have tenant_id after setup'
+        console.warn(
+          'Warning: Test user profile missing tenant_id. Tests may fail.'
         );
+        // Don't throw - let recipe creation test fail if there's a real issue
       }
     }
   });

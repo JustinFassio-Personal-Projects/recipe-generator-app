@@ -7,6 +7,7 @@ import type { Tenant } from '@/lib/types';
 import { TenantForm } from '@/components/admin/TenantForm';
 import { TenantCard } from '@/components/admin/TenantCard';
 import { useAuth } from '@/contexts/AuthProvider';
+import { DEFAULT_TENANT_ID } from '@/lib/constants';
 import { useTenant } from '@/contexts/TenantContext';
 import { TenantAdminSettings } from '@/components/admin/TenantAdminSettings';
 
@@ -19,8 +20,7 @@ export function TenantsAdminPage() {
 
   // Check if user is super admin (admin in main tenant)
   const isSuperAdmin =
-    profile?.is_admin === true &&
-    profile?.tenant_id === '00000000-0000-0000-0000-000000000001';
+    profile?.is_admin === true && profile?.tenant_id === DEFAULT_TENANT_ID;
   const isTenantAdmin = profile?.is_admin === true && !isSuperAdmin;
 
   const { data: tenants = [], isLoading } = useQuery({

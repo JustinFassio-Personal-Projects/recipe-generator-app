@@ -104,7 +104,7 @@ export async function ensureUserProfile(): Promise<{
 
     // Create basic profile without username (users can add one later if needed)
     // CRITICAL: tenant_id is required for RLS policies to work correctly
-    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+    const { DEFAULT_TENANT_ID } = await import('@/lib/constants');
     const { error: profileError } = await supabase.from('profiles').insert({
       id: user.id,
       full_name: user.user_metadata?.full_name || '',

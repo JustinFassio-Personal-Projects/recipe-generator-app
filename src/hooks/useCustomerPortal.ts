@@ -88,18 +88,19 @@ export function useCustomerPortal() {
         throw new Error(errorMessage);
       }
 
+      // Validate that the portal URL exists before returning
+      if (!('url' in responseData) || !responseData.url) {
+        console.error('[CustomerPortal] No URL in response', responseData);
+        throw new Error('No portal URL received from server');
+      }
+
       console.log('[CustomerPortal] ✅ Portal session created successfully');
       return responseData as PortalResponse;
     },
     onSuccess: (data) => {
       // Redirect to Stripe Customer Portal
       console.log('[CustomerPortal] Redirecting to portal:', data.url);
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        console.error('[CustomerPortal] No URL in response');
-        throw new Error('No portal URL received from server');
-      }
+      window.location.href = data.url;
     },
     onError: (error) => {
       console.error('[CustomerPortal] Error:', error);

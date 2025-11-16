@@ -212,8 +212,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const persistedState = getPersistedAuthState();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  // CRITICAL: Always start with loading=true to prevent premature redirects in ProtectedRoute
-  // The loading state will be set to false once the initial session check completes
+  // CRITICAL: Always start with loading=true to prevent premature redirects in ProtectedRoute.
+  // ProtectedRoute (which consumes the AuthProvider context) relies on the `loading` state to determine
+  // whether to redirect users. If `loading` is false before the initial session check completes,
+  // ProtectedRoute may redirect users prematurely. The loading state will be set to false once the initial session check completes.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(
     persistedState?.error || null

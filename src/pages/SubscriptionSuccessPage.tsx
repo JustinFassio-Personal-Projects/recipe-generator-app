@@ -11,6 +11,7 @@ import {
 } from '@/config/subscription';
 import { useSubscriptionStatus } from '@/hooks/useSubscription';
 import { useVerifySubscription } from '@/hooks/useVerifySubscription';
+import { useAuth } from '@/contexts/AuthProvider';
 
 export function SubscriptionSuccessPage() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export function SubscriptionSuccessPage() {
   const queryClient = useQueryClient();
   const { data: subscriptionStatus } = useSubscriptionStatus();
   const verifySubscription = useVerifySubscription();
+  const { refreshProfile } = useAuth();
   const [verificationAttempted, setVerificationAttempted] = useState(false);
 
   useEffect(() => {
@@ -30,10 +32,16 @@ export function SubscriptionSuccessPage() {
       planDetails.interval
     );
 
+    // CRITICAL FIX: Refresh profile when returning from Stripe to clear stale cache
+    console.log(
+      '[SubscriptionSuccess] Refreshing profile to clear stale cache'
+    );
+    refreshProfile();
+
     // Invalidate subscription queries to refetch updated status immediately
     queryClient.invalidateQueries({ queryKey: ['subscription'] });
     queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
-  }, [queryClient]);
+  }, [queryClient, refreshProfile]);
 
   // Immediately verify subscription on mount (fallback for when webhooks don't work)
   useEffect(() => {
@@ -55,6 +63,8 @@ export function SubscriptionSuccessPage() {
           // Refresh subscription status
           queryClient.invalidateQueries({ queryKey: ['subscription'] });
           queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
+          // Refresh profile again to ensure it's in sync
+          refreshProfile();
         },
         onError: (error) => {
           console.error(
@@ -65,7 +75,13 @@ export function SubscriptionSuccessPage() {
         },
       }
     );
-  }, [sessionId, verificationAttempted, verifySubscription, queryClient]);
+  }, [
+    sessionId,
+    verificationAttempted,
+    verifySubscription,
+    queryClient,
+    refreshProfile,
+  ]);
 
   // Separate effect for polling - stops when subscription is found
   useEffect(() => {
@@ -90,6 +106,9 @@ export function SubscriptionSuccessPage() {
       clearTimeout(timeout);
     };
   }, [queryClient, subscriptionStatus?.has_access]);
+
+  // Note: No auto-redirect - let users control when they want to continue
+  // They can click "Start Creating Recipes" or "Manage Subscription" buttons
 
   // Show loading state while verifying
   const isVerifying =

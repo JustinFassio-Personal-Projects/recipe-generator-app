@@ -300,7 +300,8 @@ function AppContent() {
 
         {/* Default redirects */}
         <Route path="/" element={<Navigate to="/recipes" replace />} />
-        <Route path="*" element={<Navigate to="/recipes" replace />} />
+        {/* Temporarily disabled catch-all to debug subscription/success route */}
+        {/* <Route path="*" element={<Navigate to="/recipes" replace />} /> */}
       </Routes>
     </TermsGuard>
   );

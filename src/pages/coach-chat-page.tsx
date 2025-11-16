@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { Button } from '@/components/ui/button';
+import { PremiumFeatureGuard } from '@/components/subscription/PremiumFeatureGuard';
 import type { PersonaType } from '@/lib/openai';
 
 export function CoachChatPage() {
@@ -41,12 +42,15 @@ export function CoachChatPage() {
           </div>
         </div>
 
-        <div className="bg-base-100 rounded-lg shadow-sm">
-          <ChatInterface
-            onRecipeGenerated={handleCoachResponse}
-            defaultPersona={personaParam ?? undefined}
-          />
-        </div>
+        {/* Premium Feature Guard - wraps AI health coach */}
+        <PremiumFeatureGuard feature="AI health coaching">
+          <div className="bg-base-100 rounded-lg shadow-sm">
+            <ChatInterface
+              onRecipeGenerated={handleCoachResponse}
+              defaultPersona={personaParam ?? undefined}
+            />
+          </div>
+        </PremiumFeatureGuard>
       </div>
     </div>
   );

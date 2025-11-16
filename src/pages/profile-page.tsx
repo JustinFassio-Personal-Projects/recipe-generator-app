@@ -41,7 +41,13 @@ import { Button } from '@/components/ui/button';
 import { Sparkles } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user, profile, loading: authLoading, error: authError } = useAuth();
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    error: authError,
+    refreshProfile,
+  } = useAuth();
 
   // All profile functionality via hooks
   const userSafety = useUserSafety();
@@ -59,6 +65,10 @@ export default function ProfilePage() {
 
     const loadData = async () => {
       try {
+        // CRITICAL FIX: Refresh profile when navigating to profile page to clear stale cache
+        // This ensures fresh data after returning from external pages (like Stripe)
+        refreshProfile();
+
         // Load data via hooks
         await Promise.all([
           userSafety.loadUserSafety(),
@@ -70,9 +80,9 @@ export default function ProfilePage() {
     };
 
     loadData();
-  }, [user?.id]);
+  }, [user?.id, refreshProfile]);
 
-  // Note: Profile loading is handled by AuthProvider automatically
+  // Note: Profile loading is handled by AuthProvider, but we refresh on mount for fresh data
 
   // Profile form submission state
   const [profileSubmitting, setProfileSubmitting] = useState(false);

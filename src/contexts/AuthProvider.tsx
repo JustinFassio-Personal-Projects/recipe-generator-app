@@ -12,6 +12,7 @@ import {
   Session,
   PostgrestError,
 } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/lib/types';
 import { ensureUserProfile } from '@/lib/auth-utils';
@@ -204,13 +205,18 @@ const getPersistedAuthState = () => {
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // CRITICAL: Access QueryClient for cache invalidation on auth changes
+  const queryClient = useQueryClient();
+
   // Initialize with persisted state if available (hot reload recovery)
   const persistedState = getPersistedAuthState();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(
-    persistedState?.hasUser ? false : true
-  );
+  // CRITICAL: Always start with loading=true to prevent premature redirects in ProtectedRoute.
+  // ProtectedRoute (which consumes the AuthProvider context) relies on the `loading` state to determine
+  // whether to redirect users. If `loading` is false before the initial session check completes,
+  // ProtectedRoute may redirect users prematurely. The loading state will be set to false once the initial session check completes.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(
     persistedState?.error || null
   );
@@ -231,7 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const profileCache = useRef<
     Map<string, { profile: Profile; timestamp: number }>
   >(new Map());
-  const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+  const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes - profile data changes infrequently
 
   // Store current fetchProfile function to avoid dependency issues
   const fetchProfileRef = useRef<typeof fetchProfile>();
@@ -704,6 +710,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             if (event === 'SIGNED_IN' && session?.user) {
               logger.user(`User signed in: ${session.user.id}`);
+
+              // Invalidate user-specific queries to prevent stale data
+              // Note: We use targeted invalidation instead of clearing all cache
+              // since query keys now include user IDs for proper cache isolation
+              queryClient.invalidateQueries({ queryKey: ['subscription'] });
+              queryClient.invalidateQueries({
+                queryKey: ['subscription-status'],
+              });
+              queryClient.invalidateQueries({ queryKey: ['profile'] });
+              logger.auth('🗑️ Invalidated user-specific queries on sign in');
+
               setUser(session.user);
               setError(null);
 
@@ -781,6 +798,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }, 100); // Small delay to ensure immediate profile is set first
             } else if (event === 'SIGNED_OUT') {
               logger.auth('User signed out');
+
+              // Invalidate all queries on sign out to ensure fresh data on next sign in
+              // Note: We use targeted invalidation for the most important queries
+              queryClient.invalidateQueries({ queryKey: ['subscription'] });
+              queryClient.invalidateQueries({
+                queryKey: ['subscription-status'],
+              });
+              queryClient.invalidateQueries({ queryKey: ['profile'] });
+              logger.auth('🗑️ Invalidated queries on sign out');
+
               setUser(null);
               setProfile(null);
               setError(null);

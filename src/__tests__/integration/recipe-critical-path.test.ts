@@ -53,10 +53,72 @@ Notes: Makes about 60 cookies. Store in airtight container for up to 1 week.
 // Removed UPDATED_RECIPE_TEXT as it's not used in the simplified tests
 
 // Test user for authentication
-let testUser: unknown = null;
+let testUser: { id: string } | null = null;
 const createdRecipeIds: string[] = [];
 
 describe('Recipe Critical Path Integration Tests', () => {
+  // Helper function to ensure test user has a profile with tenant_id
+  const ensureTestUserProfile = async (userId: string): Promise<boolean> => {
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+    // Check if profile exists with tenant_id
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', userId)
+      .single();
+
+    // If profile exists and has tenant_id, we're good
+    if (existingProfile?.tenant_id) {
+      return true;
+    }
+
+    // Profile doesn't exist or is missing tenant_id
+    if (profileError?.code === 'PGRST116' || !existingProfile) {
+      // Profile doesn't exist, create it
+      const { error: insertError } = await supabase.from('profiles').insert({
+        id: userId,
+        tenant_id: DEFAULT_TENANT_ID,
+        full_name: 'Test User',
+      });
+
+      if (insertError) {
+        console.error('Failed to create test user profile:', insertError);
+        return false;
+      }
+    } else if (existingProfile && !existingProfile.tenant_id) {
+      // Profile exists but missing tenant_id, update it
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ tenant_id: DEFAULT_TENANT_ID })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('Failed to update test user profile:', updateError);
+        return false;
+      }
+    }
+
+    // Verify profile now has tenant_id (with retry for eventual consistency)
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data: verifyProfile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', userId)
+        .single();
+
+      if (verifyProfile?.tenant_id) {
+        return true;
+      }
+
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+    }
+
+    console.error('Profile verification failed after retries');
+    return false;
+  };
+
   beforeAll(async () => {
     // Use existing test user from seed data
     const { data: user, error } = await supabase.auth.signInWithPassword({
@@ -72,76 +134,20 @@ describe('Recipe Critical Path Integration Tests', () => {
       testUser = user.user;
 
       // CRITICAL: Ensure user has a profile with tenant_id before running tests
-      // This is required for RLS policies to work correctly
-      const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
-
-      // Check if profile exists
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user.user.id)
-        .single();
-
-      // Create or update profile if it doesn't exist or is missing tenant_id
-      if (profileError || !existingProfile || !existingProfile.tenant_id) {
-        // Check if profile doesn't exist (PGRST116 = not found)
-        if (profileError?.code === 'PGRST116' || !existingProfile) {
-          // Profile doesn't exist, create it
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: user.user.id,
-              tenant_id: DEFAULT_TENANT_ID,
-              full_name: user.user.email || 'Test User',
-            });
-
-          if (insertError) {
-            console.warn(
-              'Could not create test user profile, tests may fail:',
-              insertError.message
-            );
-          } else {
-            // Verify profile was created successfully
-            const { data: verifyProfile } = await supabase
-              .from('profiles')
-              .select('tenant_id')
-              .eq('id', user.user.id)
-              .single();
-
-            if (!verifyProfile?.tenant_id) {
-              console.warn(
-                'Profile creation verification failed - tenant_id not set'
-              );
-            }
-          }
-        } else if (existingProfile && !existingProfile.tenant_id) {
-          // Profile exists but missing tenant_id, update it
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ tenant_id: DEFAULT_TENANT_ID })
-            .eq('id', user.user.id);
-
-          if (updateError) {
-            console.warn(
-              'Could not update test user profile, tests may fail:',
-              updateError.message
-            );
-          } else {
-            // Verify profile was updated successfully
-            const { data: verifyProfile } = await supabase
-              .from('profiles')
-              .select('tenant_id')
-              .eq('id', user.user.id)
-              .single();
-
-            if (!verifyProfile?.tenant_id) {
-              console.warn(
-                'Profile update verification failed - tenant_id not set'
-              );
-            }
-          }
-        }
+      const profileReady = await ensureTestUserProfile(user.user.id);
+      if (!profileReady) {
+        console.error(
+          'Failed to ensure test user profile - recipe creation tests will fail'
+        );
       }
+    }
+  });
+
+  // Ensure profile exists before each test that creates recipes
+  beforeEach(async () => {
+    if (testUser) {
+      // Double-check profile exists before each test (handles race conditions)
+      await ensureTestUserProfile(testUser.id);
     }
   });
 
@@ -233,6 +239,15 @@ describe('Recipe Critical Path Integration Tests', () => {
       if (!testUser) {
         console.warn('Skipping test: no test user available');
         return;
+      }
+
+      // CRITICAL: Ensure profile exists before creating recipe
+      // This prevents "User profile not found or missing tenant_id" errors
+      const profileReady = await ensureTestUserProfile(testUser.id);
+      if (!profileReady) {
+        throw new Error(
+          'Test user profile not ready - cannot create recipe. Profile must have tenant_id.'
+        );
       }
 
       // Create a simple recipe without parsing (to avoid AI dependency)
@@ -442,6 +457,14 @@ describe('Recipe Critical Path Integration Tests', () => {
       if (!testUser) {
         console.warn('Skipping test: no test user available');
         return;
+      }
+
+      // CRITICAL: Ensure profile exists before attempting to create recipe
+      const profileReady = await ensureTestUserProfile(testUser.id);
+      if (!profileReady) {
+        throw new Error(
+          'Test user profile not ready - cannot test recipe creation. Profile must have tenant_id.'
+        );
       }
 
       const invalidRecipeData = {

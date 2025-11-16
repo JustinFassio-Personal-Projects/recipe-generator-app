@@ -1,6 +1,11 @@
 // Integration test setup - mock browser APIs for Node.js environment
 import { vi } from 'vitest';
 
+// CRITICAL: Unmock Supabase for integration tests to use real database
+// Integration tests need real Supabase client to test actual database operations
+vi.unmock('@/lib/supabase');
+vi.unmock('@supabase/supabase-js');
+
 // Mock navigator object for Node.js environment
 Object.defineProperty(global, 'navigator', {
   value: {

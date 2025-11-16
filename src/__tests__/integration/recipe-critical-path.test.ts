@@ -18,7 +18,8 @@ import { recipeApi } from '@/lib/api';
 // Types imported for testing purposes only
 // import type { Recipe } from '@/lib/types';
 
-// Using mocked Supabase client from test setup
+// NOTE: Integration tests use real Supabase client (unmocked in integration-setup.ts)
+// These tests should be run with: npm run test:critical
 
 // Test data
 const SAMPLE_RECIPE_TEXT = `
@@ -99,6 +100,19 @@ describe('Recipe Critical Path Integration Tests', () => {
               'Could not create test user profile, tests may fail:',
               insertError.message
             );
+          } else {
+            // Verify profile was created successfully
+            const { data: verifyProfile } = await supabase
+              .from('profiles')
+              .select('tenant_id')
+              .eq('id', user.user.id)
+              .single();
+
+            if (!verifyProfile?.tenant_id) {
+              console.warn(
+                'Profile creation verification failed - tenant_id not set'
+              );
+            }
           }
         } else if (existingProfile && !existingProfile.tenant_id) {
           // Profile exists but missing tenant_id, update it
@@ -112,6 +126,19 @@ describe('Recipe Critical Path Integration Tests', () => {
               'Could not update test user profile, tests may fail:',
               updateError.message
             );
+          } else {
+            // Verify profile was updated successfully
+            const { data: verifyProfile } = await supabase
+              .from('profiles')
+              .select('tenant_id')
+              .eq('id', user.user.id)
+              .single();
+
+            if (!verifyProfile?.tenant_id) {
+              console.warn(
+                'Profile update verification failed - tenant_id not set'
+              );
+            }
           }
         }
       }

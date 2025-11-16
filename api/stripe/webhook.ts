@@ -241,7 +241,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Send welcome to premium email (non-blocking)
-        sendSubscriptionEmail(supabase, userId, 'subscription_created', {
+        void sendSubscriptionEmail(supabase, userId, 'subscription_created', {
           plan: subscription.items.data[0]?.price?.nickname || 'Premium',
           nextBillingDate: new Date(
             subscription.current_period_end * 1000
@@ -311,7 +311,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .single();
 
         if (subData?.user_id) {
-          sendSubscriptionEmail(
+          void sendSubscriptionEmail(
             supabase,
             subData.user_id,
             'subscription_updated',
@@ -366,7 +366,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .single();
 
         if (cancelData?.user_id) {
-          sendSubscriptionEmail(
+          void sendSubscriptionEmail(
             supabase,
             cancelData.user_id,
             'subscription_cancelled'
@@ -396,7 +396,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .single();
 
           if (paymentData?.user_id) {
-            sendSubscriptionEmail(
+            void sendSubscriptionEmail(
               supabase,
               paymentData.user_id,
               'payment_succeeded',
@@ -456,7 +456,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .single();
 
           if (failureData?.user_id) {
-            sendSubscriptionEmail(
+            void sendSubscriptionEmail(
               supabase,
               failureData.user_id,
               'payment_failed'

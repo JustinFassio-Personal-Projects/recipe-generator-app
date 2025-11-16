@@ -601,16 +601,35 @@ export const recipeApi = {
     const user = authData.user;
 
     try {
-      // Create the recipe first with tenant_id
-      // Using default tenant for now (multi-tenant infrastructure in place)
-      const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+      // CRITICAL: Ensure user has a profile with tenant_id before creating recipe
+      // This is required for RLS policies to work correctly
+      const { ensureUserProfile } = await import('@/lib/auth-utils');
+      const profileResult = await ensureUserProfile();
+      if (!profileResult.success) {
+        throw new Error(
+          `Failed to ensure user profile: ${profileResult.error || 'Unknown error'}`
+        );
+      }
+
+      // Get tenant_id from user's profile (required for RLS policy)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.tenant_id) {
+        throw new Error(
+          'User profile not found or missing tenant_id. Please refresh the page and try again.'
+        );
+      }
 
       const { data, error } = await supabase
         .from('recipes')
         .insert({
           ...recipe,
           user_id: user.id,
-          tenant_id: DEFAULT_TENANT_ID,
+          tenant_id: profile.tenant_id,
           is_public: false,
         })
         .select()

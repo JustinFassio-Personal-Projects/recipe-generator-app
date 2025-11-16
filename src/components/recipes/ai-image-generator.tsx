@@ -3,13 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
+import { useHasPremiumAccess } from '@/hooks/useSubscription';
 import { RecipeFormData } from '@/lib/schemas';
 import {
   generateEnhancedPrompt,
   optimizePromptForDALLE,
 } from '@/lib/ai-image-generation/enhanced-prompt-generator';
-import { Wand2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Wand2, RefreshCw, AlertCircle, Lock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface AIImageGeneratorProps {
   recipe: RecipeFormData;
@@ -24,6 +26,8 @@ export function AIImageGenerator({
   onError,
   className = '',
 }: AIImageGeneratorProps) {
+  const navigate = useNavigate();
+  const { hasAccess, isLoading: isCheckingAccess } = useHasPremiumAccess();
   const [showOptions, setShowOptions] = useState(false);
   const [generationOptions, setGenerationOptions] = useState({
     quality: 'standard' as 'standard' | 'hd',
@@ -115,6 +119,37 @@ export function AIImageGenerator({
 
   const canGenerate =
     recipe.title && recipe.description && recipe.ingredients?.length > 0;
+
+  // Show premium prompt if user doesn't have access
+  if (!isCheckingAccess && !hasAccess) {
+    return (
+      <div className={`space-y-4 ${className}`}>
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Lock className="h-5 w-5 text-primary mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-medium text-base-content mb-1">
+                Premium Feature
+              </h4>
+              <p className="text-sm text-base-content/70 mb-3">
+                AI image generation requires a premium subscription. Upgrade to
+                create stunning, AI-powered recipe images.
+              </p>
+              <Button
+                type="button"
+                onClick={() => navigate('/subscription')}
+                className="bg-primary hover:bg-primary/90"
+                size="sm"
+              >
+                <Wand2 className="mr-2 h-4 w-4" />
+                Upgrade to Premium
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-4 ${className}`}>

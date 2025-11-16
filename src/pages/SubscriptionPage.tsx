@@ -11,7 +11,8 @@ import {
   useSubscriptionStatus,
 } from '@/hooks/useSubscription';
 import { useCreateCheckout } from '@/hooks/useCreateCheckout';
-import { Loader2, Check, Sparkles, Zap } from 'lucide-react';
+import { useCustomerPortal } from '@/hooks/useCustomerPortal';
+import { Loader2, Check, Sparkles, Zap, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -30,6 +31,7 @@ export function SubscriptionPage() {
   const { data: subscription, isLoading: subLoading } = useSubscription();
   const { data: status } = useSubscriptionStatus();
   const createCheckout = useCreateCheckout();
+  const { mutate: openPortal, isPending: portalLoading } = useCustomerPortal();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -92,6 +94,32 @@ export function SubscriptionPage() {
           </p>
         </div>
 
+        {/* Debug Panel (Development Only) */}
+        {import.meta.env.DEV && (
+          <div className="mb-4 p-4 bg-gray-100 rounded text-xs font-mono">
+            <strong className="block mb-2 text-sm">🐛 Debug Info:</strong>
+            <div>
+              <strong>User ID:</strong> {user?.id}
+            </div>
+            <div>
+              <strong>User Email:</strong> {user?.email}
+            </div>
+            <div>
+              <strong>Status:</strong> {JSON.stringify(status)}
+            </div>
+            <div>
+              <strong>Subscription:</strong> {JSON.stringify(subscription)}
+            </div>
+            <div>
+              <strong>hasActiveSubscription:</strong>{' '}
+              {String(hasActiveSubscription)}
+            </div>
+            <div>
+              <strong>isInTrial:</strong> {String(isInTrial)}
+            </div>
+          </div>
+        )}
+
         {/* Current Status */}
         {hasActiveSubscription && (
           <Card className="mb-8 border-green-500">
@@ -106,22 +134,56 @@ export function SubscriptionPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <p>
-                  <strong>Status:</strong> {subscription?.status}
-                </p>
-                {status?.trial_end && isInTrial && (
+              <div className="space-y-4">
+                <div className="space-y-2">
                   <p>
-                    <strong>Trial ends:</strong>{' '}
-                    {new Date(status.trial_end).toLocaleDateString()}
+                    <strong>Status:</strong> {subscription?.status}
                   </p>
-                )}
-                {status?.current_period_end && !isInTrial && (
-                  <p>
-                    <strong>Next billing date:</strong>{' '}
-                    {new Date(status.current_period_end).toLocaleDateString()}
+                  {status?.trial_end && isInTrial && (
+                    <p>
+                      <strong>Trial ends:</strong>{' '}
+                      {new Date(status.trial_end).toLocaleDateString()}
+                    </p>
+                  )}
+                  {status?.current_period_end && !isInTrial && (
+                    <p>
+                      <strong>Next billing date:</strong>{' '}
+                      {new Date(status.current_period_end).toLocaleDateString()}
+                    </p>
+                  )}
+                  {subscription?.cancel_at_period_end && (
+                    <p className="text-amber-600 dark:text-amber-500">
+                      <strong>Note:</strong> Subscription will cancel at end of
+                      period
+                    </p>
+                  )}
+                </div>
+
+                {/* Manage Subscription Button */}
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => openPortal()}
+                    disabled={portalLoading}
+                  >
+                    {portalLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Manage Subscription
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    Cancel anytime, update payment method, or view billing
+                    history
                   </p>
-                )}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -6,6 +6,7 @@ import { RecipeForm } from '@/components/recipes/recipe-form';
 import { Button } from '@/components/ui/button';
 import { WelcomeDialog } from '@/components/welcome/WelcomeDialog';
 import { ChatInstructionsModal } from '@/components/welcome/ChatInstructionsModal';
+import { PremiumFeatureGuard } from '@/components/subscription/PremiumFeatureGuard';
 import type { RecipeFormData } from '@/lib/schemas';
 import type { PersonaType } from '@/lib/openai';
 
@@ -74,21 +75,6 @@ export function ChatRecipePage() {
 
   return (
     <div className="min-h-screen bg-base-200">
-      {/* Chef Selection Welcome Dialog */}
-      <WelcomeDialog
-        context="chat-recipe"
-        onChefSelected={handleChefSelected}
-      />
-
-      {/* Chat Instructions Modal - shows after chef selection */}
-      {selectedChef && (
-        <ChatInstructionsModal
-          isOpen={showInstructions}
-          onClose={() => setShowInstructions(false)}
-          chefName={CHEF_NAMES[selectedChef] || 'Your Chef'}
-        />
-      )}
-
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Button
@@ -125,27 +111,45 @@ export function ChatRecipePage() {
           </div>
         </div>
 
-        {/* Always render ChatInterface to preserve conversation state */}
-        <div
-          className={`bg-base-100 rounded-lg shadow-sm ${showEditor ? 'hidden' : ''}`}
-        >
-          <ChatInterface
-            onRecipeGenerated={handleRecipeGenerated}
-            defaultPersona={selectedPersona}
+        {/* Premium Feature Guard - wraps AI chat functionality */}
+        <PremiumFeatureGuard feature="AI recipe generation">
+          {/* Chef Selection Welcome Dialog */}
+          <WelcomeDialog
+            context="chat-recipe"
+            onChefSelected={handleChefSelected}
           />
-        </div>
 
-        {/* Show RecipeForm when editor is active */}
-        {showEditor && generatedRecipe && (
-          <div className="bg-base-100 rounded-lg shadow-sm">
-            <div className="p-6">
-              <RecipeForm
-                initialData={generatedRecipe}
-                onSuccess={handleRecipeSaved}
-              />
-            </div>
+          {/* Chat Instructions Modal - shows after chef selection */}
+          {selectedChef && (
+            <ChatInstructionsModal
+              isOpen={showInstructions}
+              onClose={() => setShowInstructions(false)}
+              chefName={CHEF_NAMES[selectedChef] || 'Your Chef'}
+            />
+          )}
+
+          {/* Always render ChatInterface to preserve conversation state */}
+          <div
+            className={`bg-base-100 rounded-lg shadow-sm ${showEditor ? 'hidden' : ''}`}
+          >
+            <ChatInterface
+              onRecipeGenerated={handleRecipeGenerated}
+              defaultPersona={selectedPersona}
+            />
           </div>
-        )}
+
+          {/* Show RecipeForm when editor is active */}
+          {showEditor && generatedRecipe && (
+            <div className="bg-base-100 rounded-lg shadow-sm">
+              <div className="p-6">
+                <RecipeForm
+                  initialData={generatedRecipe}
+                  onSuccess={handleRecipeSaved}
+                />
+              </div>
+            </div>
+          )}
+        </PremiumFeatureGuard>
       </div>
     </div>
   );

@@ -185,12 +185,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           });
         }
 
+        // Extract customer ID (session.customer can be an object if expanded)
+        const customerId =
+          typeof session.customer === 'string'
+            ? session.customer
+            : session.customer?.id || null;
+
         // Create or update subscription record with error handling
         const { data: subscriptionData, error: dbError } = await supabase
           .from('user_subscriptions')
           .upsert({
             user_id: userId,
-            stripe_customer_id: session.customer as string,
+            stripe_customer_id: customerId,
             stripe_subscription_id: subscription.id,
             stripe_price_id: subscription.items.data[0]?.price?.id,
             status: subscription.status,
@@ -200,12 +206,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             trial_end: subscription.trial_end
               ? new Date(subscription.trial_end * 1000).toISOString()
               : null,
-            current_period_start: new Date(
-              subscription.current_period_start * 1000
-            ).toISOString(),
-            current_period_end: new Date(
-              subscription.current_period_end * 1000
-            ).toISOString(),
+            current_period_start: subscription.current_period_start
+              ? new Date(subscription.current_period_start * 1000).toISOString()
+              : new Date().toISOString(), // Fallback to now if missing
+            current_period_end: subscription.current_period_end
+              ? new Date(subscription.current_period_end * 1000).toISOString()
+              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Fallback to 30 days from now
             cancel_at_period_end: subscription.cancel_at_period_end,
           })
           .select();
@@ -273,12 +279,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             trial_end: subscription.trial_end
               ? new Date(subscription.trial_end * 1000).toISOString()
               : null,
-            current_period_start: new Date(
-              subscription.current_period_start * 1000
-            ).toISOString(),
-            current_period_end: new Date(
-              subscription.current_period_end * 1000
-            ).toISOString(),
+            current_period_start: subscription.current_period_start
+              ? new Date(subscription.current_period_start * 1000).toISOString()
+              : new Date().toISOString(), // Fallback to now if missing
+            current_period_end: subscription.current_period_end
+              ? new Date(subscription.current_period_end * 1000).toISOString()
+              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Fallback to 30 days from now
             cancel_at_period_end: subscription.cancel_at_period_end,
             canceled_at: subscription.canceled_at
               ? new Date(subscription.canceled_at * 1000).toISOString()
@@ -390,14 +396,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .single();
 
           if (paymentData?.user_id) {
-            await sendSubscriptionEmail(
+            sendSubscriptionEmail(
+              supabase,
               paymentData.user_id,
               'payment_succeeded',
               {
                 amount: ((invoice.amount_paid || 0) / 100).toFixed(2),
                 currency: (invoice.currency || 'usd').toUpperCase(),
               }
-            );
+            ).catch((emailError) => {
+              console.error(
+                '[Webhook] Email sending failed (non-blocking):',
+                emailError
+              );
+            });
           }
         }
 

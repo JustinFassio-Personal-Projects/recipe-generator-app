@@ -240,6 +240,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get origin for redirect URLs
     const origin = req.headers.origin || 'http://localhost:5174';
 
+    console.log('[Checkout] Origin header:', req.headers.origin);
+    console.log('[Checkout] Using origin:', origin);
+    console.log(
+      '[Checkout] Success URL will be:',
+      `${origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`
+    );
+
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

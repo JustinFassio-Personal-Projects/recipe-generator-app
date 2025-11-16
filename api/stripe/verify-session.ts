@@ -102,9 +102,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[VerifySession] Verifying session for user:', user.email);
 
-    // Retrieve checkout session from Stripe with subscription expanded
+    // Retrieve checkout session from Stripe with subscription and customer expanded
     const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ['subscription'],
+      expand: ['subscription', 'customer'],
     });
 
     if (!session) {
@@ -112,10 +112,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Verify this session belongs to the authenticated user
+    // Method 1: Check metadata (for app-created checkouts)
     const sessionUserId = session.metadata?.supabase_user_id;
-    if (sessionUserId !== user.id) {
+
+    // Method 2: Check customer email (for Payment Links and app-created checkouts)
+    const customerEmail =
+      typeof session.customer === 'object' && session.customer
+        ? session.customer.email
+        : session.customer_details?.email;
+
+    const isOwner = sessionUserId === user.id || customerEmail === user.email;
+
+    if (!isOwner) {
+      console.error('[VerifySession] Ownership verification failed:', {
+        sessionUserId,
+        expectedUserId: user.id,
+        customerEmail,
+        expectedEmail: user.email,
+      });
       return res.status(403).json({ error: 'Session does not belong to user' });
     }
+
+    console.log('[VerifySession] ✅ Ownership verified for user:', user.email);
 
     // Check if subscription already exists in database
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
@@ -153,12 +171,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       customerId: subscription.customer,
     });
 
+    // Extract customer ID (session.customer can be an object if expanded)
+    const customerId =
+      typeof session.customer === 'string'
+        ? session.customer
+        : session.customer?.id || null;
+
     // Sync subscription to database
     const { data: subscriptionData, error: dbError } = await supabaseAdmin
       .from('user_subscriptions')
       .upsert({
         user_id: user.id,
-        stripe_customer_id: session.customer as string,
+        stripe_customer_id: customerId,
         stripe_subscription_id: subscription.id,
         stripe_price_id: subscription.items.data[0]?.price?.id,
         status: subscription.status,
@@ -168,12 +192,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         trial_end: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
           : null,
-        current_period_start: new Date(
-          subscription.current_period_start * 1000
-        ).toISOString(),
-        current_period_end: new Date(
-          subscription.current_period_end * 1000
-        ).toISOString(),
+        current_period_start: subscription.current_period_start
+          ? new Date(subscription.current_period_start * 1000).toISOString()
+          : new Date().toISOString(), // Fallback to now if missing
+        current_period_end: subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Fallback to 30 days from now
         cancel_at_period_end: subscription.cancel_at_period_end,
       })
       .select()

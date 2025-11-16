@@ -69,6 +69,66 @@ describe('Recipe Critical Path Integration Tests', () => {
       );
     } else {
       testUser = user.user;
+
+      // CRITICAL: Ensure test user has a profile with tenant_id
+      // This is required for recipe creation to work (RLS policy requirement)
+      const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+      // Check if profile exists
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.user.id)
+        .single();
+
+      // Create or update profile if needed
+      if (profileError?.code === 'PGRST116' || !existingProfile) {
+        // Profile doesn't exist, create it
+        const { error: insertError } = await supabase.from('profiles').insert({
+          id: user.user.id,
+          tenant_id: DEFAULT_TENANT_ID,
+          full_name: user.user.email || 'Test User',
+        });
+
+        if (insertError) {
+          console.error(
+            'Failed to create test user profile:',
+            insertError.message
+          );
+          throw new Error(
+            `Test setup failed: Could not create profile for test user: ${insertError.message}`
+          );
+        }
+      } else if (existingProfile && !existingProfile.tenant_id) {
+        // Profile exists but missing tenant_id, update it
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ tenant_id: DEFAULT_TENANT_ID })
+          .eq('id', user.user.id);
+
+        if (updateError) {
+          console.error(
+            'Failed to update test user profile:',
+            updateError.message
+          );
+          throw new Error(
+            `Test setup failed: Could not update profile tenant_id: ${updateError.message}`
+          );
+        }
+      }
+
+      // Verify profile has tenant_id (required for recipe creation)
+      const { data: verifyProfile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.user.id)
+        .single();
+
+      if (!verifyProfile?.tenant_id) {
+        throw new Error(
+          'Test setup failed: Test user profile does not have tenant_id after setup'
+        );
+      }
     }
   });
 

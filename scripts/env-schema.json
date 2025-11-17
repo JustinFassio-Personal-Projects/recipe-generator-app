@@ -14,7 +14,7 @@
       },
       "optional": {
         "client": [],
-        "server": []
+        "server": ["BBQ_WORKFLOW_ID"]
       }
     },
     "production": {
@@ -28,7 +28,7 @@
       },
       "optional": {
         "client": [],
-        "server": []
+        "server": ["BBQ_WORKFLOW_ID"]
       }
     }
   },
@@ -48,11 +48,16 @@
     "OPENAI_API_KEY": {
       "pattern": "^sk-[A-Za-z0-9_-]{20,}$",
       "description": "OpenAI API key"
+    },
+    "BBQ_WORKFLOW_ID": {
+      "pattern": "^wf_[a-z0-9]+$",
+      "description": "OpenAI Agent Builder workflow ID for BBQ Pit Master persona"
     }
   },
   "security": {
     "neverExposeToClient": [
       "OPENAI_API_KEY",
+      "BBQ_WORKFLOW_ID",
       "SENTRY_AUTH_TOKEN",
       "SUPABASE_SERVICE_ROLE_KEY",
       "SUPABASE_JWT_SECRET",

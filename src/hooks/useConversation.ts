@@ -4,6 +4,7 @@ import type { RecipeFormData } from '@/lib/schemas';
 import { toast } from '@/hooks/use-toast';
 import { parseRecipeFromText } from '@/lib/recipe-parser';
 import { useAuth } from '@/contexts/AuthProvider';
+import { recipeFormFromAgent } from '@/lib/recipe-from-agent';
 import {
   createConversationThread,
   saveMessage,
@@ -374,15 +375,38 @@ I'll ensure all recommendations are safe for your dietary needs and tailored to 
           }
         }
 
-        // Check if AI is asking if user is ready to save the recipe
-        // Regex pattern to detect if the AI is prompting the user to save or finalize a recipe.
-        // Matches phrases like "ready to save recipe", "create and save recipe", "finalize recipe", etc.
-        const SAVE_INTENTION_REGEX =
-          /ready.*create.*save.*recipe|ready.*save.*recipe|create.*save.*recipe|ready.*save|want.*save.*recipe|save.*this.*recipe|create.*recipe|finalize.*recipe|ready.*finalize/i;
-        const isReadyToSave = SAVE_INTENTION_REGEX.test(response.message);
-        setShowSaveRecipeButton(isReadyToSave);
+        // Handle structured recipe from Agent Builder workflow (bbqPitMaster persona)
+        if (persona === 'bbqPitMaster' && response.agentRecipe) {
+          try {
+            const formRecipe = recipeFormFromAgent(response.agentRecipe);
+            setGeneratedRecipe(formRecipe);
+            // Recipe will be automatically passed to onRecipeGenerated via useEffect in ChatInterface
+            console.log(
+              '[BBQ Workflow] Structured recipe received and converted'
+            );
+          } catch (error) {
+            console.error(
+              '[BBQ Workflow] Failed to convert agent recipe:',
+              error
+            );
+            toast({
+              title: 'Recipe Conversion Error',
+              description:
+                'Received recipe data but failed to convert it. Please try again.',
+              variant: 'destructive',
+            });
+          }
+        } else {
+          // Check if AI is asking if user is ready to save the recipe
+          // Regex pattern to detect if the AI is prompting the user to save or finalize a recipe.
+          // Matches phrases like "ready to save recipe", "create and save recipe", "finalize recipe", etc.
+          const SAVE_INTENTION_REGEX =
+            /ready.*create.*save.*recipe|ready.*save.*recipe|create.*save.*recipe|ready.*save|want.*save.*recipe|save.*this.*recipe|create.*recipe|finalize.*recipe|ready.*finalize/i;
+          const isReadyToSave = SAVE_INTENTION_REGEX.test(response.message);
+          setShowSaveRecipeButton(isReadyToSave);
 
-        // No automatic recipe detection - recipes will be created when user clicks "Save Recipe"
+          // No automatic recipe detection - recipes will be created when user clicks "Save Recipe"
+        }
       } catch (error) {
         console.error('AI API error:', error);
 

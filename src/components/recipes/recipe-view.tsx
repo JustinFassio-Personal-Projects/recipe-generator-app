@@ -17,6 +17,7 @@ import {
   Save,
   Plus,
   Shield,
+  Sliders,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,8 @@ import { CommentSystem } from './comment-system';
 import { AddToShoppingListButton } from '@/components/shopping-cart/AddToShoppingListButton';
 import { useUserGroceryCart } from '@/hooks/useUserGroceryCart';
 import { EditableNotes } from '@/components/shared/patterns/EditableNotes';
+import { detectIngredientMentions } from '@/lib/utils/ingredient-mention-detector';
+import { InstructionIngredientDropdown } from './InstructionIngredientDropdown';
 
 interface RecipeViewProps {
   recipe: Recipe;
@@ -96,6 +99,117 @@ export function RecipeView({
   const [clickedIngredients, setClickedIngredients] = useState<Set<string>>(
     new Set()
   );
+
+  // State to track checked instruction steps (persisted in localStorage)
+  const [checkedSteps, setCheckedSteps] = useState<Set<number>>(new Set());
+
+  // Load checked steps from localStorage on mount
+  useEffect(() => {
+    const storageKey = `recipe-instructions-checked-${recipe.id}`;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as number[];
+        setCheckedSteps(new Set(parsed));
+      }
+    } catch (error) {
+      console.warn('Failed to load checked steps from localStorage:', error);
+    }
+  }, [recipe.id]);
+
+  // Save checked steps to localStorage whenever they change
+  useEffect(() => {
+    const storageKey = `recipe-instructions-checked-${recipe.id}`;
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(Array.from(checkedSteps))
+      );
+    } catch (error) {
+      console.warn('Failed to save checked steps to localStorage:', error);
+    }
+  }, [checkedSteps, recipe.id]);
+
+  // Handle step checkbox toggle
+  const handleStepToggle = (stepIndex: number) => {
+    setCheckedSteps((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(stepIndex)) {
+        newSet.delete(stepIndex);
+      } else {
+        newSet.add(stepIndex);
+      }
+      return newSet;
+    });
+  };
+
+  // Parse instructions into steps array (extracted for useMemo)
+  const instructionSteps = useMemo(() => {
+    let steps: string[] = [];
+    let instructionsToProcess: unknown = recipe.instructions;
+
+    // Check if instructions is a JSON string that needs parsing
+    // Handle case where instructions might be stored as a string instead of array
+    const instructionsValue: unknown = recipe.instructions;
+    if (
+      typeof instructionsValue === 'string' &&
+      instructionsValue.trim().startsWith('[')
+    ) {
+      try {
+        instructionsToProcess = JSON.parse(instructionsValue);
+      } catch (e) {
+        console.warn('Failed to parse instructions as JSON:', e);
+      }
+    }
+
+    if (Array.isArray(instructionsToProcess)) {
+      steps = instructionsToProcess
+        .map((step) => {
+          if (typeof step === 'string' && step.includes('\n')) {
+            return step
+              .split('\n')
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0);
+          }
+          return step;
+        })
+        .flat()
+        .filter((step) => {
+          const trimmed =
+            typeof step === 'string' ? step.trim() : String(step).trim();
+          return (
+            trimmed.length > 0 &&
+            !(trimmed.startsWith('**') && trimmed.endsWith('**'))
+          );
+        })
+        .map((step) => {
+          const stepStr = typeof step === 'string' ? step : String(step);
+          return stepStr.replace(/^\d+\.\s*/, '').trim();
+        });
+    } else if (typeof instructionsToProcess === 'string') {
+      const lines = instructionsToProcess.split('\n');
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+        if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+          continue;
+        }
+        const cleanedStep = trimmedLine.replace(/^\d+\.\s*/, '').trim();
+        if (cleanedStep.length > 0) {
+          steps.push(cleanedStep);
+        }
+      }
+    }
+
+    return steps;
+  }, [recipe.instructions]);
+
+  // Pre-compute ingredient mentions for all steps (performance optimization)
+  const ingredientMentionsByStep = useMemo(() => {
+    return instructionSteps.map((step) =>
+      detectIngredientMentions(step, recipe.ingredients)
+    );
+  }, [instructionSteps, recipe.ingredients]);
 
   // Create enhanced matcher that includes global ingredients (for individual ingredient workflow)
   const [enhancedMatcher, setEnhancedMatcher] =
@@ -301,23 +415,20 @@ export function RecipeView({
 
               {/* Setup */}
               {recipe.setup && recipe.setup.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    Setup & Preparation
+                <div className="mt-4 border border-base-300 rounded-lg p-4 bg-base-200">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                    Setup
                   </h4>
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     {recipe.setup.map((step, index) => (
-                      <div key={index} className="flex items-start">
-                        <div className="mt-0.5 mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
-                          <span className="text-xs font-semibold text-blue-700">
-                            {index + 1}
-                          </span>
-                        </div>
-                        <div className="flex-1 pt-0.5">
-                          <p className="text-sm text-gray-800 leading-relaxed">
-                            {step}
-                          </p>
-                        </div>
+                      <div
+                        key={index}
+                        className="flex items-start gap-2 border border-base-300 rounded-md p-2 bg-base-100"
+                      >
+                        <Sliders className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-gray-800 leading-relaxed">
+                          {index + 1}. {step}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -325,56 +436,58 @@ export function RecipeView({
               )}
 
               {/* Instructions */}
-              <div className="mt-4">
-                <h4 className="text-lg font-semibold text-gray-900 mb-3">
+              <div className="mt-4 border border-base-300 rounded-lg p-4 bg-base-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">
                   Instructions
                 </h4>
-                <div className="space-y-2">
-                  {(() => {
-                    // Instructions are now an array - handle both array and legacy string format
-                    let instructionSteps: string[] = [];
-
-                    if (Array.isArray(recipe.instructions)) {
-                      instructionSteps = recipe.instructions.filter(
-                        (step) => step.trim().length > 0
-                      );
-                    } else if (typeof recipe.instructions === 'string') {
-                      // Legacy format: split by newlines for backward compatibility
-                      const instructionsStr: string = recipe.instructions;
-                      const lines = instructionsStr.split('\n');
-                      for (const line of lines) {
-                        const trimmedLine = line.trim();
-                        // Skip empty lines and section headers
-                        if (!trimmedLine) continue;
-                        if (
-                          trimmedLine.startsWith('**') &&
-                          trimmedLine.endsWith('**')
-                        ) {
-                          continue;
-                        }
-                        const cleanedStep = trimmedLine
-                          .replace(/^\d+\.\s*/, '')
-                          .trim();
-                        if (cleanedStep.length > 0) {
-                          instructionSteps.push(cleanedStep);
-                        }
-                      }
-                    }
-
-                    // Render instructions as numbered steps with yellow/brown (amber) colors
-                    return instructionSteps.map((step, index) => (
-                      <div key={index} className="flex items-start">
-                        <div className="mt-0.5 mr-3 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
-                          <span className="text-xs font-semibold text-amber-800">
-                            {index + 1}
-                          </span>
+                <div className="flex flex-col gap-2">
+                  {instructionSteps.length === 0 ? (
+                    <p className="text-sm text-gray-500 italic">
+                      No instructions available for this recipe.
+                    </p>
+                  ) : (
+                    instructionSteps.map((step, index) => {
+                      const isChecked = checkedSteps.has(index);
+                      const ingredientMentions =
+                        ingredientMentionsByStep[index];
+                      return (
+                        <div
+                          key={index}
+                          className={`flex flex-col gap-2 border border-base-300 rounded-md p-2 bg-base-100 ${
+                            isChecked ? 'opacity-60' : ''
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleStepToggle(index)}
+                              className="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded border-gray-300 text-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-0"
+                              aria-label={`Mark step ${index + 1} as complete`}
+                            />
+                            <Badge
+                              variant="outline"
+                              className="h-5 min-w-[1.5rem] flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5"
+                            >
+                              {index + 1}
+                            </Badge>
+                            <p
+                              className={`text-sm text-gray-800 leading-relaxed flex-1 ${
+                                isChecked ? 'line-through' : ''
+                              }`}
+                            >
+                              {step}
+                            </p>
+                          </div>
+                          {ingredientMentions.length > 0 && (
+                            <InstructionIngredientDropdown
+                              ingredients={ingredientMentions}
+                            />
+                          )}
                         </div>
-                        <p className="pt-0.5 text-sm leading-relaxed text-gray-800">
-                          {step}
-                        </p>
-                      </div>
-                    ));
-                  })()}
+                      );
+                    })
+                  )}
                 </div>
               </div>
 

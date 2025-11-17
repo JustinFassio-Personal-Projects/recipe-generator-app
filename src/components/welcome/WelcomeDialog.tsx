@@ -12,6 +12,7 @@ import { FirstTimeWelcome } from './FirstTimeWelcome';
 import { WelcomeBackFlow } from './WelcomeBackFlow';
 import { QuickNavigationFlow } from './QuickNavigationFlow';
 import { ChatRecipeWelcome } from './ChatRecipeWelcome';
+import { AgentRecipeWelcome } from './AgentRecipeWelcome';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface WelcomeDialogProps {
@@ -65,6 +66,7 @@ export function WelcomeDialog({
             {flowType === 'welcome-back' && 'Welcome Back'}
             {flowType === 'quick-nav' && 'Quick Navigation'}
             {flowType === 'chat-recipe' && 'Choose Your Cooking Guide'}
+            {flowType === 'agent-recipe' && 'Choose Your AI Agent'}
           </DialogTitle>
           <DialogDescription>
             {flowType === 'first-time' &&
@@ -74,6 +76,8 @@ export function WelcomeDialog({
             {flowType === 'quick-nav' && 'Navigate to your favorite sections'}
             {flowType === 'chat-recipe' &&
               'Select a chef personality to guide your recipe creation'}
+            {flowType === 'agent-recipe' &&
+              'Select an AI agent powered by OpenAI Agent Builder workflows'}
           </DialogDescription>
         </VisuallyHidden>
 
@@ -100,6 +104,12 @@ export function WelcomeDialog({
           <ChatRecipeWelcome
             onClose={dismissPopup}
             onSelectChef={onChefSelected || (() => {})}
+          />
+        )}
+        {flowType === 'agent-recipe' && (
+          <AgentRecipeWelcome
+            onClose={dismissPopup}
+            onSelectAgent={onChefSelected || (() => {})}
           />
         )}
       </DialogContent>

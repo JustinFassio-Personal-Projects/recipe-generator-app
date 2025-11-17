@@ -211,6 +211,12 @@ export function RecipesPage() {
               onClick: () => navigate('/chat-recipe'),
             },
             {
+              id: 'agent-recipe',
+              icon: <ChefHat className="h-4 w-4" />,
+              label: 'AI Agentic Chef',
+              onClick: () => navigate('/agent-recipe'),
+            },
+            {
               id: 'update-profile',
               icon: <User className="h-4 w-4" />,
               label: 'Update Profile',

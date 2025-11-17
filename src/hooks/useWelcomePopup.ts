@@ -9,8 +9,9 @@ export type WelcomeFlowType =
   | 'welcome-back'
   | 'quick-nav'
   | 'chat-recipe'
+  | 'agent-recipe'
   | null;
-export type WelcomeFlowContext = 'general' | 'chat-recipe';
+export type WelcomeFlowContext = 'general' | 'chat-recipe' | 'agent-recipe';
 
 interface UseWelcomePopupReturn {
   shouldShow: boolean;
@@ -174,6 +175,15 @@ export function useWelcomePopup(
     // Handle chat-recipe context (always show, not session-tracked)
     if (context === 'chat-recipe') {
       setFlowType('chat-recipe');
+      setShouldShow(true);
+      setIsLoading(false);
+      setHasInitialized(true);
+      return;
+    }
+
+    // Handle agent-recipe context (always show, not session-tracked)
+    if (context === 'agent-recipe') {
+      setFlowType('agent-recipe');
       setShouldShow(true);
       setIsLoading(false);
       setHasInitialized(true);

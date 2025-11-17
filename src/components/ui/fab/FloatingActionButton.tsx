@@ -37,6 +37,9 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     if (itemId === 'ai-create') {
       // AI Recipe Creator - primary theme color
       return 'btn-primary';
+    } else if (itemId === 'agent-recipe') {
+      // AI Agentic Chef - warning/orange theme color
+      return 'btn-warning';
     } else if (itemId === 'update-profile') {
       // Update Profile - secondary theme color
       return 'btn-secondary';

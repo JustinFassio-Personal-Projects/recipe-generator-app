@@ -980,3 +980,5 @@ class OpenAIAPI {
 }
 
 export const openaiAPI = new OpenAIAPI();
+// Alias for backward compatibility with tests
+export const openAIClient = openaiAPI;

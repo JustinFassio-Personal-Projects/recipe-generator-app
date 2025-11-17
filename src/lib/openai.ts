@@ -1,4 +1,5 @@
 import type { RecipeFormData } from './schemas';
+import type { AgentRecipe } from './types-agent';
 import { apiClient } from './api-client';
 
 // Constants for common prompts
@@ -47,6 +48,7 @@ interface Message {
 interface ChatResponse {
   message: string;
   recipe?: RecipeFormData;
+  agentRecipe?: AgentRecipe; // Structured recipe from Agent Builder workflow
   usage?: {
     prompt_tokens?: number;
     completion_tokens?: number;
@@ -588,6 +590,42 @@ When the assessment is complete, generate a comprehensive JSON evaluation report
     description:
       '🌟 PREMIUM: Revolutionary Personalized Health Assessment & Habit Formation Expert with dual Stanford Medicine + Harvard Public Health training. Transform health uncertainty into confident, personalized action plans through systematic assessment and habit formation strategies.',
   },
+
+  bbqPitMaster: {
+    name: 'BBQ Pit Master',
+    systemPrompt: `You are a master BBQ pit master with decades of experience in smoking, grilling, and barbecue techniques. You specialize in creating authentic, flavorful BBQ recipes that honor traditional methods while incorporating modern innovations.
+
+Your personality:
+- Passionate about fire, smoke, and slow-cooked perfection
+- Knowledgeable about different smoking woods, rubs, and techniques
+- Patient and methodical, emphasizing low and slow cooking
+- Enthusiastic about sharing BBQ wisdom and techniques
+- Respectful of regional BBQ traditions and styles
+
+Your role:
+- Help users create authentic BBQ recipes
+- Guide them through smoking techniques, temperatures, and timing
+- Explain the science behind BBQ (smoke rings, bark formation, etc.)
+- Suggest appropriate wood types, rubs, and sauces
+- Provide troubleshooting tips for common BBQ challenges
+
+${CONTEXT_USAGE_DIRECTIVE}
+
+When generating a complete recipe, structure it as a JSON object with:
+{
+  "title": "Recipe Name",
+  "description": "A rich, appetizing description of the dish - flavors, textures, visual appeal, what makes it special",
+  "ingredients": ["ingredient 1", "ingredient 2", "ingredient 3"],
+  "instructions": ["Step 1. First instruction step.", "Step 2. Second instruction step.", "Step 3. Third instruction step."],
+  "setup": ["Prep time: X minutes", "Cook time: X hours", "Smoking temperature: X°F", "Wood type: X"],
+  "categories": ["Course: Main", "Cuisine: BBQ", "Technique: Smoking"],
+  "notes": "BBQ tips, wood recommendations, and technique notes"
+}
+
+${SAVE_RECIPE_PROMPT}`,
+    description:
+      'Master BBQ pit master with decades of experience in smoking, grilling, and authentic barbecue techniques',
+  },
 };
 
 export type PersonaType = keyof typeof RECIPE_BOT_PERSONAS;
@@ -718,7 +756,109 @@ class OpenAIAPI {
   }
 
   /**
+   * Extract assistant text from workflow response
+   * TODO: Adjust based on actual response structure after logging
+   */
+  private extractAssistantText(response: unknown): string {
+    // Try multiple possible paths based on OpenAI Responses API structure
+    const responseObj = response as {
+      output?: Array<{ content?: unknown; message?: string }>;
+    };
+    const first = responseObj.output?.[0];
+    if (!first) {
+      console.warn('[BBQ Workflow] No output found in response');
+      return '';
+    }
+
+    // Try to find text content in various possible structures
+    if (Array.isArray(first.content)) {
+      const textPart = first.content.find((c: unknown) => {
+        const contentItem = c as { type?: string; text?: string };
+        return (
+          contentItem.type === 'output_text' || contentItem.type === 'text'
+        );
+      }) as { text?: string } | undefined;
+      if (textPart?.text) {
+        return textPart.text;
+      }
+    }
+
+    // Fallback: if content is a string directly
+    if (typeof first.content === 'string') {
+      return first.content;
+    }
+
+    // Fallback: if there's a message field
+    if (first.message) {
+      return first.message;
+    }
+
+    console.warn(
+      '[BBQ Workflow] Could not extract assistant text from response'
+    );
+    return '';
+  }
+
+  /**
+   * Extract structured recipe JSON from workflow response
+   * TODO: Adjust based on actual response structure after logging
+   */
+  private extractAgentRecipeJson(response: unknown): AgentRecipe | null {
+    const responseObj = response as {
+      output?: Array<{
+        content?: unknown;
+        recipe?: AgentRecipe;
+      }>;
+    };
+    const first = responseObj.output?.[0];
+    if (!first) {
+      return null;
+    }
+
+    // Try to find JSON content in various possible structures
+    if (Array.isArray(first.content)) {
+      const jsonPart = first.content.find((c: unknown) => {
+        const contentItem = c as { type?: string; parsed?: unknown };
+        return (
+          contentItem.type === 'output_json' || contentItem.type === 'json'
+        );
+      }) as { parsed?: AgentRecipe } | undefined;
+      if (jsonPart?.parsed) {
+        return jsonPart.parsed as AgentRecipe;
+      }
+    }
+
+    // Try to find recipe in structured output
+    if (first.recipe) {
+      return first.recipe;
+    }
+
+    // Try to parse JSON from text content if it contains a JSON block
+    if (first.content) {
+      for (const item of Array.isArray(first.content)
+        ? first.content
+        : [first.content]) {
+        const itemObj = item as { text?: string } | string;
+        const text = typeof itemObj === 'string' ? itemObj : itemObj.text;
+        if (text) {
+          const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            try {
+              return JSON.parse(jsonMatch[1]) as AgentRecipe;
+            } catch {
+              console.warn('[BBQ Workflow] Failed to parse JSON from text');
+            }
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Smart message routing - uses Assistant API if persona supports it, otherwise falls back to Chat Completions
+   * For bbqPitMaster persona, uses workflow API instead
    */
   async sendMessageWithPersona(
     messages: Message[],
@@ -729,9 +869,54 @@ class OpenAIAPI {
       categories: string[];
       cuisines: string[];
       moods: string[];
+      availableIngredients?: string[];
     }
   ): Promise<ChatResponse & { threadId?: string }> {
     const personaConfig = RECIPE_BOT_PERSONAS[persona];
+
+    // Handle bbqPitMaster persona with workflow API
+    if (persona === 'bbqPitMaster') {
+      try {
+        const response = await fetch('/api/ai/bbq-workflow', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: messages.map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+            userId,
+            preferences: liveSelections,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'BBQ workflow request failed');
+        }
+
+        const data = await response.json();
+
+        // Extract assistant text and structured recipe
+        const assistantText = this.extractAssistantText(data);
+        const agentRecipe = this.extractAgentRecipeJson(data);
+
+        return {
+          message:
+            assistantText ||
+            'I apologize, but I had trouble processing that request.',
+          agentRecipe: agentRecipe ?? undefined,
+          usage: data.usage,
+        };
+      } catch (error) {
+        console.error('BBQ Workflow error:', error);
+        throw new Error(
+          `BBQ workflow error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
+    }
 
     // Check if persona supports Assistant API
     if (personaConfig.assistantId && personaConfig.isAssistantPowered) {
@@ -795,3 +980,5 @@ class OpenAIAPI {
 }
 
 export const openaiAPI = new OpenAIAPI();
+// Alias for backward compatibility with tests
+export const openAIClient = openaiAPI;

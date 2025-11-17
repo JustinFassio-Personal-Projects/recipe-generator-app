@@ -201,9 +201,9 @@ export function AgentRecipePage() {
   // TODO: Implement recipe extraction from ChatKit conversation
   // This function will be used when recipe extraction is implemented
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleRecipeGenerated = (recipe: RecipeFormData) => {
-    setGeneratedRecipe(recipe);
-    setShowEditor(true);
+  const handleRecipeGenerated = (_recipe: RecipeFormData) => {
+    // setGeneratedRecipe(recipe);
+    // setShowEditor(true);
   };
 
   const handleRecipeSaved = () => {

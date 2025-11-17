@@ -150,13 +150,12 @@ export function RecipeView({
 
     // Check if instructions is a JSON string that needs parsing
     // Handle case where instructions might be stored as a string instead of array
-    const instructionsValue: unknown = recipe.instructions;
     if (
-      typeof instructionsValue === 'string' &&
-      instructionsValue.trim().startsWith('[')
+      typeof instructionsToProcess === 'string' &&
+      instructionsToProcess.trim().startsWith('[')
     ) {
       try {
-        instructionsToProcess = JSON.parse(instructionsValue);
+        instructionsToProcess = JSON.parse(instructionsToProcess);
       } catch (e) {
         console.warn('Failed to parse instructions as JSON:', e);
       }

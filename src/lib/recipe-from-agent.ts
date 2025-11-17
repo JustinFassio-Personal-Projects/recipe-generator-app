@@ -13,7 +13,7 @@ export function recipeFormFromAgent(agent: AgentRecipe): RecipeFormData {
     ingredients: agent.ingredients ?? [],
     instructions: agent.instructions ?? [],
     notes: agent.notes ?? '',
-    image_url: agent.image_url ?? null,
+    image_url: agent.image_url,
     categories: agent.categories ?? [],
     setup: agent.setup ?? [],
   };

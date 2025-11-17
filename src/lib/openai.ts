@@ -588,6 +588,48 @@ When the assessment is complete, generate a comprehensive JSON evaluation report
     description:
       '🌟 PREMIUM: Revolutionary Personalized Health Assessment & Habit Formation Expert with dual Stanford Medicine + Harvard Public Health training. Transform health uncertainty into confident, personalized action plans through systematic assessment and habit formation strategies.',
   },
+
+  bbqPitMaster: {
+    name: 'BBQ Pit Master',
+    systemPrompt: `You are a BBQ Pit Master, an expert in barbecue and smoking techniques. You specialize in creating incredible BBQ recipes using various smoking methods, wood types, and low-and-slow cooking techniques.
+
+Your personality:
+- Passionate about barbecue and smoking
+- Knowledgeable about different regional BBQ styles
+- Enthusiastic about teaching proper technique
+- Focused on achieving perfect smoke rings and bark
+- Emphasizes patience and proper temperature control
+
+Your role:
+- Help users create exceptional BBQ recipes
+- Guide them through proper smoking techniques
+- Recommend appropriate wood types and cooking methods
+- Provide timing and temperature guidance
+- Share tips for achieving restaurant-quality results
+
+${CONTEXT_USAGE_DIRECTIVE}
+
+When generating a complete recipe, structure it as a JSON object with:
+{
+  "title": "Recipe Name",
+  "description": "A rich, appetizing description of the dish - flavors, textures, visual appeal, what makes it special",
+  "ingredients": [
+    {
+      "item": "ingredient name",
+      "amount": "quantity needed",
+      "prep": "preparation instructions"
+    }
+  ],
+  "instructions": ["Step 1. First instruction step.", "Step 2. Second instruction step.", "Step 3. Third instruction step."],
+  "setup": ["Prep time: X minutes", "Cook time: X hours", "Smoking temperature: X°F", "Wood type: X"],
+  "categories": ["Course: Main", "Cuisine: BBQ/Smoking", "Technique: Smoking"],
+  "notes": "BBQ tips, wood recommendations, and technique guidance"
+}
+
+${SAVE_RECIPE_PROMPT}`,
+    description:
+      '🔥 BBQ Pit Master specializing in low-and-slow smoking techniques, regional BBQ styles, and creating restaurant-quality barbecue recipes',
+  },
 };
 
 export type PersonaType = keyof typeof RECIPE_BOT_PERSONAS;
@@ -732,6 +774,57 @@ class OpenAIAPI {
     }
   ): Promise<ChatResponse & { threadId?: string }> {
     const personaConfig = RECIPE_BOT_PERSONAS[persona];
+
+    // Check if persona uses workflow (BBQ Pit Master)
+    if (persona === 'bbqPitMaster') {
+      try {
+        const response = await fetch('/api/ai/bbq-workflow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: messages.map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+            userId,
+            preferences: liveSelections
+              ? {
+                  categories: liveSelections.categories || [],
+                  cuisines: liveSelections.cuisines || [],
+                  moods: liveSelections.moods || [],
+                }
+              : undefined,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({
+            error: 'BBQ workflow request failed',
+          }));
+          throw new Error(errorData.error || 'BBQ workflow request failed');
+        }
+
+        const workflowResponse = await response.json();
+
+        // Import extraction utilities dynamically
+        const {
+          extractAssistantMessageFromWorkflow,
+          extractRecipeJsonFromWorkflow,
+        } = await import('./workflow-response-parser');
+
+        const assistantMessage =
+          extractAssistantMessageFromWorkflow(workflowResponse);
+        const recipeJson = extractRecipeJsonFromWorkflow(workflowResponse);
+
+        return {
+          message: assistantMessage,
+          recipe: recipeJson || undefined,
+        };
+      } catch (workflowError) {
+        console.error('BBQ workflow error:', workflowError);
+        // Fall through to Chat Completions fallback
+      }
+    }
 
     // Check if persona supports Assistant API
     if (personaConfig.assistantId && personaConfig.isAssistantPowered) {

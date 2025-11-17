@@ -1,6 +1,6 @@
 import { createDaisyUICardClasses } from '@/lib/card-migration';
 import { createDaisyUISkeletonClasses } from '@/lib/skeleton-migration';
-import { Plus, ChefHat, Sparkles, User } from 'lucide-react';
+import { Plus, ChefHat, Sparkles, User, Bot } from 'lucide-react';
 import { useRecipes } from '@/hooks/use-recipes';
 import { useRecipeFilters } from '@/hooks/use-recipe-filters';
 import { RecipeCard } from '@/components/recipes/recipe-card';
@@ -209,6 +209,12 @@ export function RecipesPage() {
               icon: <Sparkles className="h-4 w-4" />,
               label: 'AI Recipe Creator',
               onClick: () => navigate('/chat-recipe'),
+            },
+            {
+              id: 'ai-agent',
+              icon: <Bot className="h-4 w-4" />,
+              label: 'AI Agentic Chef',
+              onClick: () => navigate('/agent-recipe'),
             },
             {
               id: 'update-profile',

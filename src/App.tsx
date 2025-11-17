@@ -15,6 +15,8 @@ import { RecipeViewPage } from '@/pages/recipe-view-page';
 import { ViewRecipePage } from '@/pages/view-recipe-page';
 import { ChatRecipePage } from '@/pages/chat-recipe-page';
 import { CoachChatPage } from '@/pages/coach-chat-page';
+import { AiAgenticChefPage } from '@/pages/ai-agentic-chef-page';
+import { AgentRecipePage } from '@/pages/agent-recipe-page';
 import ProfilePage from '@/pages/profile-page';
 import AuthCallbackPage from '@/pages/auth-callback-page';
 import ExplorePage from '@/pages/explore-page';
@@ -130,6 +132,32 @@ function AppContent() {
                 <Header />
                 <main>
                   <CoachChatPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-agentic-chef"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <AiAgenticChefPage />
+                </main>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/agent-recipe"
+          element={
+            <ProtectedRoute>
+              <div className="bg-base-100 min-h-screen">
+                <Header />
+                <main>
+                  <AgentRecipePage />
                 </main>
               </div>
             </ProtectedRoute>

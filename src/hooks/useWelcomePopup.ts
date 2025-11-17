@@ -9,8 +9,9 @@ export type WelcomeFlowType =
   | 'welcome-back'
   | 'quick-nav'
   | 'chat-recipe'
+  | 'agent-recipe'
   | null;
-export type WelcomeFlowContext = 'general' | 'chat-recipe';
+export type WelcomeFlowContext = 'general' | 'chat-recipe' | 'agent-recipe';
 
 interface UseWelcomePopupReturn {
   shouldShow: boolean;
@@ -24,7 +25,8 @@ interface UseWelcomePopupReturn {
 const SESSION_STORAGE_PREFIX = 'welcome-popup-shown-';
 
 function hasFlowBeenShownThisSession(flowType: WelcomeFlowType): boolean {
-  if (!flowType || flowType === 'chat-recipe') return false;
+  if (!flowType || flowType === 'chat-recipe' || flowType === 'agent-recipe')
+    return false;
   try {
     return (
       sessionStorage.getItem(`${SESSION_STORAGE_PREFIX}${flowType}`) === 'true'
@@ -36,7 +38,8 @@ function hasFlowBeenShownThisSession(flowType: WelcomeFlowType): boolean {
 }
 
 function markFlowAsShown(flowType: WelcomeFlowType): void {
-  if (!flowType || flowType === 'chat-recipe') return;
+  if (!flowType || flowType === 'chat-recipe' || flowType === 'agent-recipe')
+    return;
   try {
     sessionStorage.setItem(`${SESSION_STORAGE_PREFIX}${flowType}`, 'true');
   } catch {
@@ -162,21 +165,32 @@ export function useWelcomePopup(
 
   // Initialize popup visibility on mount or when user changes
   useEffect(() => {
+    // Handle chat-recipe context (always show, not session-tracked, doesn't need profile)
+    // Reset initialization for this context so it can show again
+    if (context === 'chat-recipe') {
+      setFlowType('chat-recipe');
+      setShouldShow(true);
+      setIsLoading(false);
+      setHasInitialized(true);
+      return;
+    }
+
+    // Handle agent-recipe context (always show, not session-tracked, doesn't need profile)
+    // Always show on initial load, allow re-showing if flowType changed
+    if (context === 'agent-recipe') {
+      setFlowType('agent-recipe');
+      setShouldShow(true);
+      setIsLoading(false);
+      setHasInitialized(true);
+      return;
+    }
+
     // Prevent re-evaluating visibility after initial load to avoid
     // immediate auto-close when profile is refreshed (e.g. after visit count increment)
     if (hasInitialized) return;
 
     if (!profile) {
       setIsLoading(false);
-      return;
-    }
-
-    // Handle chat-recipe context (always show, not session-tracked)
-    if (context === 'chat-recipe') {
-      setFlowType('chat-recipe');
-      setShouldShow(true);
-      setIsLoading(false);
-      setHasInitialized(true);
       return;
     }
 

@@ -1,4 +1,4 @@
-import { ChefHat, Heart, Home, Bot, Brain, Menu, X } from 'lucide-react';
+import { ChefHat, Heart, Home, Bot, Brain, Menu, X, User } from 'lucide-react';
 import { RECIPE_BOT_PERSONAS, type PersonaType } from '@/lib/openai';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -12,12 +12,14 @@ interface ChatHeaderProps {
   onConvertToRecipe: () => Promise<void>;
   onNewRecipe: () => void;
   onChangeAssistant: () => void;
+  onOpenProfile?: () => void;
 }
 
 export function ChatHeader({
   selectedPersona,
   onNewRecipe,
   onChangeAssistant,
+  onOpenProfile,
 }: ChatHeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -79,6 +81,17 @@ export function ChatHeader({
 
         {/* Desktop Action Buttons */}
         <div className="hidden items-center space-x-2 md:flex">
+          {onOpenProfile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpenProfile}
+              className="p-2"
+              title="View Profile"
+            >
+              <User className="h-5 w-5" />
+            </Button>
+          )}
           <Button
             variant="outline"
             className="border-success text-success hover:bg-success/10"
@@ -96,7 +109,18 @@ export function ChatHeader({
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="flex md:hidden">
+        <div className="flex items-center space-x-2 md:hidden">
+          {onOpenProfile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpenProfile}
+              className="p-2"
+              title="View Profile"
+            >
+              <User className="h-5 w-5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -124,6 +148,19 @@ export function ChatHeader({
             <h2 id="mobile-menu-title" className="sr-only">
               Chat Actions Menu
             </h2>
+            {onOpenProfile && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onOpenProfile();
+                  closeMobileMenu();
+                }}
+                className="w-full justify-start border-info text-info hover:bg-info/10"
+              >
+                <User className="mr-2 h-4 w-4" />
+                View Profile
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => {

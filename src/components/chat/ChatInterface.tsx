@@ -1,7 +1,8 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { createDaisyUIInputClasses } from '@/lib/input-migration';
 import { createDaisyUICardClasses } from '@/lib/card-migration';
 import { createDaisyUIScrollAreaClasses } from '@/lib/scroll-area-migration';
+import { useNavigate } from 'react-router-dom';
 
 import {
   Send,
@@ -12,6 +13,7 @@ import {
   Home,
   Bot,
   Brain,
+  Settings,
 } from 'lucide-react';
 import { PersonaSelector } from './PersonaSelector';
 import { ChatHeader } from './ChatHeader';
@@ -29,20 +31,29 @@ import {
   parseInstructionsFromText,
   formatInstructionsForDisplay,
 } from '@/utils/chat-recipe-parser';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 
 interface ChatInterfaceProps {
   onRecipeGenerated: (recipe: RecipeFormData) => void;
   defaultPersona?: PersonaType;
 }
 
-// Maximum height for textarea input (matches Tailwind max-h-32 = 128px)
-const MAX_TEXTAREA_HEIGHT = 128;
+// Maximum height for textarea input (matches Tailwind max-h-32 = 128px on desktop, max-h-24 = 96px on mobile)
+const MAX_TEXTAREA_HEIGHT_DESKTOP = 128;
+const MAX_TEXTAREA_HEIGHT_MOBILE = 96;
 
 export function ChatInterface({
   onRecipeGenerated,
   defaultPersona,
 }: ChatInterfaceProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const {
     persona,
     messages,
@@ -62,6 +73,18 @@ export function ChatInterface({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = React.useState('');
+  const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size for sheet positioning
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640); // sm breakpoint
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     // Auto-scroll to bottom when new messages are added
@@ -81,10 +104,12 @@ export function ChatInterface({
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
-      const newHeight = Math.min(
-        inputRef.current.scrollHeight,
-        MAX_TEXTAREA_HEIGHT
-      );
+      // Use mobile max height on small screens, desktop max height on larger screens
+      const isMobile = window.innerWidth < 640; // sm breakpoint
+      const maxHeight = isMobile
+        ? MAX_TEXTAREA_HEIGHT_MOBILE
+        : MAX_TEXTAREA_HEIGHT_DESKTOP;
+      const newHeight = Math.min(inputRef.current.scrollHeight, maxHeight);
       inputRef.current.style.height = `${newHeight}px`;
     }
   }, [inputValue]);
@@ -322,7 +347,7 @@ export function ChatInterface({
   }
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col">
+    <div className="mx-auto flex max-w-4xl flex-col pb-32 sm:pb-0">
       {/* Chat Header */}
       <ChatHeader
         selectedPersona={persona}
@@ -342,6 +367,7 @@ export function ChatInterface({
         }}
         onNewRecipe={startNewRecipe}
         onChangeAssistant={changePersona}
+        onOpenProfile={user?.id ? () => setIsProfileSheetOpen(true) : undefined}
       />
 
       {/* Cuisine & Category Selector */}
@@ -361,15 +387,6 @@ export function ChatInterface({
         </div>
       </div>
 
-      {/* User Profile Display - Phase 4 Integration */}
-      {user?.id && persona && (
-        <div className="bg-base-100 border-b p-4">
-          <div className="max-w-4xl mx-auto">
-            <UserProfileDisplay userId={user.id} liveSelections={selections} />
-          </div>
-        </div>
-      )}
-
       {/* Chat Messages - Responsive height */}
       <div
         ref={scrollAreaRef}
@@ -378,8 +395,12 @@ export function ChatInterface({
           'bg-base-200 p-4'
         )} ${
           messages.length === 0
-            ? 'min-h-[150px] max-h-[250px] sm:min-h-[200px] sm:max-h-[300px]' // Compact when empty
-            : 'min-h-[250px] max-h-[50vh] sm:min-h-[300px] sm:max-h-[60vh]' // Expand based on content
+            ? 'min-h-[300px] max-h-[500px] sm:min-h-[400px] sm:max-h-[600px]' // Compact when empty - doubled
+            : `min-h-[500px] max-h-[calc(100dvh-200px)] sm:min-h-[600px] sm:max-h-[calc(100dvh-200px)] ${
+                persona && messages.length > 2
+                  ? 'pb-[200px] sm:pb-0' // Extra padding when button is visible (button + input)
+                  : 'pb-32 sm:pb-0' // Standard padding for input only
+              }` // Expand based on content, doubled height - add bottom padding on mobile for fixed elements
         } overflow-y-auto`}
       >
         {/* Welcome Message - Always visible when no conversation */}
@@ -496,54 +517,101 @@ export function ChatInterface({
 
       {/* Smart Save Recipe Button - Shows when there's conversation content */}
       {persona && messages.length > 2 && (
-        <SmartCreateRecipeButton
-          conversationContent={messages
-            .map((m) => `${m.role}: ${m.content}`)
-            .join('\n\n')}
-          onRecipeParsed={onRecipeGenerated}
-          className="bg-gradient-to-r from-success/10 to-info/10 border-t"
-          persona={persona}
-          onGenerateReport={generateEvaluationReport}
-          onSaveReport={saveEvaluationReport}
-        />
+        <div className="fixed bottom-[calc(120px+env(safe-area-inset-bottom))] left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto z-40">
+          <div className="mx-auto max-w-4xl">
+            <SmartCreateRecipeButton
+              conversationContent={messages
+                .map((m) => `${m.role}: ${m.content}`)
+                .join('\n\n')}
+              onRecipeParsed={onRecipeGenerated}
+              className="bg-gradient-to-r from-success/10 to-info/10 border-t"
+              persona={persona}
+              onGenerateReport={generateEvaluationReport}
+              onSaveReport={saveEvaluationReport}
+            />
+          </div>
+        </div>
       )}
 
       {/* Chat Input - Always visible and accessible */}
-      <div className="bg-base-100 rounded-b-lg border-t p-4 sticky bottom-0 shadow-lg">
-        <div className="flex items-end space-x-2">
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setInputValue(e.target.value)
-            }
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message here..."
-            disabled={isLoading}
-            rows={1}
-            className={`${createDaisyUIInputClasses('bordered')} 
-              flex-1 min-h-[44px] max-h-32 
+      <div className="bg-base-100/95 backdrop-blur-sm rounded-b-lg border-t p-4 fixed bottom-0 left-0 right-0 sm:sticky sm:relative sm:left-auto sm:right-auto z-50 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-lg">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex items-end space-x-2">
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setInputValue(e.target.value)
+              }
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message here..."
+              disabled={isLoading}
+              rows={1}
+              className={`${createDaisyUIInputClasses('bordered')} 
+              flex-1 min-h-[44px] max-h-24 sm:max-h-32 
               resize-none overflow-y-auto overflow-x-hidden 
               whitespace-pre-wrap break-words`}
-            style={{
-              resize: 'none',
-              wordWrap: 'break-word',
-              overflowWrap: 'break-word',
-            }}
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isLoading}
-            size="sm"
-            className="bg-success hover:bg-success/90 min-h-[44px] px-4"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+              style={{
+                resize: 'none',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+              }}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isLoading}
+              size="sm"
+              className="bg-warning text-warning-content hover:bg-warning/90 min-h-[44px] px-4"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-base-content/70">
+            Press Enter to send, or Shift+Enter for a new line
+          </p>
         </div>
-        <p className="mt-2 text-xs text-base-content/70">
-          Press Enter to send, or Shift+Enter for a new line
-        </p>
       </div>
+
+      {/* Profile Sheet - Mobile bottom, Desktop right */}
+      {user?.id && persona && (
+        <Sheet open={isProfileSheetOpen} onOpenChange={setIsProfileSheetOpen}>
+          <SheetContent
+            side={isMobile ? 'bottom' : 'right'}
+            className={`z-[60] ${isMobile ? 'h-[85vh]' : 'h-full max-w-md'}`}
+          >
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Your Profile
+              </SheetTitle>
+              <SheetDescription>
+                View your profile information that AI assistants use to provide
+                personalized recommendations
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-6 overflow-y-auto max-h-[calc(85vh-120px)] sm:max-h-[calc(100vh-120px)] pr-2">
+              <UserProfileDisplay
+                userId={user.id}
+                liveSelections={selections}
+                className="bg-transparent border-0 p-0"
+              />
+            </div>
+            <div className="mt-6 pt-4 border-t">
+              <Button
+                onClick={() => {
+                  setIsProfileSheetOpen(false);
+                  navigate('/profile');
+                }}
+                className="w-full bg-warning text-warning-content hover:bg-warning/90"
+                size="lg"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Edit Profile
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }

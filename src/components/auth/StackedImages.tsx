@@ -131,8 +131,9 @@ export function StackedImages({
   }
 
   // Use real recipes if available, otherwise fall back to emoji placeholders
+  // Only show real recipes if we have enough to fill all circles (maintains visual consistency)
   const displayItems =
-    topRecipes.length > 0 ? topRecipes.slice(0, maxImages) : null;
+    topRecipes.length >= maxImages ? topRecipes.slice(0, maxImages) : null;
 
   // Helper function to get image URL (prefer avatar, fallback to recipe image)
   const getImageUrl = (recipe: PublicRecipe): string | null => {

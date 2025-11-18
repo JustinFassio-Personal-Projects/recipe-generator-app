@@ -41,6 +41,7 @@ function applySimpleIngredientFilter(
 interface ProfileSummary {
   id: string;
   full_name: string | null;
+  avatar_url: string | null;
 }
 
 export const recipeApi = {
@@ -372,7 +373,7 @@ export const recipeApi = {
     // Fetch profiles for those users
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name')
+      .select('id, full_name, avatar_url')
       .in('id', userIds);
 
     if (profilesError) handleError(profilesError, 'Get profiles');
@@ -532,17 +533,23 @@ export const recipeApi = {
     const userIds = [...new Set(recipes.map((recipe) => recipe.user_id))];
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name')
+      .select('id, full_name, avatar_url')
       .in('id', userIds);
 
     if (profilesError)
       handleError(profilesError, 'Get profiles for highest rated');
 
-    // Create profile map
-    const profileMap = new Map(
+    // Create profile maps for name and avatar
+    const profileNameMap = new Map(
       (profiles || []).map((profile: ProfileSummary) => [
         profile.id,
         profile.full_name,
+      ])
+    );
+    const profileAvatarMap = new Map(
+      (profiles || []).map((profile: ProfileSummary) => [
+        profile.id,
+        profile.avatar_url,
       ])
     );
 
@@ -552,7 +559,8 @@ export const recipeApi = {
         recipe.id,
         {
           ...recipe,
-          author_name: profileMap.get(recipe.user_id) || 'Unknown Author',
+          author_name: profileNameMap.get(recipe.user_id) || 'Unknown Author',
+          author_avatar_url: profileAvatarMap.get(recipe.user_id) || null,
         },
       ])
     );
@@ -561,6 +569,72 @@ export const recipeApi = {
     return data
       .map((item) => recipeMap.get(item.recipe_id))
       .filter((recipe) => recipe !== undefined) as PublicRecipe[];
+  },
+
+  // Get public recipe statistics for the auth page showcase
+  async getPublicRecipeStats(): Promise<{
+    totalRecipes: number;
+    totalChefs: number;
+    averageRating: number;
+  }> {
+    try {
+      // Get total count of public recipes
+      const { count: recipeCount, error: recipeCountError } = await supabase
+        .from('recipes')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_public', true);
+
+      if (recipeCountError) {
+        console.error('Error getting recipe count:', recipeCountError);
+      }
+
+      // Get unique chefs count (users who created public recipes)
+      const { data: chefData, error: chefError } = await supabase
+        .from('recipes')
+        .select('user_id')
+        .eq('is_public', true);
+
+      if (chefError) {
+        console.error('Error getting chef count:', chefError);
+      }
+
+      const uniqueChefs = chefData
+        ? new Set(chefData.map((r) => r.user_id)).size
+        : 0;
+
+      // Get average rating from all public recipes with ratings
+      const { data: ratingData, error: ratingError } = await supabase
+        .from('recipes')
+        .select('creator_rating')
+        .eq('is_public', true)
+        .not('creator_rating', 'is', null);
+
+      if (ratingError) {
+        console.error('Error getting ratings:', ratingError);
+      }
+
+      let averageRating = 0;
+      if (ratingData && ratingData.length > 0) {
+        const sum = ratingData.reduce(
+          (acc, r) => acc + (r.creator_rating || 0),
+          0
+        );
+        averageRating = Math.round((sum / ratingData.length) * 10) / 10; // Round to 1 decimal
+      }
+
+      return {
+        totalRecipes: recipeCount || 0,
+        totalChefs: uniqueChefs,
+        averageRating,
+      };
+    } catch (error) {
+      console.error('Error getting public recipe stats:', error);
+      return {
+        totalRecipes: 0,
+        totalChefs: 0,
+        averageRating: 0,
+      };
+    }
   },
 
   // Toggle recipe public status

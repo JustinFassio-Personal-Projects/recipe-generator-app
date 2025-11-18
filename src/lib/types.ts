@@ -24,6 +24,7 @@ export type Recipe = {
 
 export type PublicRecipe = Recipe & {
   author_name: string;
+  author_avatar_url?: string | null;
 };
 
 // Recipe Versioning types

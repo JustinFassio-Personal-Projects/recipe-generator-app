@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { recipeApi } from '@/lib/api';
 import { Star, ChefHat, Users } from 'lucide-react';
 import type { PublicRecipe } from '@/lib/types';
+import { getOptimizedAvatarUrl } from '@/lib/avatar-utils';
 
 interface StackedImagesProps {
   maxImages?: number;
@@ -51,8 +52,10 @@ export function StackedImages({
   const [topRecipes, setTopRecipes] = useState<PublicRecipe[]>([]);
   const [recipeCount, setRecipeCount] = useState<number>(0);
   const [averageRating, setAverageRating] = useState<number>(0);
+  const [totalChefs, setTotalChefs] = useState<number>(0);
   const [topChefs, setTopChefs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Skip fetching during SSR or in test environment
@@ -64,30 +67,22 @@ export function StackedImages({
     const loadStats = async () => {
       try {
         setLoading(true);
-        const recipes = await recipeApi.getHighestRatedPublicRecipes(20);
 
-        // Get top 6 recipes for display
+        // Fetch recipes and stats in parallel
+        const [recipes, stats] = await Promise.all([
+          recipeApi.getHighestRatedPublicRecipes(maxImages),
+          recipeApi.getPublicRecipeStats(),
+        ]);
+
+        // Get top recipes for display
         setTopRecipes(recipes.slice(0, maxImages));
 
-        // Calculate total recipe count
-        setRecipeCount(recipes.length);
+        // Use accurate statistics from API
+        setRecipeCount(stats.totalRecipes);
+        setAverageRating(stats.averageRating);
+        setTotalChefs(stats.totalChefs);
 
-        // Calculate average rating from recipes with ratings
-        const recipesWithRatings = recipes.filter(
-          (r) => r.creator_rating && r.creator_rating > 0
-        );
-        if (recipesWithRatings.length > 0) {
-          const avgRating =
-            recipesWithRatings.reduce(
-              (sum, r) => sum + (r.creator_rating || 0),
-              0
-            ) / recipesWithRatings.length;
-          setAverageRating(Math.round(avgRating * 10) / 10); // Round to 1 decimal
-        } else {
-          setAverageRating(0);
-        }
-
-        // Get unique chef names
+        // Get unique chef names from fetched recipes for display
         const chefNames = [
           ...new Set(
             recipes.map((r) => r.author_name?.split(' ')[0] || 'Chef')
@@ -100,6 +95,7 @@ export function StackedImages({
         setTopRecipes([]);
         setRecipeCount(FALLBACK_RECIPE_COUNT);
         setAverageRating(FALLBACK_AVERAGE_RATING);
+        setTotalChefs(0);
         setTopChefs(FALLBACK_TOP_CHEFS);
       } finally {
         setLoading(false);
@@ -108,6 +104,10 @@ export function StackedImages({
 
     loadStats();
   }, [maxImages]);
+
+  const handleImageError = (recipeId: string) => {
+    setImageErrors((prev) => new Set(prev).add(recipeId));
+  };
 
   if (loading) {
     return (
@@ -132,21 +132,37 @@ export function StackedImages({
 
   // Use real recipes if available, otherwise fall back to emoji placeholders
   const displayItems =
-    topRecipes.length >= maxImages ? topRecipes.slice(0, maxImages) : null;
+    topRecipes.length > 0 ? topRecipes.slice(0, maxImages) : null;
+
+  // Helper function to get image URL (prefer avatar, fallback to recipe image)
+  const getImageUrl = (recipe: PublicRecipe): string | null => {
+    // Prefer user avatar if available
+    if (recipe.author_avatar_url) {
+      return getOptimizedAvatarUrl(recipe.author_avatar_url, 'large');
+    }
+    // Fallback to recipe image
+    if (recipe.image_url) {
+      return recipe.image_url;
+    }
+    return null;
+  };
 
   return (
     <div
       className={`flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 ${className}`}
     >
-      {/* Colorful Food Icon Circles */}
+      {/* Recipe/User Image Circles */}
       <div className="relative mb-8 pb-2">
         <div className="flex -space-x-2 sm:-space-x-3">
-          {displayItems
-            ? // Show real recipe data
+          {displayItems && displayItems.length > 0
+            ? // Show real recipe/user images
               displayItems.map((recipe, index) => {
                 const baseZIndex = maxImages - index;
-                const emoji = getCategoryEmoji(recipe);
                 const rating = recipe.creator_rating || 4;
+                const imageUrl = getImageUrl(recipe);
+                const hasImageError = imageErrors.has(recipe.id);
+                const showEmoji = !imageUrl || hasImageError;
+                const emoji = showEmoji ? getCategoryEmoji(recipe) : null;
 
                 return (
                   <div
@@ -154,8 +170,8 @@ export function StackedImages({
                     className={`
                     relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 
                     rounded-full border-3 sm:border-4 border-white shadow-xl
-                    bg-gradient-to-br ${COLORS[index % COLORS.length]}
-                    flex items-center justify-center
+                    ${showEmoji ? `bg-gradient-to-br ${COLORS[index % COLORS.length]}` : 'bg-gray-100'}
+                    flex items-center justify-center overflow-hidden
                     transform transition-all duration-300 hover:scale-110 hover:-translate-y-1
                     cursor-pointer
                   `}
@@ -170,9 +186,19 @@ export function StackedImages({
                     }}
                     title={recipe.title}
                   >
-                    <span className="text-2xl sm:text-3xl md:text-4xl">
-                      {emoji}
-                    </span>
+                    {showEmoji ? (
+                      <span className="text-2xl sm:text-3xl md:text-4xl">
+                        {emoji}
+                      </span>
+                    ) : (
+                      <img
+                        src={imageUrl!}
+                        alt={recipe.title}
+                        className="w-full h-full object-cover"
+                        onError={() => handleImageError(recipe.id)}
+                        loading="lazy"
+                      />
+                    )}
 
                     {/* Star rating badge - real rating */}
                     <div
@@ -278,7 +304,7 @@ export function StackedImages({
               <Users className="w-6 h-6 text-white" />
             </div>
             <div className="text-lg font-bold text-gray-900">
-              {topChefs.length}+
+              {totalChefs > 0 ? totalChefs : topChefs.length}+
             </div>
             <div className="text-xs text-gray-500">Chefs</div>
           </div>

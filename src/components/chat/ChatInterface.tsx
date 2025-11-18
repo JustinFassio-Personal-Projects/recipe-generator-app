@@ -48,6 +48,11 @@ interface ChatInterfaceProps {
 const MAX_TEXTAREA_HEIGHT_DESKTOP = 128;
 const MAX_TEXTAREA_HEIGHT_MOBILE = 96;
 
+// Mobile layout constants for fixed positioning
+const MOBILE_INPUT_AREA_HEIGHT = 120; // Approximate height of input area (textarea + padding + helper text)
+const MOBILE_BUTTON_AND_INPUT_HEIGHT = 200; // Height of button + input area combined
+const MOBILE_STANDARD_PADDING = 128; // pb-32 = 128px, standard padding for input only
+
 export function ChatInterface({
   onRecipeGenerated,
   defaultPersona,
@@ -105,14 +110,13 @@ export function ChatInterface({
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
       // Use mobile max height on small screens, desktop max height on larger screens
-      const isMobile = window.innerWidth < 640; // sm breakpoint
       const maxHeight = isMobile
         ? MAX_TEXTAREA_HEIGHT_MOBILE
         : MAX_TEXTAREA_HEIGHT_DESKTOP;
       const newHeight = Math.min(inputRef.current.scrollHeight, maxHeight);
       inputRef.current.style.height = `${newHeight}px`;
     }
-  }, [inputValue]);
+  }, [inputValue, isMobile]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -347,7 +351,10 @@ export function ChatInterface({
   }
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col pb-32 sm:pb-0">
+    <div
+      className="mx-auto flex max-w-4xl flex-col sm:pb-0"
+      style={{ paddingBottom: `${MOBILE_STANDARD_PADDING}px` }}
+    >
       {/* Chat Header */}
       <ChatHeader
         selectedPersona={persona}
@@ -396,12 +403,19 @@ export function ChatInterface({
         )} ${
           messages.length === 0
             ? 'min-h-[300px] max-h-[500px] sm:min-h-[400px] sm:max-h-[600px]' // Compact when empty - doubled
-            : `min-h-[500px] max-h-[calc(100dvh-200px)] sm:min-h-[600px] sm:max-h-[calc(100dvh-200px)] ${
-                persona && messages.length > 2
-                  ? 'pb-[200px] sm:pb-0' // Extra padding when button is visible (button + input)
-                  : 'pb-32 sm:pb-0' // Standard padding for input only
-              }` // Expand based on content, doubled height - add bottom padding on mobile for fixed elements
+            : `min-h-[500px] sm:min-h-[600px] sm:max-h-[calc(100dvh-${MOBILE_BUTTON_AND_INPUT_HEIGHT}px)] sm:pb-0` // Expand based on content, doubled height - add bottom padding on mobile for fixed elements
         } overflow-y-auto`}
+        style={
+          messages.length > 0
+            ? {
+                maxHeight: `calc(100dvh - ${MOBILE_BUTTON_AND_INPUT_HEIGHT}px)`,
+                paddingBottom:
+                  persona && messages.length > 2
+                    ? `${MOBILE_BUTTON_AND_INPUT_HEIGHT}px`
+                    : `${MOBILE_STANDARD_PADDING}px`,
+              }
+            : undefined
+        }
       >
         {/* Welcome Message - Always visible when no conversation */}
         {messages.length === 0 && (
@@ -517,7 +531,12 @@ export function ChatInterface({
 
       {/* Smart Save Recipe Button - Shows when there's conversation content */}
       {persona && messages.length > 2 && (
-        <div className="fixed bottom-[calc(120px+env(safe-area-inset-bottom))] left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto z-40">
+        <div
+          className="fixed left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto z-40"
+          style={{
+            bottom: `calc(${MOBILE_INPUT_AREA_HEIGHT}px + env(safe-area-inset-bottom))`,
+          }}
+        >
           <div className="mx-auto max-w-4xl">
             <SmartCreateRecipeButton
               conversationContent={messages
@@ -589,7 +608,14 @@ export function ChatInterface({
                 personalized recommendations
               </SheetDescription>
             </SheetHeader>
-            <div className="mt-6 overflow-y-auto max-h-[calc(85vh-120px)] sm:max-h-[calc(100vh-120px)] pr-2">
+            <div
+              className="mt-6 overflow-y-auto pr-2"
+              style={{
+                maxHeight: isMobile
+                  ? `calc(85vh - ${MOBILE_INPUT_AREA_HEIGHT}px)`
+                  : `calc(100vh - ${MOBILE_INPUT_AREA_HEIGHT}px)`,
+              }}
+            >
               <UserProfileDisplay
                 userId={user.id}
                 liveSelections={selections}

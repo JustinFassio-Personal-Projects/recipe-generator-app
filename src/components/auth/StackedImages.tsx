@@ -139,7 +139,7 @@ export function StackedImages({
   const getImageUrl = (recipe: PublicRecipe): string | null => {
     // Prefer user avatar if available
     if (recipe.author_avatar_url) {
-      return getOptimizedAvatarUrl(recipe.author_avatar_url, 'large');
+      return getOptimizedAvatarUrl(recipe.author_avatar_url, 'small');
     }
     // Fallback to recipe image
     if (recipe.image_url) {
@@ -156,7 +156,7 @@ export function StackedImages({
       <div className="relative mb-8 pb-2">
         <div className="flex -space-x-2 sm:-space-x-3">
           {displayItems && displayItems.length > 0
-            ? // Show real recipe/user images
+            ? // Show real recipe/user images (may be fewer than maxImages)
               displayItems.map((recipe, index) => {
                 const baseZIndex = maxImages - index;
                 const rating = recipe.creator_rating || 4;
@@ -216,8 +216,8 @@ export function StackedImages({
                   </div>
                 );
               })
-            : // Fallback to emoji placeholders
-              FOOD_EMOJIS.map((emoji, index) => {
+            : // Fallback to emoji placeholders (only when no recipes available)
+              FOOD_EMOJIS.slice(0, maxImages).map((emoji, index) => {
                 const baseZIndex = FOOD_EMOJIS.length - index;
                 const rating = index % 2 === 0 ? 5 : 4;
 

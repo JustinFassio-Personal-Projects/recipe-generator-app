@@ -514,18 +514,17 @@ export const recipeApi = {
     }
 
     // Get the full recipe data for these high-rated recipes
+    // Don't filter by image_url - we want to show user avatars even if recipes don't have images
     const recipeIds = data.map((item) => item.recipe_id);
     const { data: recipes, error: recipesError } = await supabase
       .from('recipes')
       .select('*')
       .in('id', recipeIds)
-      .eq('is_public', true)
-      .not('image_url', 'is', null)
-      .neq('image_url', '');
+      .eq('is_public', true);
 
     if (recipesError) handleError(recipesError, 'Get recipe details');
     if (!recipes || recipes.length === 0) {
-      // Fallback if no recipes with images
+      // Fallback if no recipes found
       return this.getPublicRecipes();
     }
 

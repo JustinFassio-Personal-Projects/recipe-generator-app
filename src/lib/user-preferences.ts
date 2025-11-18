@@ -304,7 +304,7 @@ export async function getUserGroceries(
       .from('user_groceries')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') {

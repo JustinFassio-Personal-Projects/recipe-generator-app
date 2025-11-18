@@ -32,24 +32,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     setIsOpen(!isOpen);
   };
 
-  // Get button style based on item ID using DaisyUI classes
-  const getMenuItemStyle = (itemId: string) => {
-    if (itemId === 'ai-create') {
-      // AI Recipe Creator - primary theme color
-      return 'btn-primary';
-    } else if (itemId === 'agent-recipe') {
-      // AI Agentic Chef - warning/orange theme color
-      return 'btn-warning';
-    } else if (itemId === 'update-profile') {
-      // Update Profile - secondary theme color
-      return 'btn-secondary';
-    } else if (itemId === 'add-recipe') {
-      // Add Recipe - success color with outline
-      return 'btn-outline btn-success';
-    }
-    // Default style
-    return 'btn-outline';
-  };
+  // Removed getMenuItemStyle - now using inline className matching AI agent modal design
 
   return (
     <div className={cn('fixed z-50', positionClasses[position])}>
@@ -58,7 +41,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         onClick={handleButtonClick}
         className={cn(
           'h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-all',
-          'btn-primary',
+          'bg-warning text-warning-content hover:bg-warning/90',
           isOpen && 'scale-105'
         )}
         aria-label="Open menu"
@@ -77,13 +60,14 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 setIsOpen(false);
               }}
               className={cn(
-                'btn-sm whitespace-nowrap shadow-lg rounded-md px-4 py-2 flex items-center gap-2 transition-all',
-                getMenuItemStyle(item.id)
+                'whitespace-nowrap shadow-md rounded-lg px-4 py-3 flex items-center gap-2 transition-all',
+                'border-2 border-base-300 bg-base-100 text-base-content',
+                'hover:border-warning/50 hover:shadow-lg'
               )}
               aria-label={item.label}
             >
               {item.icon}
-              <span>{item.label}</span>
+              <span className="font-medium">{item.label}</span>
             </button>
           ))}
         </div>

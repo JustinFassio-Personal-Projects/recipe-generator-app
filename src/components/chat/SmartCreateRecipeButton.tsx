@@ -169,7 +169,7 @@ export const SmartCreateRecipeButton: React.FC<
 
   const getButtonClasses = () => {
     const baseClasses = `
-      btn btn-primary btn-lg
+      btn btn-warning btn-lg
       flex items-center gap-3
       px-8 py-4
       text-lg font-semibold
@@ -179,18 +179,20 @@ export const SmartCreateRecipeButton: React.FC<
     `;
 
     if (parseStatus === 'success') {
-      return baseClasses.replace('btn-primary', 'btn-success');
+      return baseClasses.replace('btn-warning', 'btn-success');
     }
 
     if (parseStatus === 'error') {
-      return baseClasses.replace('btn-primary', 'btn-error');
+      return baseClasses.replace('btn-warning', 'btn-error');
     }
 
     return baseClasses;
   };
 
   return (
-    <div className={`flex justify-center p-4 ${className}`}>
+    <div
+      className={`flex justify-center items-center py-3 px-4 sm:p-4 min-h-[80px] sm:min-h-0 ${className}`}
+    >
       <button
         onClick={handleCreateRecipe}
         disabled={isLoading}

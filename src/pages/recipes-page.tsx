@@ -102,7 +102,7 @@ export function RecipesPage() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 self-start sm:flex-row sm:self-auto">
+            <div className="flex flex-col gap-2 self-start md:flex-row md:self-auto">
               <Button
                 onClick={() => navigate('/chat-recipe')}
                 className="btn-primary"
@@ -112,11 +112,11 @@ export function RecipesPage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => navigate('/add')}
-                className="btn-outline btn-success"
+                onClick={() => navigate('/agent-recipe')}
+                className="btn-outline btn-warning"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Recipe
+                <ChefHat className="mr-2 h-4 w-4" />
+                AI Agentic Chef
               </Button>
             </div>
           </div>

@@ -34,6 +34,7 @@ import { TenantsAdminPage } from '@/pages/admin/tenants-admin-page';
 import { usePageTracking } from '@/hooks/usePageTracking';
 
 import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -334,6 +335,7 @@ function App() {
                 </SelectionProvider>
               </AuthProvider>
               <Toaster />
+              <SonnerToaster position="bottom-right" />
             </BrowserRouter>
           </TenantGuard>
           <ReactQueryDevtools initialIsOpen={false} />

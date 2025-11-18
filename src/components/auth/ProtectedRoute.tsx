@@ -95,30 +95,20 @@ export function ProtectedRoute({
     };
   }, [location.pathname]);
 
-  // Enhanced debug logging for production troubleshooting
-  logger.debug('ProtectedRoute render', {
-    loading,
-    hasUser: !!user,
-    hasError: !!error,
-    requiresAuth,
-    currentPath: location.pathname,
-    userEmail: user?.email,
-    userId: user?.id,
-    timestamp: new Date().toISOString(),
-    isProduction: import.meta.env.PROD,
-  });
-
-  // Additional console logging for production debugging
-  console.log('🔐 [ProtectedRoute] Auth state check:', {
-    loading,
-    hasUser: !!user,
-    userEmail: user?.email,
-    hasError: !!error,
-    errorMessage: error,
-    requiresAuth,
-    currentPath: location.pathname,
-    isProduction: import.meta.env.PROD,
-  });
+  // Enhanced debug logging for production troubleshooting (dev only)
+  if (import.meta.env.DEV) {
+    logger.debug('ProtectedRoute render', {
+      loading,
+      hasUser: !!user,
+      hasError: !!error,
+      requiresAuth,
+      currentPath: location.pathname,
+      userEmail: user?.email,
+      userId: user?.id,
+      timestamp: new Date().toISOString(),
+      isProduction: import.meta.env.PROD,
+    });
+  }
 
   // Show error state if there's an error
   if (error) {

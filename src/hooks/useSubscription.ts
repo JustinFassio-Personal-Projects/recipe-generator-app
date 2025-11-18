@@ -40,11 +40,8 @@ export function useSubscriptionStatus() {
     queryKey: ['subscription-status', user?.id],
     queryFn: async () => {
       if (!user?.id) {
-        console.log('[useSubscriptionStatus] No user ID, returning null');
         return null;
       }
-
-      console.log('[useSubscriptionStatus] Fetching for user:', user.id);
 
       const { data, error } = await supabase
         .from('user_subscription_status')
@@ -52,27 +49,23 @@ export function useSubscriptionStatus() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      console.log('[useSubscriptionStatus] Result:', {
-        data,
-        error: error?.message,
-      });
-
       if (error) {
         // If no subscription exists, return null (not an error)
         if (error.code === 'PGRST116') {
-          console.log(
-            '[useSubscriptionStatus] No subscription found (PGRST116)'
-          );
           return null;
         }
         // If table doesn't exist, return null gracefully
         if (error.code === '42P01' || error.code === 'PGRST205') {
-          console.warn(
-            '[useSubscriptionStatus] Subscription table not found - migration may not be applied yet'
-          );
+          if (import.meta.env.DEV) {
+            console.warn(
+              '[useSubscriptionStatus] Subscription table not found - migration may not be applied yet'
+            );
+          }
           return null;
         }
-        console.error('[useSubscriptionStatus] Error:', error);
+        if (import.meta.env.DEV) {
+          console.error('[useSubscriptionStatus] Error:', error);
+        }
         throw error;
       }
 
@@ -97,11 +90,8 @@ export function useSubscription() {
     queryKey: ['subscription', user?.id],
     queryFn: async () => {
       if (!user?.id) {
-        console.log('[useSubscription] No user ID, returning null');
         return null;
       }
-
-      console.log('[useSubscription] Fetching for user:', user.id);
 
       const { data, error } = await supabase
         .from('user_subscriptions')
@@ -109,21 +99,22 @@ export function useSubscription() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      console.log('[useSubscription] Result:', { data, error: error?.message });
-
       if (error) {
         if (error.code === 'PGRST116') {
-          console.log('[useSubscription] No subscription found (PGRST116)');
           return null;
         }
         // If table doesn't exist, return null gracefully
         if (error.code === '42P01' || error.code === 'PGRST205') {
-          console.warn(
-            '[useSubscription] Subscription table not found - migration may not be applied yet'
-          );
+          if (import.meta.env.DEV) {
+            console.warn(
+              '[useSubscription] Subscription table not found - migration may not be applied yet'
+            );
+          }
           return null;
         }
-        console.error('[useSubscription] Error:', error);
+        if (import.meta.env.DEV) {
+          console.error('[useSubscription] Error:', error);
+        }
         throw error;
       }
 

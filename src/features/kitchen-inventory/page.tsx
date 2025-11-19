@@ -170,7 +170,7 @@ export function KitchenInventoryPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+      <div className="min-h-screen bg-base-100">
         <div className="mx-auto max-w-4xl px-4 py-8">
           <div className={createDaisyUICardClasses('bordered')}>
             <div className="card-body text-center">
@@ -186,18 +186,20 @@ export function KitchenInventoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+    <div className="min-h-screen bg-base-100">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Enhanced Header Section */}
         <div className="mb-8">
           {/* Title Row */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg">
-              <ChefHat className="h-6 w-6 text-white" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-lg">
+              <ChefHat className="h-6 w-6 text-primary-content" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Kitchen</h1>
-              <p className="text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-base-content">
+                My Kitchen
+              </h1>
+              <p className="text-sm text-base-content/70">
                 Manage your ingredient inventory
               </p>
             </div>
@@ -208,13 +210,13 @@ export function KitchenInventoryPage() {
             {/* Stats Cards */}
             <div className="flex flex-wrap gap-3">
               {/* Available Ingredients Card */}
-              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-                  <Package className="h-4 w-4 text-green-600" />
+              <div className="flex items-center gap-2 px-4 py-2 bg-base-200 rounded-lg shadow-sm border border-base-300">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-success/20">
+                  <Package className="h-4 w-4 text-success" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">In Stock</p>
-                  <p className="text-lg font-bold text-green-600">
+                  <p className="text-xs text-base-content/60">In Stock</p>
+                  <p className="text-lg font-bold text-success">
                     {groceries.getTotalCount()}
                   </p>
                 </div>
@@ -223,14 +225,14 @@ export function KitchenInventoryPage() {
               {/* Shopping List Card */}
               <Link
                 to="/cart"
-                className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-base-200 rounded-lg shadow-sm border border-base-300 hover:border-primary hover:shadow-md transition-all cursor-pointer"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
-                  <ShoppingCart className="h-4 w-4 text-orange-600" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/20">
+                  <ShoppingCart className="h-4 w-4 text-warning" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Shopping List</p>
-                  <p className="text-lg font-bold text-orange-600">
+                  <p className="text-xs text-base-content/60">Shopping List</p>
+                  <p className="text-lg font-bold text-warning">
                     {groceries.getShoppingListCount()}
                   </p>
                 </div>
@@ -240,12 +242,12 @@ export function KitchenInventoryPage() {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="relative flex-1 sm:flex-initial">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-base-content/40" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search ingredients..."
-                  className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-black"
+                  className="w-full sm:w-64 pl-10 pr-4 py-2 border border-base-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-base-200 text-base-content"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -271,8 +273,8 @@ export function KitchenInventoryPage() {
           </div>
 
           {/* Info Banner */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="mt-4 p-3 bg-info/10 border border-info/20 rounded-lg">
+            <p className="text-sm text-info">
               <span className="font-medium">💡 Tip:</span> Click ingredients to
               toggle between <span className="font-semibold">In Stock</span>{' '}
               (available) and <span className="font-semibold">Need to Buy</span>{' '}
@@ -342,14 +344,16 @@ export function KitchenInventoryPage() {
         {groceries.loading ? (
           <div className={createDaisyUICardClasses('bordered')}>
             <div className="card-body">
-              <div className="animate-pulse text-gray-500">
+              <div className="animate-pulse text-base-content/60">
                 Loading ingredients…
               </div>
             </div>
           </div>
         ) : Object.keys(grouped).length === 0 ? (
           <div className={createDaisyUICardClasses('bordered')}>
-            <div className="card-body text-gray-600">No ingredients found.</div>
+            <div className="card-body text-base-content/70">
+              No ingredients found.
+            </div>
           </div>
         ) : (
           Object.entries(grouped).map(([category, subcategoryGroups]) => {
@@ -367,7 +371,7 @@ export function KitchenInventoryPage() {
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                       <span>{categoryMeta.icon}</span>
                       <span>{categoryMeta.name}</span>
-                      <span className="text-sm font-normal text-gray-500">
+                      <span className="text-sm font-normal text-base-content/60">
                         ({totalInCategory})
                       </span>
                     </h2>
@@ -396,12 +400,12 @@ export function KitchenInventoryPage() {
                       >
                         <div className="card-body">
                           {/* Subcategory Header */}
-                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-700">
+                          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-base-content">
                             <span className="text-xl">
                               {subcategoryMeta.icon}
                             </span>
                             <span>{subcategoryMeta.label}</span>
-                            <span className="text-sm font-normal text-gray-500">
+                            <span className="text-sm font-normal text-base-content/60">
                               ({items.length})
                             </span>
                           </h3>

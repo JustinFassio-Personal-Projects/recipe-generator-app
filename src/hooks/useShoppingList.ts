@@ -99,6 +99,29 @@ export function useShoppingList(): UseShoppingListReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to get user's tenant_id
+  const getUserTenantId = useCallback(async (): Promise<string | null> => {
+    if (!user?.id) return null;
+
+    try {
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching tenant_id:', profileError);
+        return null;
+      }
+
+      return data?.tenant_id || null;
+    } catch (err) {
+      console.error('Error getting tenant_id:', err);
+      return null;
+    }
+  }, [user?.id]);
+
   // Load shopping data from database
   const loadShoppingData = useCallback(async () => {
     if (!user?.id) {
@@ -156,7 +179,8 @@ export function useShoppingList(): UseShoppingListReturn {
       name: string,
       _category: string,
       _source: ShoppingItem['source'],
-      options: {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      _options: {
         sourceId?: string;
         sourceTitle?: string;
         quantity?: string;
@@ -178,8 +202,6 @@ export function useShoppingList(): UseShoppingListReturn {
           (item) => item.name.toLowerCase() === name.toLowerCase()
         );
 
-        console.log('Options received:', options);
-
         if (existingItem) {
           toast({
             title: 'Item Already in List',
@@ -195,17 +217,20 @@ export function useShoppingList(): UseShoppingListReturn {
           [name]: 'pending',
         };
 
-        // Save to database
-        console.log('Saving shopping list to database:', {
-          user_id: user.id,
-          shopping_list: updatedShoppingList,
-          updated_at: new Date().toISOString(),
-        });
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
 
+        // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             shopping_list: updatedShoppingList,
             updated_at: new Date().toISOString(),
           });
@@ -239,7 +264,7 @@ export function useShoppingList(): UseShoppingListReturn {
         return false;
       }
     },
-    [user?.id, shoppingList]
+    [user?.id, shoppingList, getUserTenantId]
   );
 
   // Remove item from shopping list
@@ -267,11 +292,20 @@ export function useShoppingList(): UseShoppingListReturn {
             : 'pending';
         });
 
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             shopping_list: simpleShoppingList,
             updated_at: new Date().toISOString(),
           });
@@ -305,7 +339,7 @@ export function useShoppingList(): UseShoppingListReturn {
         return false;
       }
     },
-    [user?.id, shoppingList]
+    [user?.id, shoppingList, getUserTenantId]
   );
 
   // Toggle item completed status
@@ -333,11 +367,20 @@ export function useShoppingList(): UseShoppingListReturn {
             : 'pending';
         });
 
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             shopping_list: simpleShoppingList,
             updated_at: new Date().toISOString(),
           });
@@ -381,7 +424,7 @@ export function useShoppingList(): UseShoppingListReturn {
         return false;
       }
     },
-    [user?.id, shoppingList]
+    [user?.id, shoppingList, getUserTenantId]
   );
 
   // Update shopping item
@@ -401,11 +444,20 @@ export function useShoppingList(): UseShoppingListReturn {
           },
         };
 
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             shopping_list: updatedShoppingList,
             updated_at: new Date().toISOString(),
           });
@@ -421,7 +473,7 @@ export function useShoppingList(): UseShoppingListReturn {
         return false;
       }
     },
-    [user?.id, shoppingList]
+    [user?.id, shoppingList, getUserTenantId]
   );
 
   // Clear completed items
@@ -433,11 +485,20 @@ export function useShoppingList(): UseShoppingListReturn {
         Object.entries(shoppingList).filter(([, item]) => !item.completed)
       );
 
+      // Get tenant_id for RLS policy
+      const tenantId = await getUserTenantId();
+      if (!tenantId) {
+        throw new Error(
+          'Unable to determine tenant. Please refresh and try again.'
+        );
+      }
+
       // Save to database
       const { error: saveError } = await supabase
         .from('user_groceries')
         .upsert({
           user_id: user.id,
+          tenant_id: tenantId,
           shopping_list: updatedShoppingList,
           updated_at: new Date().toISOString(),
         });
@@ -467,11 +528,20 @@ export function useShoppingList(): UseShoppingListReturn {
     if (!user?.id) return false;
 
     try {
+      // Get tenant_id for RLS policy
+      const tenantId = await getUserTenantId();
+      if (!tenantId) {
+        throw new Error(
+          'Unable to determine tenant. Please refresh and try again.'
+        );
+      }
+
       // Save to database
       const { error: saveError } = await supabase
         .from('user_groceries')
         .upsert({
           user_id: user.id,
+          tenant_id: tenantId,
           shopping_list: {},
           updated_at: new Date().toISOString(),
         });
@@ -493,7 +563,7 @@ export function useShoppingList(): UseShoppingListReturn {
       );
       return false;
     }
-  }, [user?.id]);
+  }, [user?.id, getUserTenantId]);
 
   // Create shopping context
   const createShoppingContext = useCallback(
@@ -522,11 +592,20 @@ export function useShoppingList(): UseShoppingListReturn {
           [newContext.id]: newContext,
         };
 
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             shopping_contexts: updatedContexts,
             updated_at: new Date().toISOString(),
           });
@@ -546,7 +625,7 @@ export function useShoppingList(): UseShoppingListReturn {
         return null;
       }
     },
-    [user?.id, shoppingContexts]
+    [user?.id, shoppingContexts, getUserTenantId]
   );
 
   // Update shopping context
@@ -566,11 +645,20 @@ export function useShoppingList(): UseShoppingListReturn {
           },
         };
 
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             shopping_contexts: updatedContexts,
             updated_at: new Date().toISOString(),
           });
@@ -590,7 +678,7 @@ export function useShoppingList(): UseShoppingListReturn {
         return false;
       }
     },
-    [user?.id, shoppingContexts]
+    [user?.id, shoppingContexts, getUserTenantId]
   );
 
   // Remove shopping context
@@ -602,11 +690,20 @@ export function useShoppingList(): UseShoppingListReturn {
         const updatedContexts = { ...shoppingContexts };
         delete updatedContexts[contextId];
 
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             shopping_contexts: updatedContexts,
             updated_at: new Date().toISOString(),
           });

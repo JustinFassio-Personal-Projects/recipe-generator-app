@@ -86,11 +86,33 @@
     <!-- Set theme immediately before React loads to prevent flash -->
     <script>
       // Set default theme immediately to prevent flash of unstyled content
+      // IMPORTANT: For tenant subdomains, let TenantProvider handle theme from database
       (function () {
-        const storedTheme = localStorage.getItem('theme');
-        const defaultTheme = 'caramellatte';
-        const theme = storedTheme || defaultTheme;
-        document.documentElement.setAttribute('data-theme', theme);
+        // Detect if we're on a tenant subdomain
+        const hostname = window.location.hostname;
+        const parts = hostname.split('.');
+        let isTenantSubdomain = false;
+
+        // Local development: drsmith.localhost
+        if (hostname.includes('localhost')) {
+          isTenantSubdomain = parts.length > 1 && parts[0] !== 'localhost';
+        } else {
+          // Production: drsmith.recipegenerator.app
+          if (parts.length >= 3) {
+            const subdomain = parts[0];
+            isTenantSubdomain = subdomain !== 'www' && subdomain !== 'app';
+          }
+        }
+
+        // Only set theme for main app (not tenant subdomains)
+        // Tenant themes are handled by TenantProvider from database
+        if (!isTenantSubdomain) {
+          const storedTheme = localStorage.getItem('theme');
+          const defaultTheme = 'caramellatte';
+          const theme = storedTheme || defaultTheme;
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+        // For tenant subdomains, TenantProvider will set the theme from database
       })();
     </script>
   </head>

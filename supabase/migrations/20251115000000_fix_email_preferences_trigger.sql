@@ -45,3 +45,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- The existing trigger on_auth_user_created_email_prefs will use this updated function
 
 
+

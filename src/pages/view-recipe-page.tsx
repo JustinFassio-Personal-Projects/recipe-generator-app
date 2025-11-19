@@ -445,11 +445,13 @@ export function ViewRecipePage() {
       isValid: id ? isValidUUID(id) : false,
     });
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50 p-4">
+      <div className="min-h-screen bg-base-100 p-4">
         <div className="mx-auto max-w-2xl pt-20">
-          <div className="border border-gray-200 p-8 text-center rounded-lg">
-            <h2 className="mb-2 text-xl font-semibold">Invalid Recipe URL</h2>
-            <p className="mb-4 text-gray-600">
+          <div className="border border-base-300 p-8 text-center rounded-lg bg-base-200">
+            <h2 className="mb-2 text-xl font-semibold text-base-content">
+              Invalid Recipe URL
+            </h2>
+            <p className="mb-4 text-base-content/70">
               The recipe URL is malformed or contains an invalid recipe ID.
             </p>
             <Button onClick={() => navigate('/')}>Back to Home</Button>
@@ -570,7 +572,7 @@ export function ViewRecipePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+      <div className="min-h-screen bg-base-100">
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="space-y-6">
             <div className={createDaisyUISkeletonClasses('h-10 w-48')} />
@@ -613,33 +615,35 @@ export function ViewRecipePage() {
     });
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50 p-4">
+      <div className="min-h-screen bg-base-100 p-4">
         <div className="mx-auto max-w-2xl pt-20">
           <div
             className={`${createDaisyUICardClasses('bordered')} p-8 text-center`}
           >
             <div className="card-body">
-              <ChefHat className="mx-auto mb-4 h-12 w-12 text-red-400" />
-              <h2 className="mb-2 text-xl font-semibold">Recipe not found</h2>
-              <p className="mb-4 text-gray-600">
+              <ChefHat className="mx-auto mb-4 h-12 w-12 text-error" />
+              <h2 className="mb-2 text-xl font-semibold text-base-content">
+                Recipe not found
+              </h2>
+              <p className="mb-4 text-base-content/70">
                 The recipe you're looking for doesn't exist or has been deleted.
               </p>
 
               {/* Debug info for production troubleshooting */}
               {import.meta.env.PROD && (
-                <div className="mb-4 rounded-lg bg-gray-100 p-3 text-left text-sm">
-                  <p className="font-medium text-gray-800">Debug Info:</p>
-                  <p className="text-gray-600">Recipe ID: {id}</p>
-                  <p className="text-gray-600">
+                <div className="mb-4 rounded-lg bg-base-200 p-3 text-left text-sm">
+                  <p className="font-medium text-base-content">Debug Info:</p>
+                  <p className="text-base-content/70">Recipe ID: {id}</p>
+                  <p className="text-base-content/70">
                     Error: {error?.message || 'No error message'}
                   </p>
-                  <p className="text-gray-600">
+                  <p className="text-base-content/70">
                     User Error: {userError?.message || 'None'}
                   </p>
-                  <p className="text-gray-600">
+                  <p className="text-base-content/70">
                     Public Error: {publicError?.message || 'None'}
                   </p>
-                  <p className="text-gray-600">
+                  <p className="text-base-content/70">
                     Has Recipe: {recipe ? 'Yes' : 'No'}
                   </p>
                 </div>
@@ -780,7 +784,7 @@ export function ViewRecipePage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-teal-50">
+    <div className="min-h-screen bg-base-100">
       {/* Dynamic meta tags for social sharing */}
       {recipe && metaRecipe && (
         <Helmet>
@@ -834,7 +838,7 @@ export function ViewRecipePage() {
                     variant="ghost"
                     size="sm"
                     onClick={handleBack}
-                    className="text-gray-600 hover:text-gray-900"
+                    className="text-base-content/70 hover:text-base-content"
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back
@@ -881,8 +885,8 @@ export function ViewRecipePage() {
                     variant="outline"
                     className={`text-xs ${
                       recipe?.is_public || !!publicRecipe
-                        ? 'bg-green-100 text-green-800 border-green-300'
-                        : 'bg-gray-100 text-gray-700 border-gray-300'
+                        ? 'bg-success/20 text-success border-success/30'
+                        : 'bg-base-200 text-base-content/70 border-base-300'
                     }`}
                     title={
                       recipe?.is_public || !!publicRecipe
@@ -930,7 +934,7 @@ export function ViewRecipePage() {
 
         {/* Current Version Info */}
         {(isOwner || versions.length > 0) && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <div className="bg-base-200 rounded-lg border border-base-300 p-4 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -946,12 +950,12 @@ export function ViewRecipePage() {
                     }
                     className={
                       versionContent?.version_number === 0
-                        ? 'bg-amber-100 text-amber-800 border-amber-300'
+                        ? 'bg-warning/20 text-warning border-warning/30'
                         : versionContent &&
                             versions.length > 0 &&
                             versionContent.version_number ===
                               Math.max(...versions.map((v) => v.version_number))
-                          ? 'bg-green-100 text-green-800 border-green-300'
+                          ? 'bg-success/20 text-success border-success/30'
                           : ''
                     }
                   >
@@ -966,18 +970,18 @@ export function ViewRecipePage() {
                       ' (Latest)'}
                   </Badge>
                   {versionContent?.version_name && (
-                    <span className="text-sm font-medium text-gray-700 break-words">
+                    <span className="text-sm font-medium text-base-content break-words">
                       {versionContent.version_name}
                     </span>
                   )}
                   {recipe && !versionContent?.version_name && (
-                    <span className="text-sm font-medium text-gray-900 break-words">
+                    <span className="text-sm font-medium text-base-content break-words">
                       {recipe.title}
                     </span>
                   )}
                 </div>
                 {versionContent?.changelog && (
-                  <div className="text-sm text-gray-600 mt-1 break-words">
+                  <div className="text-sm text-base-content/70 mt-1 break-words">
                     <strong>
                       {versionContent.version_number === 0
                         ? 'Description:'
@@ -987,7 +991,7 @@ export function ViewRecipePage() {
                   </div>
                 )}
                 {versionContent && (
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-base-content/60 mt-1">
                     {versionContent.version_number === 0
                       ? 'Original recipe'
                       : `Created ${new Date(versionContent.created_at).toLocaleDateString()}`}
@@ -995,7 +999,7 @@ export function ViewRecipePage() {
                 )}
                 {recipe?.creator_rating && (
                   <div className="flex items-center space-x-1 mt-1">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-base-content/60">
                       Creator rating:
                     </span>
                     <div className="flex items-center">
@@ -1004,15 +1008,15 @@ export function ViewRecipePage() {
                           key={star}
                           className={`text-xs ${
                             star <= recipe.creator_rating!
-                              ? 'text-orange-400'
-                              : 'text-gray-300'
+                              ? 'text-warning'
+                              : 'text-base-content/20'
                           }`}
                         >
                           ★
                         </span>
                       ))}
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-base-content/60">
                       ({recipe.creator_rating}/5)
                     </span>
                   </div>
@@ -1025,7 +1029,7 @@ export function ViewRecipePage() {
         {/* Recipe Image - Only shown on view-recipe-page */}
         {displayContent?.image_url && (
           <div className="mb-6">
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-base-200">
               <ProgressiveImage
                 src={
                   getSafeImageUrl(
@@ -1075,11 +1079,13 @@ export function ViewRecipePage() {
 
         {/* Version Selection Modal */}
         {showVersions && versions.length > 0 && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-base-200 rounded-lg max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden border border-base-300">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Recipe Versions</h3>
+                  <h3 className="text-lg font-semibold text-base-content">
+                    Recipe Versions
+                  </h3>
                   <Button
                     variant="ghost"
                     size="sm"

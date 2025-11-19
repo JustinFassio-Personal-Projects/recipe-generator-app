@@ -36,6 +36,29 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to get user's tenant_id
+  const getUserTenantId = useCallback(async (): Promise<string | null> => {
+    if (!user?.id) return null;
+
+    try {
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching tenant_id:', profileError);
+        return null;
+      }
+
+      return data?.tenant_id || null;
+    } catch (err) {
+      console.error('Error getting tenant_id:', err);
+      return null;
+    }
+  }, [user?.id]);
+
   // Load user's grocery cart from database
   const loadUserGroceryCart = useCallback(async () => {
     if (!user?.id) {
@@ -97,11 +120,20 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
         const currentCart = currentData?.groceries || {};
         const updatedCart = addIngredientToCart(name, category, currentCart);
 
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             groceries: updatedCart,
             updated_at: new Date().toISOString(),
           });
@@ -137,7 +169,7 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
         return false;
       }
     },
-    [user?.id]
+    [user?.id, getUserTenantId]
   );
 
   // Remove ingredient from cart (with multi-category support)
@@ -156,11 +188,20 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
         // Remove using multi-category logic
         const updatedCart = removeIngredientFromCart(name, userGroceryCart);
 
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             groceries: updatedCart,
             updated_at: new Date().toISOString(),
           });
@@ -197,7 +238,7 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
         return false;
       }
     },
-    [user?.id, userGroceryCart]
+    [user?.id, userGroceryCart, getUserTenantId]
   );
 
   // Update entire cart (for bulk operations)
@@ -213,11 +254,20 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
       }
 
       try {
+        // Get tenant_id for RLS policy
+        const tenantId = await getUserTenantId();
+        if (!tenantId) {
+          throw new Error(
+            'Unable to determine tenant. Please refresh and try again.'
+          );
+        }
+
         // Save to database
         const { error: saveError } = await supabase
           .from('user_groceries')
           .upsert({
             user_id: user.id,
+            tenant_id: tenantId,
             groceries: updatedCart,
             updated_at: new Date().toISOString(),
           });
@@ -248,7 +298,7 @@ export function useUserGroceryCart(): UserGroceryCartReturn {
         return false;
       }
     },
-    [user?.id]
+    [user?.id, getUserTenantId]
   );
 
   // Refresh cart (alias for loadUserGroceryCart for clarity)

@@ -286,21 +286,21 @@ export function RecipeView({
   const getIngredientStatusIcon = (match: { matchType: string }) => {
     switch (match.matchType) {
       case 'exact':
-        return <Check className="h-4 w-4 text-green-600" />;
+        return <Check className="h-4 w-4 text-success" />;
       case 'partial':
       case 'fuzzy':
-        return <Check className="h-4 w-4 text-yellow-600" />;
+        return <Check className="h-4 w-4 text-warning" />;
       case 'global':
-        return <Globe className="h-4 w-4 text-blue-600" />;
+        return <Globe className="h-4 w-4 text-info" />;
       default:
-        return <ShoppingCart className="h-4 w-4 text-gray-400" />;
+        return <ShoppingCart className="h-4 w-4 text-base-content/40" />;
     }
   };
 
   const getIngredientBadge = (match: { matchType: string }) => {
     if (match.matchType === 'none') {
       return (
-        <Badge variant="outline" className="text-red-600 bg-red-50">
+        <Badge variant="outline" className="text-error bg-error/20">
           Not Available
         </Badge>
       );
@@ -308,7 +308,7 @@ export function RecipeView({
 
     if (match.matchType === 'global') {
       return (
-        <Badge variant="outline" className="text-blue-600 bg-blue-50">
+        <Badge variant="outline" className="text-info bg-info/20">
           My Ingredient
         </Badge>
       );
@@ -322,8 +322,8 @@ export function RecipeView({
         variant={variant}
         className={`ml-2 text-xs ${
           match.matchType === 'exact'
-            ? 'bg-green-100 text-green-800 border-green-300'
-            : 'bg-amber-50 text-amber-700 border-amber-300'
+            ? 'bg-success/20 text-success border-success/30'
+            : 'bg-warning/20 text-warning border-warning/30'
         }`}
       >
         {text}
@@ -527,22 +527,18 @@ export function RecipeView({
 
       {/* Grocery Compatibility Section */}
       {enhancedMatcher && Object.keys(groceries.groceries).length > 0 && (
-        <div
-          className={createDaisyUICardClasses(
-            'bordered bg-gradient-to-r from-green-50 to-blue-50'
-          )}
-        >
+        <div className={createDaisyUICardClasses('bordered bg-base-200')}>
           <div className="card-body">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="card-title text-green-800">
+              <h3 className="card-title text-success">
                 <ShoppingCart className="h-5 w-5 mr-2" />
                 Grocery Compatibility
               </h3>
               <div className="text-right">
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-success">
                   {availabilityPercentage}%
                 </div>
-                <div className="text-sm text-green-700">
+                <div className="text-sm text-success/80">
                   {groceryCompatibility.availableIngredients.length} of{' '}
                   {groceryCompatibility.totalIngredients} ingredients
                 </div>
@@ -550,16 +546,16 @@ export function RecipeView({
             </div>
 
             {/* Compatibility Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+            <div className="w-full bg-base-300 rounded-full h-3 mb-4">
               <div
                 className={`h-3 rounded-full transition-all duration-500 ${
                   availabilityPercentage >= 80
-                    ? 'bg-green-500'
+                    ? 'bg-success'
                     : availabilityPercentage >= 60
-                      ? 'bg-yellow-500'
+                      ? 'bg-warning'
                       : availabilityPercentage >= 40
-                        ? 'bg-orange-500'
-                        : 'bg-red-500'
+                        ? 'bg-warning'
+                        : 'bg-error'
                 }`}
                 style={{ width: `${availabilityPercentage}%` }}
               />
@@ -788,8 +784,8 @@ export function RecipeView({
 
           {/* Shopping List for Missing Ingredients */}
           {enhancedMatcher && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-medium text-blue-800 mb-3 flex items-center">
+            <div className="mt-6 p-4 bg-info/10 rounded-lg border border-info/20">
+              <h4 className="font-medium text-info mb-3 flex items-center">
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Shopping List ({missingIngredients.length} items)
               </h4>
@@ -798,20 +794,20 @@ export function RecipeView({
                   {missingIngredients.map((match, index) => (
                     <div
                       key={index}
-                      className="flex items-center text-sm text-blue-700"
+                      className="flex items-center text-sm text-info"
                     >
-                      <div className="w-2 h-2 bg-blue-400 rounded-full mr-2" />
+                      <div className="w-2 h-2 bg-info rounded-full mr-2" />
                       {match.recipeIngredient}
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <Check className="h-8 w-8 mx-auto text-green-600 mb-2" />
-                  <p className="text-green-700 font-medium">
+                  <Check className="h-8 w-8 mx-auto text-success mb-2" />
+                  <p className="text-success font-medium">
                     You have all ingredients!
                   </p>
-                  <p className="text-green-600 text-sm">
+                  <p className="text-success/80 text-sm">
                     No shopping needed for this recipe.
                   </p>
                 </div>
@@ -826,12 +822,12 @@ export function RecipeView({
                     recipeTitle={recipe.title}
                     variant="outline"
                     size="sm"
-                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                    className="border-info/30 text-info hover:bg-info/20"
                   />
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                    className="border-info/30 text-info hover:bg-info/20"
                     onClick={() => {
                       // Export shopping list as a text file
                       const text = missingIngredients

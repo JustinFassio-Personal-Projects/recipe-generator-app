@@ -11,11 +11,11 @@ INSERT INTO tenants (
   is_active
 )
 VALUES (
-  'sanctuary-health',
+  'sanctuaryhealth',
   'Sanctuary Health',
   NULL, -- System tenant, no specific owner
   jsonb_build_object(
-    'theme_name', 'silk',
+    'theme_name', 'sanctuary-health',
     'primary_color', '#4ade80',
     'secondary_color', '#60a5fa'
   ),

@@ -26,8 +26,8 @@ export const sanctuaryHealthConfig: Partial<Tenant> = {
     // Custom Sanctuary Health theme with gold/parchment colors
     // Theme is defined in src/index.css - no color overrides needed
     theme_name: SANCTUARY_HEALTH_THEME_NAME,
-    logo_url: '/tenants/sanctuaryhealth/logo.svg',
-    favicon_url: '/tenants/sanctuaryhealth/logo.svg',
+    logo_url: '/tenants/sanctuaryhealth/primary_logo.png',
+    favicon_url: '/tenants/sanctuaryhealth/primary_logo.png',
   },
 
   // Tenant-specific settings

@@ -32,6 +32,17 @@ export function Header() {
   const logoUrl = tenant?.branding?.logo_url || '/recipe-generator-logo.png';
   const appName = tenant?.name || 'Recipe Generator';
 
+  // Debug logging in development
+  if (import.meta.env.DEV) {
+    console.log('🎨 Header Logo Debug:', {
+      hasTenant: !!tenant,
+      tenantSubdomain: tenant?.subdomain,
+      tenantName: tenant?.name,
+      logoUrl,
+      branding: tenant?.branding,
+    });
+  }
+
   const handleSignOut = async () => {
     try {
       await signOut();

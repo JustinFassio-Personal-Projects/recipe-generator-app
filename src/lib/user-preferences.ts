@@ -338,8 +338,27 @@ export async function updateUserGroceries(
   try {
     logger.debug('Updating user groceries for user:', userId);
 
+    // Get tenant_id for RLS policy
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      logger.error('Error fetching tenant_id:', profileError);
+      throw new Error(
+        'Unable to determine tenant. Please refresh and try again.'
+      );
+    }
+
+    if (!profile?.tenant_id) {
+      throw new Error('User tenant not found. Please contact support.');
+    }
+
     const updateData: Record<string, unknown> = {
       user_id: userId,
+      tenant_id: profile.tenant_id,
       groceries,
       updated_at: new Date().toISOString(),
     };

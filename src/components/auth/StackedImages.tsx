@@ -130,11 +130,6 @@ export function StackedImages({
     );
   }
 
-  // Use real recipes if available, otherwise fall back to emoji placeholders
-  // Only show real recipes if we have enough to fill all circles (maintains visual consistency)
-  const displayItems =
-    topRecipes.length >= maxImages ? topRecipes.slice(0, maxImages) : null;
-
   // Helper function to get image URL (prefer avatar, fallback to recipe image)
   const getImageUrl = (recipe: PublicRecipe): string | null => {
     // Prefer user avatar if available
@@ -148,6 +143,10 @@ export function StackedImages({
     return null;
   };
 
+  // Show real recipes whenever available, fill remaining slots with emojis
+  const realRecipes = topRecipes.slice(0, maxImages);
+  const remainingSlots = maxImages - realRecipes.length;
+
   return (
     <div
       className={`flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 ${className}`}
@@ -155,112 +154,114 @@ export function StackedImages({
       {/* Recipe/User Image Circles */}
       <div className="relative mb-8 pb-2">
         <div className="flex -space-x-2 sm:-space-x-3">
-          {displayItems && displayItems.length > 0
-            ? // Show real recipe/user images (may be fewer than maxImages)
-              displayItems.map((recipe, index) => {
-                const baseZIndex = maxImages - index;
-                const rating = recipe.creator_rating || 4;
-                const imageUrl = getImageUrl(recipe);
-                const hasImageError = imageErrors.has(recipe.id);
-                const showEmoji = !imageUrl || hasImageError;
-                const emoji = showEmoji ? getCategoryEmoji(recipe) : null;
+          {/* Show real recipe/user images whenever available */}
+          {realRecipes.map((recipe, index) => {
+            const baseZIndex = maxImages - index;
+            const rating = recipe.creator_rating || 4;
+            const imageUrl = getImageUrl(recipe);
+            const hasImageError = imageErrors.has(recipe.id);
+            const showEmoji = !imageUrl || hasImageError;
+            const emoji = showEmoji ? getCategoryEmoji(recipe) : null;
 
-                return (
-                  <div
-                    key={recipe.id}
-                    className={`
-                    relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 
-                    rounded-full border-3 sm:border-4 border-white shadow-xl
-                    ${showEmoji ? `bg-gradient-to-br ${COLORS[index % COLORS.length]}` : 'bg-gray-100'}
-                    flex items-center justify-center overflow-hidden
-                    transform transition-all duration-300 hover:scale-110 hover:-translate-y-1
-                    cursor-pointer
-                  `}
-                    style={{
-                      zIndex: baseZIndex,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.zIndex = '20';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.zIndex = baseZIndex.toString();
-                    }}
-                    title={recipe.title}
-                  >
-                    {showEmoji ? (
-                      <span className="text-2xl sm:text-3xl md:text-4xl">
-                        {emoji}
-                      </span>
-                    ) : (
-                      <img
-                        src={imageUrl!}
-                        alt={recipe.title}
-                        className="w-full h-full object-cover"
-                        onError={() => handleImageError(recipe.id)}
-                        loading="lazy"
-                      />
-                    )}
+            return (
+              <div
+                key={recipe.id}
+                className={`
+                  relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 
+                  rounded-full border-3 sm:border-4 border-white shadow-xl
+                  ${showEmoji ? `bg-gradient-to-br ${COLORS[index % COLORS.length]}` : 'bg-gray-100'}
+                  flex items-center justify-center overflow-hidden
+                  transform transition-all duration-300 hover:scale-110 hover:-translate-y-1
+                  cursor-pointer
+                `}
+                style={{
+                  zIndex: baseZIndex,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.zIndex = '20';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.zIndex = baseZIndex.toString();
+                }}
+                title={recipe.title}
+              >
+                {showEmoji ? (
+                  <span className="text-2xl sm:text-3xl md:text-4xl">
+                    {emoji}
+                  </span>
+                ) : (
+                  <img
+                    src={imageUrl!}
+                    alt={recipe.title}
+                    className="w-full h-full object-cover"
+                    onError={() => handleImageError(recipe.id)}
+                    loading="lazy"
+                  />
+                )}
 
-                    {/* Star rating badge - real rating */}
-                    <div
-                      className="absolute -top-1 -right-1 bg-orange-500 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-lg border-2 border-white"
-                      style={{ zIndex: baseZIndex + 10 }}
-                    >
-                      <div className="flex items-center gap-0.5">
-                        <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 fill-current" />
-                        <span className="text-[10px] sm:text-xs font-bold">
-                          {rating}
-                        </span>
-                      </div>
-                    </div>
+                {/* Star rating badge - real rating */}
+                <div
+                  className="absolute -top-1 -right-1 bg-orange-500 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-lg border-2 border-white"
+                  style={{ zIndex: baseZIndex + 10 }}
+                >
+                  <div className="flex items-center gap-0.5">
+                    <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 fill-current" />
+                    <span className="text-[10px] sm:text-xs font-bold">
+                      {rating}
+                    </span>
                   </div>
-                );
-              })
-            : // Fallback to emoji placeholders (only when no recipes available)
-              FOOD_EMOJIS.slice(0, maxImages).map((emoji, index) => {
-                const baseZIndex = FOOD_EMOJIS.length - index;
-                const rating = index % 2 === 0 ? 5 : 4;
+                </div>
+              </div>
+            );
+          })}
 
-                return (
-                  <div
-                    key={index}
-                    className={`
+          {/* Fill remaining slots with emoji placeholders */}
+          {remainingSlots > 0 &&
+            FOOD_EMOJIS.slice(0, remainingSlots).map((emoji, index) => {
+              const actualIndex = realRecipes.length + index;
+              const baseZIndex = maxImages - actualIndex;
+              const rating = actualIndex % 2 === 0 ? 5 : 4;
+
+              return (
+                <div
+                  key={`emoji-${index}`}
+                  className={`
                     relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 
                     rounded-full border-3 sm:border-4 border-white shadow-xl
-                    bg-gradient-to-br ${COLORS[index]}
+                    bg-gradient-to-br ${COLORS[actualIndex % COLORS.length]}
                     flex items-center justify-center
                     transform transition-all duration-300 hover:scale-110 hover:-translate-y-1
                     cursor-pointer
                   `}
-                    style={{
-                      zIndex: baseZIndex,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.zIndex = '20';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.zIndex = baseZIndex.toString();
-                    }}
-                  >
-                    <span className="text-2xl sm:text-3xl md:text-4xl">
-                      {emoji}
-                    </span>
+                  style={{
+                    zIndex: baseZIndex,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.zIndex = '20';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.zIndex = baseZIndex.toString();
+                  }}
+                >
+                  <span className="text-2xl sm:text-3xl md:text-4xl">
+                    {emoji}
+                  </span>
 
-                    {/* Star rating badge */}
-                    <div
-                      className="absolute -top-1 -right-1 bg-orange-500 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-lg border-2 border-white"
-                      style={{ zIndex: baseZIndex + 10 }}
-                    >
-                      <div className="flex items-center gap-0.5">
-                        <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 fill-current" />
-                        <span className="text-[10px] sm:text-xs font-bold">
-                          {rating}
-                        </span>
-                      </div>
+                  {/* Star rating badge */}
+                  <div
+                    className="absolute -top-1 -right-1 bg-orange-500 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center shadow-lg border-2 border-white"
+                    style={{ zIndex: baseZIndex + 10 }}
+                  >
+                    <div className="flex items-center gap-0.5">
+                      <Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 fill-current" />
+                      <span className="text-[10px] sm:text-xs font-bold">
+                        {rating}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
         </div>
       </div>
 
